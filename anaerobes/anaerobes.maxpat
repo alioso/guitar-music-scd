@@ -8,7 +8,7 @@
 			"architecture": "x64",
 			"modernui": 1
 		},
-		"classnamespace": "box",
+		"classnamespace": "dsp.toplevel",
 		"rect": [
 			50.0,
 			80.0,

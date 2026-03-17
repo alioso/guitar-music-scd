@@ -244,10 +244,15 @@ boxes.append(flonum("min_disp", COL_TIMER+150, ROW_TOP+180, 60))
 boxes.append(comment("lbl_tmin", "min", COL_TIMER+215, ROW_TOP+184, 30))
 
 # BPM display / edit
-boxes.append(comment("lbl_bpm", "BPM:", COL_TIMER, ROW_TOP+215, 35))
-boxes.append(intnum("bpm_num", COL_TIMER+38, ROW_TOP+215, 45))
-boxes.append(msg("msg_bpm_qn",  "750", COL_TIMER+38, ROW_TOP+243, 40))   # default 80bpm
+# FIX 5a: bpm_num was disconnected. Wire it so changing it updates both metros.
+# bpm_num holds ms-per-quarter-note (750 = 80bpm). Right inlet of metro sets interval.
+boxes.append(comment("lbl_bpm", "BPM (ms/qn):", COL_TIMER, ROW_TOP+215, 90))
+boxes.append(intnum("bpm_num", COL_TIMER+95, ROW_TOP+215, 50))
+boxes.append(msg("msg_bpm_init", "750", COL_TIMER+95, ROW_TOP+243, 40))  # default at loadbang
+boxes.append(msg("msg_bpm_qn",  "750", COL_TIMER+38, ROW_TOP+243, 40))
 boxes.append(msg("msg_bpm_8th", "375", COL_TIMER+85, ROW_TOP+243, 40))
+boxes.append(newobj("bpm_half", "/ 2", 2, 1, ["int"],
+                     COL_TIMER+95, ROW_TOP+270, 35))
 
 # ------- AUDIO CLICK (quarter note) -------
 # Short sine burst at 880Hz on each quarter note
@@ -286,6 +291,12 @@ lines.append(line("click_cycle", 0, "click_mult",  0))
 lines.append(line("click_env",   0, "click_mult",  1))
 lines.append(line("click_mult",  0, "click_gain",  0))
 lines.append(line("click_toggle",0, "click_gain",  1))
+# FIX 5a: bpm_num -> both metros; default 750 fired at loadbang
+lines.append(line("bpm_num",      0, "bpm_half",     0))
+lines.append(line("bpm_num",      0, "metro_qn",     1))  # right inlet sets interval
+lines.append(line("bpm_half",     0, "metro_8th",    1))
+lines.append(line("loadbang",     0, "msg_bpm_init", 0))
+lines.append(line("msg_bpm_init", 0, "bpm_num",      0))
 
 # ============================================================
 # SECTION 3: PITCH DETECTION  (active 0–30s)
@@ -343,9 +354,34 @@ boxes.append(comment("lbl_detect_st", "pitch→MIDI→histogram",
 boxes.append(button("lock_pool_btn", COL_DETECT+170, ROW_TOP+20))
 boxes.append(comment("lbl_lock", "LOCK POOL (auto@30s)", COL_DETECT+200, ROW_TOP+24, 150))
 
-# The 5-note pool: coll sorted by count, top 5 stored in pool_notes coll
+# The 5-note pool: top 5 detected notes stored in pool_coll
 boxes.append(newobj("pool_coll", "coll pool_notes", 2, 3, ["", "", ""],
                      COL_DETECT+170, ROW_TOP+80, 120))
+
+# FIX 1b: wire pool_coll and ref_hz.
+# At lock: dump note_hist -> route first 5 items into pool_coll (indices 0-4).
+# Then fetch pool_coll key 0 -> mtof -> ref_hz (most-detected note as reference pitch).
+boxes.append(msg("msg_hist_dump", "dump", COL_DETECT+170, ROW_TOP+55, 45))
+boxes.append(newobj("pool_count", "counter 0 4", 5, 4, ["int", "", "", "int"],
+                     COL_DETECT+230, ROW_TOP+80, 80))
+boxes.append(newobj("pool_store_pack", "pak 0 0", 2, 1, [""],
+                     COL_DETECT+320, ROW_TOP+80, 60))
+boxes.append(newobj("pool_store_msg", "prepend store", 1, 1, [""],
+                     COL_DETECT+390, ROW_TOP+80, 90))
+boxes.append(msg("msg_fetch_ref", "0", COL_DETECT+170, ROW_TOP+115, 27))
+boxes.append(newobj("mtof_ref", "mtof", 1, 1, ["float"],
+                     COL_DETECT+210, ROW_TOP+115, 45))
+lines.append(line("lock_pool_btn",   0, "msg_hist_dump",   0))
+lines.append(line("msg_hist_dump",   0, "note_hist",       0))
+lines.append(line("note_hist",       0, "pool_count",      0))
+lines.append(line("pool_count",      0, "pool_store_pack", 0))
+lines.append(line("note_hist",       0, "pool_store_pack", 1))
+lines.append(line("pool_store_pack", 0, "pool_store_msg",  0))
+lines.append(line("pool_store_msg",  0, "pool_coll",       0))
+lines.append(line("lock_pool_btn",   0, "msg_fetch_ref",   0))
+lines.append(line("msg_fetch_ref",   0, "pool_coll",       0))
+lines.append(line("pool_coll",       0, "mtof_ref",        0))
+lines.append(line("mtof_ref",        0, "ref_hz",          0))
 
 # Detection wiring
 lines.append(line("ms_to_sec",   0, "detect_lt",   0))
@@ -359,6 +395,12 @@ lines.append(line("snap_pitch",  0, "round_midi",  0))
 lines.append(line("round_midi",  0, "int_midi",    0))
 lines.append(line("snap_conf",   0, "conf_gt",     0))
 lines.append(line("conf_gt",     0, "msg_store_pitch", 0))
+# FIX 1a: note_hist was never wired. int_midi sends key to recall; hist_inc adds 1;
+# msg_store_pitch triggers the re-store back under the same key.
+lines.append(line("int_midi",        0, "note_hist",   0))  # key -> recall count
+lines.append(line("note_hist",       0, "hist_inc",    0))  # recalled count -> +1
+lines.append(line("hist_inc",        0, "note_hist",   1))  # incremented -> value inlet
+lines.append(line("msg_store_pitch", 0, "note_hist",   0))  # "store" re-saves
 
 # ============================================================
 # SECTION 4: RECORD BUFFER (0–30s)
@@ -498,30 +540,50 @@ boxes.append(comment("lbl_engine", "=== EUCLIDEAN ENGINE ===",
                       COL_ENGINE, ROW_TOP-10, 200))
 
 # Pattern bank coll (shared, read-only after init)
+# Storage scheme: key = pat_id * 100 + step_idx, value = 0 or 1
+# e.g. pattern 0 step 3 -> key 3, pattern 2 step 1 -> key 201
+# This allows direct lookup: step_key expr = cur_pat*100 + step_idx -> coll -> 0 or 1
 boxes.append(newobj("pat_bank", "coll pat_bank",
                      2, 3, ["", "", ""],
                      COL_ENGINE, ROW_TOP+20, 100))
 
-# Load patterns into pat_bank on bang (called after start)
-# We embed as a series of message boxes with "store" commands
-for pidx, (k, n, bits) in enumerate(PATTERNS):
-    boxes.append(msg(f"msg_pat_{pidx}", f"{pidx}, {bits} ;",
-                     COL_ENGINE + 110, ROW_TOP + 20 + pidx * 22, 280))
+# Also store pattern lengths separately: key = pat_id + 900, value = length (n)
+# Used to set the step counter range when a new pattern is chosen.
 
-# A loadbang-driven sequence to populate the coll:
+# Build individual step store messages for each pattern
+# Format: "key, value ;" sent to pat_bank
+all_pat_msgs = []
+for pidx, (k, n, bits) in enumerate(PATTERNS):
+    steps = [int(x) for x in bits.split()]
+    for sidx, val in enumerate(steps):
+        key = pidx * 100 + sidx
+        mid = COL_ENGINE + 110 + (pidx % 5) * 200
+        miy = ROW_TOP + 20 + (pidx * len(steps) + sidx) * 14
+        mid_id = f"msg_step_{pidx}_{sidx}"
+        boxes.append(msg(mid_id, f"{key}, {val} ;", mid, miy, 80))
+        all_pat_msgs.append(mid_id)
+    # Store pattern length under key 900+pidx
+    len_id = f"msg_patlen_{pidx}"
+    boxes.append(msg(len_id, f"{900 + pidx}, {n} ;",
+                     COL_ENGINE + 110, ROW_TOP + 20 + pidx * 14, 80))
+    all_pat_msgs.append(len_id)
+
+# Loadbang-driven init: one trigger outlet per store message, fired right-to-left
+n_msgs = len(all_pat_msgs)
+trig_args = " ".join(["bang"] * n_msgs)
 boxes.append(newobj("pat_init_lb", "loadbang", 0, 1, ["bang"],
                      COL_ENGINE + 400, ROW_TOP + 20, 70))
 boxes.append(newobj("pat_init_delay", "delay 200", 2, 1, ["bang"],
                      COL_ENGINE + 400, ROW_TOP + 50, 70))
-boxes.append(newobj("pat_init_trig", "trigger bang bang bang bang bang bang bang bang bang bang",
-                     1, 10, ["bang"]*10,
-                     COL_ENGINE + 400, ROW_TOP + 80, 400))
+boxes.append(newobj("pat_init_trig", f"trigger {trig_args}",
+                     1, n_msgs, ["bang"] * n_msgs,
+                     COL_ENGINE + 400, ROW_TOP + 80, min(600, n_msgs * 45 + 60)))
 lines.append(line("pat_init_lb",    0, "pat_init_delay", 0))
 lines.append(line("pat_init_delay", 0, "pat_init_trig",  0))
-for pidx in range(NUM_PATTERNS):
-    # trigger outlet (9-pidx) fires in order 0..9 because trigger fires right-to-left
-    lines.append(line("pat_init_trig", 9 - pidx, f"msg_pat_{pidx}", 0))
-    lines.append(line(f"msg_pat_{pidx}", 0, "pat_bank", 0))
+for i, mid_id in enumerate(all_pat_msgs):
+    # trigger fires right-to-left, so outlet (n_msgs-1-i) fires msg i
+    lines.append(line("pat_init_trig", n_msgs - 1 - i, mid_id, 0))
+    lines.append(line(mid_id, 0, "pat_bank", 0))
 
 # NOTE POOL coll (pool_coll already defined in DETECT section)
 # Voice-specific note-order colls
@@ -559,10 +621,13 @@ for vidx in range(1, 5):
     boxes.append(newobj(f"pat_last_{vidx}", "i",
                          1, 1, ["int"],
                          vx + 200, vy, 30))  # stores last pattern idx
-    # If rand == last, add 1 mod 10 (simple collision avoid)
-    boxes.append(newobj(f"pat_dedup_{vidx}", f"sel 0",
+    # If rand == last: subtract (gives 0 when equal) -> sel 0 detects match
+    boxes.append(newobj(f"pat_eq_{vidx}", "==",
+                         2, 1, ["int"],
+                         vx + 240, vy, 40))
+    boxes.append(newobj(f"pat_dedup_{vidx}", "sel 1",
                          2, 2, ["bang", ""],
-                         vx + 240, vy, 55))
+                         vx + 290, vy, 50))
     boxes.append(newobj(f"pat_inc_{vidx}", f"+ 1",
                          2, 1, ["int"],
                          vx + 300, vy, 40))
@@ -578,11 +643,27 @@ for vidx in range(1, 5):
                          1, 2, ["", ""],
                          vx + 440, vy, 55))
 
-    # Step counter (8th-note driven) – length set to pattern length
-    # Default length 8, overwritten when pattern is loaded
+    # Step counter (8th-note driven) – upper bound set from pattern length at "on" time
+    # Default 0 7 (length 8) matching E(3,8); overwritten per pattern.
     boxes.append(newobj(f"step_ctr_{vidx}", f"counter 0 7",
                          5, 4, ["int", "", "", "int"],
                          vx + 505, vy, 85))
+
+    # When a new pattern is chosen, fetch its length from pat_bank (key 900+pat_idx)
+    # and set the step counter upper bound. key = 900 + cur_pat.
+    boxes.append(newobj(f"patlen_key_{vidx}", f"+ 900",
+                         2, 1, ["int"],
+                         vx + 405, vy + 30, 55))
+    boxes.append(newobj(f"patlen_fetch_{vidx}", "coll pat_bank",
+                         2, 3, ["", "", ""],
+                         vx + 465, vy + 30, 100))
+    # step counter "setmax N" message: prepend "setmax"
+    boxes.append(newobj(f"patlen_sub1_{vidx}", "- 1",
+                         2, 1, ["int"],
+                         vx + 570, vy + 30, 40))
+    boxes.append(newobj(f"patlen_setmax_{vidx}", "prepend setmax",
+                         1, 1, [""],
+                         vx + 618, vy + 30, 90))
 
     # Gate toggle: on/off controlled by scheduler
     boxes.append(toggle_box(f"step_gate_{vidx}", vx + 600, vy))
@@ -638,25 +719,44 @@ for vidx in range(1, 5):
                           vx + 1140, vy + 30, 120))
 
     # ---- Voice on/off/taper routing ----
-    # "on N" → trigger: random pattern, shuffle notes, enable gate
-    lines.append(line(f"voice_ctrl_{vidx}", 0, f"rand_pat_{vidx}", 0))  # on → rand
-    lines.append(line(f"rand_pat_{vidx}",   0, f"pat_dedup_{vidx}", 0))
-    lines.append(line(f"pat_last_{vidx}",   0, f"pat_dedup_{vidx}", 1))
-    # if not duplicate: use rand output
+    # FIX 2+3: route strips its selector and passes the bare voice-index int (1..4).
+    # Sending that int to a toggle sets it to 1 regardless of on/off (both non-zero).
+    # Sending it to random's left inlet sets its upper bound instead of triggering it.
+    # Fix: split "on" through a trigger to get a clean bang for rand and a 1-msg for toggle.
+    boxes.append(newobj(f"on_trig_{vidx}", "trigger bang bang",
+                         1, 2, ["bang", "bang"],
+                         vx, vy + 25, 110))
+    boxes.append(msg(f"msg_gate_on_{vidx}",  "1", vx + 120, vy + 25, 27))
+    boxes.append(msg(f"msg_gate_off_{vidx}", "0", vx + 120, vy + 50, 27))
+
+    lines.append(line(f"voice_ctrl_{vidx}",  0, f"on_trig_{vidx}",    0))  # on -> trigger
+    lines.append(line(f"on_trig_{vidx}",     1, f"msg_gate_on_{vidx}", 0)) # R outlet: 1
+    lines.append(line(f"msg_gate_on_{vidx}", 0, f"step_gate_{vidx}",   0))
+    lines.append(line(f"on_trig_{vidx}",     0, f"rand_pat_{vidx}",    0)) # L outlet: bang
+
+    lines.append(line(f"rand_pat_{vidx}",   0, f"pat_eq_{vidx}",    0))  # rand result -> ==
+    lines.append(line(f"pat_last_{vidx}",   0, f"pat_eq_{vidx}",    1))  # last -> == right
+    lines.append(line(f"pat_eq_{vidx}",     0, f"pat_dedup_{vidx}", 0))  # 1=match->bang
+    # duplicate (sel 1 outlet 0 = bang): increment and mod-wrap
+    lines.append(line(f"pat_dedup_{vidx}",  0, f"pat_inc_{vidx}",   0))
+    lines.append(line(f"pat_inc_{vidx}",    0, f"pat_mod_{vidx}",   0))
+    lines.append(line(f"pat_mod_{vidx}",    0, f"cur_pat_{vidx}",   0))
+    # not duplicate (sel 1 outlet 1 = passthrough int): use directly
     lines.append(line(f"pat_dedup_{vidx}",  1, f"cur_pat_{vidx}",   0))
-    # if duplicate: increment mod
-    lines.append(line(f"pat_dedup_{vidx}",  0, f"rand_pat_{vidx}",  0))  # re-roll
-    lines.append(line(f"rand_pat_{vidx}",   0, f"cur_pat_{vidx}",   0))
     # save chosen pattern as last
     lines.append(line(f"cur_pat_{vidx}",    0, f"pat_last_{vidx}",  0))
     lines.append(line(f"cur_pat_{vidx}",    0, f"cur_pat_i_{vidx}", 0))
+    # fetch pattern length and update step counter upper bound
+    lines.append(line(f"cur_pat_{vidx}",    0, f"patlen_key_{vidx}",   0))
+    lines.append(line(f"patlen_key_{vidx}", 0, f"patlen_fetch_{vidx}", 0))
+    lines.append(line(f"patlen_fetch_{vidx}",0,f"patlen_sub1_{vidx}",  0))
+    lines.append(line(f"patlen_sub1_{vidx}", 0,f"patlen_setmax_{vidx}",0))
+    lines.append(line(f"patlen_setmax_{vidx}",0,f"step_ctr_{vidx}",    0))
 
-    # on → enable step gate
-    lines.append(line(f"voice_ctrl_{vidx}", 0, f"step_gate_{vidx}", 0))
-
-    # off → disable gate, reset step counter
-    lines.append(line(f"voice_ctrl_{vidx}", 1, f"step_gate_{vidx}", 0))
-    lines.append(line(f"voice_ctrl_{vidx}", 1, f"step_ctr_{vidx}",  3))  # reset
+    # off -> send 0 to toggle, reset step counter
+    lines.append(line(f"voice_ctrl_{vidx}",   1, f"msg_gate_off_{vidx}", 0))
+    lines.append(line(f"msg_gate_off_{vidx}", 0, f"step_gate_{vidx}",    0))
+    lines.append(line(f"voice_ctrl_{vidx}",   1, f"step_ctr_{vidx}",     3))  # reset
 
     # metro_8th → gate → step counter
     # (gate = multiply by 0/1 via *; simpler: use gate object)
@@ -740,8 +840,13 @@ for vidx in range(1, 5):
     lines.append(line(f"step_sel_{vidx}",   0, f"start_rand_{vidx}",  0))
     lines.append(line(f"start_rand_{vidx}", 0, f"start_float_{vidx}", 0))
     lines.append(line(f"start_float_{vidx}",0, f"msg_loopst_{vidx}",  0))
-    lines.append(line(f"msg_loopst_{vidx}", 0, f"groove_{vidx}",      0))
-    lines.append(line(f"msg_loopdur_{vidx}",0, f"groove_{vidx}",      0))
+    lines.append(line(f"msg_loopst_{vidx}",  0, f"groove_{vidx}",      0))
+    lines.append(line(f"msg_loopdur_{vidx}", 0, f"groove_{vidx}",      0))
+    # FIX 4: msg_loopdur was never triggered. Fire it at loadbang so the
+    # 400ms grain window is set before any playback begins.
+    boxes.append(newobj(f"lb_loopdur_{vidx}", "loadbang", 0, 1, ["bang"],
+                         vx + 160, vy + 115, 70))
+    lines.append(line(f"lb_loopdur_{vidx}", 0, f"msg_loopdur_{vidx}", 0))
 
     # Rate line → groove
     lines.append(line(f"rate_line_{vidx}",  0, f"groove_{vidx}",      1))
@@ -899,7 +1004,7 @@ patch = {
             "architecture": "x64",
             "modernui": 1
         },
-        "classnamespace": "box",
+        "classnamespace": "dsp.toplevel",
         "rect": [50.0, 80.0, 2300.0, 1000.0],
         "gridsize": [15.0, 15.0],
         "boxes": boxes,

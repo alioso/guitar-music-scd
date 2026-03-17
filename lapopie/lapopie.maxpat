@@ -8,7 +8,7 @@
 			"architecture": "x64",
 			"modernui": 1
 		},
-		"classnamespace": "box",
+		"classnamespace": "dsp.toplevel",
 		"rect": [
 			50.0,
 			80.0,
@@ -502,11 +502,11 @@
 					"patching_rect": [
 						300,
 						265,
-						35,
+						90,
 						22
 					],
 					"outlettype": [],
-					"text": "BPM:"
+					"text": "BPM (ms/qn):"
 				}
 			},
 			{
@@ -516,9 +516,9 @@
 					"numinlets": 1,
 					"numoutlets": 2,
 					"patching_rect": [
-						338,
+						395,
 						265,
-						45,
+						50,
 						22
 					],
 					"outlettype": [
@@ -526,6 +526,24 @@
 						"bang"
 					],
 					"parameter_enable": 0
+				}
+			},
+			{
+				"box": {
+					"id": "msg_bpm_init",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						395,
+						293,
+						40,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "750"
 				}
 			},
 			{
@@ -562,6 +580,24 @@
 						""
 					],
 					"text": "375"
+				}
+			},
+			{
+				"box": {
+					"id": "bpm_half",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						395,
+						320,
+						35,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "/ 2"
 				}
 			},
 			{
@@ -1011,6 +1047,117 @@
 						""
 					],
 					"text": "coll pool_notes"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_hist_dump",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						770,
+						105,
+						45,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "dump"
+				}
+			},
+			{
+				"box": {
+					"id": "pool_count",
+					"maxclass": "newobj",
+					"numinlets": 5,
+					"numoutlets": 4,
+					"patching_rect": [
+						830,
+						130,
+						80,
+						22
+					],
+					"outlettype": [
+						"int",
+						"",
+						"",
+						"int"
+					],
+					"text": "counter 0 4"
+				}
+			},
+			{
+				"box": {
+					"id": "pool_store_pack",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						920,
+						130,
+						60,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "pak 0 0"
+				}
+			},
+			{
+				"box": {
+					"id": "pool_store_msg",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						130,
+						90,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "prepend store"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_fetch_ref",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						770,
+						165,
+						27,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "0"
+				}
+			},
+			{
+				"box": {
+					"id": "mtof_ref",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						810,
+						165,
+						45,
+						22
+					],
+					"outlettype": [
+						"float"
+					],
+					"text": "mtof"
 				}
 			},
 			{
@@ -1721,182 +1868,1568 @@
 			},
 			{
 				"box": {
-					"id": "msg_pat_0",
+					"id": "msg_step_0_0",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1560,
 						70,
-						280,
+						80,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "0, 1 0 0 1 0 0 1 0 ;"
+					"text": "0, 1 ;"
 				}
 			},
 			{
 				"box": {
-					"id": "msg_pat_1",
+					"id": "msg_step_0_1",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1560,
-						92,
-						280,
+						84,
+						80,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "1, 1 0 1 0 1 0 1 1 ;"
+					"text": "1, 0 ;"
 				}
 			},
 			{
 				"box": {
-					"id": "msg_pat_2",
+					"id": "msg_step_0_2",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1560,
-						114,
-						280,
+						98,
+						80,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "2, 1 0 0 1 0 ;"
+					"text": "2, 0 ;"
 				}
 			},
 			{
 				"box": {
-					"id": "msg_pat_3",
+					"id": "msg_step_0_3",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1560,
-						136,
-						280,
+						112,
+						80,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "3, 1 0 1 0 1 ;"
+					"text": "3, 1 ;"
 				}
 			},
 			{
 				"box": {
-					"id": "msg_pat_4",
+					"id": "msg_step_0_4",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1560,
-						158,
-						280,
+						126,
+						80,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "4, 1 0 0 1 0 0 1 ;"
+					"text": "4, 0 ;"
 				}
 			},
 			{
 				"box": {
-					"id": "msg_pat_5",
+					"id": "msg_step_0_5",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1560,
-						180,
-						280,
+						140,
+						80,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "5, 1 0 1 0 1 0 1 ;"
+					"text": "5, 0 ;"
 				}
 			},
 			{
 				"box": {
-					"id": "msg_pat_6",
+					"id": "msg_step_0_6",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1560,
-						202,
-						280,
+						154,
+						80,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "6, 1 1 0 1 0 1 1 ;"
+					"text": "6, 1 ;"
 				}
 			},
 			{
 				"box": {
-					"id": "msg_pat_7",
+					"id": "msg_step_0_7",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1560,
+						168,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "7, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_patlen_0",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						70,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "900, 8 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_1_0",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						182,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "100, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_1_1",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						196,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "101, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_1_2",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						210,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "102, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_1_3",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
 						224,
-						280,
+						80,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "7, 1 0 0 1 0 0 1 0 0 ;"
+					"text": "103, 0 ;"
 				}
 			},
 			{
 				"box": {
-					"id": "msg_pat_8",
+					"id": "msg_step_1_4",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						238,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "104, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_1_5",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						252,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "105, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_1_6",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						266,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "106, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_1_7",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						280,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "107, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_patlen_1",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1560,
-						246,
-						280,
+						84,
+						80,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "8, 1 0 1 0 1 0 1 0 1 ;"
+					"text": "901, 8 ;"
 				}
 			},
 			{
 				"box": {
-					"id": "msg_pat_9",
+					"id": "msg_step_2_0",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						210,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "200, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_2_1",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						224,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "201, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_2_2",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						238,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "202, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_2_3",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						252,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "203, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_2_4",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						266,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "204, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_patlen_2",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1560,
-						268,
-						280,
+						98,
+						80,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "9, 1 0 1 0 1 0 1 0 1 0 1 1 ;"
+					"text": "902, 5 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_3_0",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						280,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "300, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_3_1",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						294,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "301, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_3_2",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						308,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "302, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_3_3",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						322,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "303, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_3_4",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						336,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "304, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_patlen_3",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						112,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "903, 5 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_4_0",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						462,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "400, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_4_1",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						476,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "401, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_4_2",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						490,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "402, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_4_3",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						504,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "403, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_4_4",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						518,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "404, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_4_5",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						532,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "405, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_4_6",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						546,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "406, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_patlen_4",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						126,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "904, 7 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_5_0",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						560,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "500, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_5_1",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						574,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "501, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_5_2",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						588,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "502, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_5_3",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						602,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "503, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_5_4",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						616,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "504, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_5_5",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						630,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "505, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_5_6",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						644,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "506, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_patlen_5",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						140,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "905, 7 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_6_0",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						658,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "600, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_6_1",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						672,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "601, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_6_2",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						686,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "602, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_6_3",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						700,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "603, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_6_4",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						714,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "604, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_6_5",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						728,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "605, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_6_6",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1760,
+						742,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "606, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_patlen_6",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						154,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "906, 7 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_7_0",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						952,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "700, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_7_1",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						966,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "701, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_7_2",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						980,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "702, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_7_3",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						994,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "703, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_7_4",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						1008,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "704, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_7_5",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						1022,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "705, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_7_6",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						1036,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "706, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_7_7",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						1050,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "707, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_7_8",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1960,
+						1064,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "708, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_patlen_7",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						168,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "907, 9 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_8_0",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						1078,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "800, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_8_1",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						1092,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "801, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_8_2",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						1106,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "802, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_8_3",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						1120,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "803, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_8_4",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						1134,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "804, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_8_5",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						1148,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "805, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_8_6",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						1162,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "806, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_8_7",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						1176,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "807, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_8_8",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2160,
+						1190,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "808, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_patlen_8",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						182,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "908, 9 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_9_0",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						1582,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "900, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_9_1",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						1596,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "901, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_9_2",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						1610,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "902, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_9_3",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						1624,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "903, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_9_4",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						1638,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "904, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_9_5",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						1652,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "905, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_9_6",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						1666,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "906, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_9_7",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						1680,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "907, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_9_8",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						1694,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "908, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_9_9",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						1708,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "909, 0 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_9_10",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						1722,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "910, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_step_9_11",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2360,
+						1736,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "911, 1 ;"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_patlen_9",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1560,
+						196,
+						80,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "909, 12 ;"
 				}
 			},
 			{
@@ -1940,11 +3473,11 @@
 					"id": "pat_init_trig",
 					"maxclass": "newobj",
 					"numinlets": 1,
-					"numoutlets": 10,
+					"numoutlets": 87,
 					"patching_rect": [
 						1850,
 						130,
-						400,
+						600,
 						22
 					],
 					"outlettype": [
@@ -1957,9 +3490,86 @@
 						"bang",
 						"bang",
 						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
+						"bang",
 						"bang"
 					],
-					"text": "trigger bang bang bang bang bang bang bang bang bang bang"
+					"text": "trigger bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang bang"
 				}
 			},
 			{
@@ -2117,21 +3727,39 @@
 			},
 			{
 				"box": {
+					"id": "pat_eq_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1690,
+						300,
+						40,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "=="
+				}
+			},
+			{
+				"box": {
 					"id": "pat_dedup_1",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 2,
 					"patching_rect": [
-						1690,
+						1740,
 						300,
-						55,
+						50,
 						22
 					],
 					"outlettype": [
 						"bang",
 						""
 					],
-					"text": "sel 0"
+					"text": "sel 1"
 				}
 			},
 			{
@@ -2226,6 +3854,80 @@
 						"int"
 					],
 					"text": "counter 0 7"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_key_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1855,
+						330,
+						55,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "+ 900"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_fetch_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 3,
+					"patching_rect": [
+						1915,
+						330,
+						100,
+						22
+					],
+					"outlettype": [
+						"",
+						"",
+						""
+					],
+					"text": "coll pat_bank"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_sub1_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2020,
+						330,
+						40,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "- 1"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_setmax_1",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						2068,
+						330,
+						90,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "prepend setmax"
 				}
 			},
 			{
@@ -2452,6 +4154,61 @@
 			},
 			{
 				"box": {
+					"id": "on_trig_1",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						1450,
+						325,
+						110,
+						22
+					],
+					"outlettype": [
+						"bang",
+						"bang"
+					],
+					"text": "trigger bang bang"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_gate_on_1",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1570,
+						325,
+						27,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "1"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_gate_off_1",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1570,
+						350,
+						27,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "0"
+				}
+			},
+			{
+				"box": {
 					"id": "gate_obj_1",
 					"maxclass": "newobj",
 					"numinlets": 2,
@@ -2543,21 +4300,39 @@
 			},
 			{
 				"box": {
+					"id": "pat_eq_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1690,
+						460,
+						40,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "=="
+				}
+			},
+			{
+				"box": {
 					"id": "pat_dedup_2",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 2,
 					"patching_rect": [
-						1690,
+						1740,
 						460,
-						55,
+						50,
 						22
 					],
 					"outlettype": [
 						"bang",
 						""
 					],
-					"text": "sel 0"
+					"text": "sel 1"
 				}
 			},
 			{
@@ -2652,6 +4427,80 @@
 						"int"
 					],
 					"text": "counter 0 7"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_key_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1855,
+						490,
+						55,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "+ 900"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_fetch_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 3,
+					"patching_rect": [
+						1915,
+						490,
+						100,
+						22
+					],
+					"outlettype": [
+						"",
+						"",
+						""
+					],
+					"text": "coll pat_bank"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_sub1_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2020,
+						490,
+						40,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "- 1"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_setmax_2",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						2068,
+						490,
+						90,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "prepend setmax"
 				}
 			},
 			{
@@ -2878,6 +4727,61 @@
 			},
 			{
 				"box": {
+					"id": "on_trig_2",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						1450,
+						485,
+						110,
+						22
+					],
+					"outlettype": [
+						"bang",
+						"bang"
+					],
+					"text": "trigger bang bang"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_gate_on_2",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1570,
+						485,
+						27,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "1"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_gate_off_2",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1570,
+						510,
+						27,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "0"
+				}
+			},
+			{
+				"box": {
 					"id": "gate_obj_2",
 					"maxclass": "newobj",
 					"numinlets": 2,
@@ -2969,21 +4873,39 @@
 			},
 			{
 				"box": {
+					"id": "pat_eq_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1690,
+						620,
+						40,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "=="
+				}
+			},
+			{
+				"box": {
 					"id": "pat_dedup_3",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 2,
 					"patching_rect": [
-						1690,
+						1740,
 						620,
-						55,
+						50,
 						22
 					],
 					"outlettype": [
 						"bang",
 						""
 					],
-					"text": "sel 0"
+					"text": "sel 1"
 				}
 			},
 			{
@@ -3078,6 +5000,80 @@
 						"int"
 					],
 					"text": "counter 0 7"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_key_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1855,
+						650,
+						55,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "+ 900"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_fetch_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 3,
+					"patching_rect": [
+						1915,
+						650,
+						100,
+						22
+					],
+					"outlettype": [
+						"",
+						"",
+						""
+					],
+					"text": "coll pat_bank"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_sub1_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2020,
+						650,
+						40,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "- 1"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_setmax_3",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						2068,
+						650,
+						90,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "prepend setmax"
 				}
 			},
 			{
@@ -3304,6 +5300,61 @@
 			},
 			{
 				"box": {
+					"id": "on_trig_3",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						1450,
+						645,
+						110,
+						22
+					],
+					"outlettype": [
+						"bang",
+						"bang"
+					],
+					"text": "trigger bang bang"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_gate_on_3",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1570,
+						645,
+						27,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "1"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_gate_off_3",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1570,
+						670,
+						27,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "0"
+				}
+			},
+			{
+				"box": {
 					"id": "gate_obj_3",
 					"maxclass": "newobj",
 					"numinlets": 2,
@@ -3395,21 +5446,39 @@
 			},
 			{
 				"box": {
+					"id": "pat_eq_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1690,
+						780,
+						40,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "=="
+				}
+			},
+			{
+				"box": {
 					"id": "pat_dedup_4",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 2,
 					"patching_rect": [
-						1690,
+						1740,
 						780,
-						55,
+						50,
 						22
 					],
 					"outlettype": [
 						"bang",
 						""
 					],
-					"text": "sel 0"
+					"text": "sel 1"
 				}
 			},
 			{
@@ -3504,6 +5573,80 @@
 						"int"
 					],
 					"text": "counter 0 7"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_key_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1855,
+						810,
+						55,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "+ 900"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_fetch_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 3,
+					"patching_rect": [
+						1915,
+						810,
+						100,
+						22
+					],
+					"outlettype": [
+						"",
+						"",
+						""
+					],
+					"text": "coll pat_bank"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_sub1_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						2020,
+						810,
+						40,
+						22
+					],
+					"outlettype": [
+						"int"
+					],
+					"text": "- 1"
+				}
+			},
+			{
+				"box": {
+					"id": "patlen_setmax_4",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						2068,
+						810,
+						90,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "prepend setmax"
 				}
 			},
 			{
@@ -3726,6 +5869,61 @@
 					],
 					"outlettype": [],
 					"text": "\u2192 to playback G4"
+				}
+			},
+			{
+				"box": {
+					"id": "on_trig_4",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 2,
+					"patching_rect": [
+						1450,
+						805,
+						110,
+						22
+					],
+					"outlettype": [
+						"bang",
+						"bang"
+					],
+					"text": "trigger bang bang"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_gate_on_4",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1570,
+						805,
+						27,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "1"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_gate_off_4",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1570,
+						830,
+						27,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "0"
 				}
 			},
 			{
@@ -3957,6 +6155,24 @@
 						""
 					],
 					"text": "loopdur 400"
+				}
+			},
+			{
+				"box": {
+					"id": "lb_loopdur_1",
+					"maxclass": "newobj",
+					"numinlets": 0,
+					"numoutlets": 1,
+					"patching_rect": [
+						1910,
+						225,
+						70,
+						22
+					],
+					"outlettype": [
+						"bang"
+					],
+					"text": "loadbang"
 				}
 			},
 			{
@@ -4250,6 +6466,24 @@
 			},
 			{
 				"box": {
+					"id": "lb_loopdur_2",
+					"maxclass": "newobj",
+					"numinlets": 0,
+					"numoutlets": 1,
+					"patching_rect": [
+						1910,
+						385,
+						70,
+						22
+					],
+					"outlettype": [
+						"bang"
+					],
+					"text": "loadbang"
+				}
+			},
+			{
+				"box": {
 					"id": "vol_sig_2",
 					"maxclass": "newobj",
 					"numinlets": 2,
@@ -4539,6 +6773,24 @@
 			},
 			{
 				"box": {
+					"id": "lb_loopdur_3",
+					"maxclass": "newobj",
+					"numinlets": 0,
+					"numoutlets": 1,
+					"patching_rect": [
+						1910,
+						545,
+						70,
+						22
+					],
+					"outlettype": [
+						"bang"
+					],
+					"text": "loadbang"
+				}
+			},
+			{
+				"box": {
 					"id": "vol_sig_3",
 					"maxclass": "newobj",
 					"numinlets": 2,
@@ -4824,6 +7076,24 @@
 						""
 					],
 					"text": "loopdur 400"
+				}
+			},
+			{
+				"box": {
+					"id": "lb_loopdur_4",
+					"maxclass": "newobj",
+					"numinlets": 0,
+					"numoutlets": 1,
+					"patching_rect": [
+						1910,
+						705,
+						70,
+						22
+					],
+					"outlettype": [
+						"bang"
+					],
+					"text": "loadbang"
 				}
 			},
 			{
@@ -5507,6 +7777,198 @@
 			{
 				"patchline": {
 					"destination": [
+						"bpm_half",
+						0
+					],
+					"source": [
+						"bpm_num",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"metro_qn",
+						1
+					],
+					"source": [
+						"bpm_num",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"metro_8th",
+						1
+					],
+					"source": [
+						"bpm_half",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_bpm_init",
+						0
+					],
+					"source": [
+						"loadbang",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"bpm_num",
+						0
+					],
+					"source": [
+						"msg_bpm_init",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_hist_dump",
+						0
+					],
+					"source": [
+						"lock_pool_btn",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"note_hist",
+						0
+					],
+					"source": [
+						"msg_hist_dump",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pool_count",
+						0
+					],
+					"source": [
+						"note_hist",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pool_store_pack",
+						0
+					],
+					"source": [
+						"pool_count",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pool_store_pack",
+						1
+					],
+					"source": [
+						"note_hist",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pool_store_msg",
+						0
+					],
+					"source": [
+						"pool_store_pack",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pool_coll",
+						0
+					],
+					"source": [
+						"pool_store_msg",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_fetch_ref",
+						0
+					],
+					"source": [
+						"lock_pool_btn",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pool_coll",
+						0
+					],
+					"source": [
+						"msg_fetch_ref",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"mtof_ref",
+						0
+					],
+					"source": [
+						"pool_coll",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"ref_hz",
+						0
+					],
+					"source": [
+						"mtof_ref",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"detect_lt",
 						0
 					],
@@ -5632,6 +8094,54 @@
 					],
 					"source": [
 						"conf_gt",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"note_hist",
+						0
+					],
+					"source": [
+						"int_midi",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"hist_inc",
+						0
+					],
+					"source": [
+						"note_hist",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"note_hist",
+						1
+					],
+					"source": [
+						"hist_inc",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"note_hist",
+						0
+					],
+					"source": [
+						"msg_store_pitch",
 						0
 					]
 				}
@@ -6323,7 +8833,1855 @@
 			{
 				"patchline": {
 					"destination": [
-						"msg_pat_0",
+						"msg_step_0_0",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						86
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_0_0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_0_1",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						85
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_0_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_0_2",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						84
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_0_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_0_3",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						83
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_0_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_0_4",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						82
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_0_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_0_5",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						81
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_0_5",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_0_6",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						80
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_0_6",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_0_7",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						79
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_0_7",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_patlen_0",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						78
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_patlen_0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_1_0",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						77
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_1_0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_1_1",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						76
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_1_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_1_2",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						75
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_1_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_1_3",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						74
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_1_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_1_4",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						73
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_1_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_1_5",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						72
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_1_5",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_1_6",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						71
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_1_6",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_1_7",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						70
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_1_7",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_patlen_1",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						69
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_patlen_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_2_0",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						68
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_2_0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_2_1",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						67
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_2_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_2_2",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						66
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_2_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_2_3",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						65
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_2_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_2_4",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						64
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_2_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_patlen_2",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						63
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_patlen_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_3_0",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						62
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_3_0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_3_1",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						61
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_3_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_3_2",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						60
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_3_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_3_3",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						59
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_3_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_3_4",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						58
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_3_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_patlen_3",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						57
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_patlen_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_4_0",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						56
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_4_0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_4_1",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						55
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_4_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_4_2",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						54
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_4_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_4_3",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						53
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_4_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_4_4",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						52
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_4_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_4_5",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						51
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_4_5",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_4_6",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						50
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_4_6",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_patlen_4",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						49
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_patlen_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_5_0",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						48
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_5_0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_5_1",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						47
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_5_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_5_2",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						46
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_5_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_5_3",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						45
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_5_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_5_4",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						44
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_5_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_5_5",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						43
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_5_5",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_5_6",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						42
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_5_6",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_patlen_5",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						41
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_patlen_5",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_6_0",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						40
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_6_0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_6_1",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						39
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_6_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_6_2",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						38
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_6_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_6_3",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						37
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_6_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_6_4",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						36
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_6_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_6_5",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						35
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_6_5",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_6_6",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						34
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_6_6",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_patlen_6",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						33
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_patlen_6",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_7_0",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						32
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_7_0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_7_1",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						31
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_7_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_7_2",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						30
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_7_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_7_3",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						29
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_7_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_7_4",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						28
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_7_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_7_5",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						27
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_7_5",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_7_6",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						26
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_7_6",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_7_7",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						25
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_7_7",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_7_8",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						24
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_7_8",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_patlen_7",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						23
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_patlen_7",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_8_0",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						22
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_8_0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_8_1",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						21
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_8_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_8_2",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						20
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_8_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_8_3",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						19
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_8_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_8_4",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						18
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_8_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_8_5",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						17
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_8_5",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_8_6",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						16
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_8_6",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_8_7",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						15
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_8_7",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_8_8",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						14
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_8_8",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_patlen_8",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						13
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_patlen_8",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_9_0",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						12
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_9_0",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_9_1",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						11
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_9_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_9_2",
+						0
+					],
+					"source": [
+						"pat_init_trig",
+						10
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_bank",
+						0
+					],
+					"source": [
+						"msg_step_9_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_step_9_3",
 						0
 					],
 					"source": [
@@ -6339,7 +10697,7 @@
 						0
 					],
 					"source": [
-						"msg_pat_0",
+						"msg_step_9_3",
 						0
 					]
 				}
@@ -6347,7 +10705,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"msg_pat_1",
+						"msg_step_9_4",
 						0
 					],
 					"source": [
@@ -6363,7 +10721,7 @@
 						0
 					],
 					"source": [
-						"msg_pat_1",
+						"msg_step_9_4",
 						0
 					]
 				}
@@ -6371,7 +10729,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"msg_pat_2",
+						"msg_step_9_5",
 						0
 					],
 					"source": [
@@ -6387,7 +10745,7 @@
 						0
 					],
 					"source": [
-						"msg_pat_2",
+						"msg_step_9_5",
 						0
 					]
 				}
@@ -6395,7 +10753,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"msg_pat_3",
+						"msg_step_9_6",
 						0
 					],
 					"source": [
@@ -6411,7 +10769,7 @@
 						0
 					],
 					"source": [
-						"msg_pat_3",
+						"msg_step_9_6",
 						0
 					]
 				}
@@ -6419,7 +10777,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"msg_pat_4",
+						"msg_step_9_7",
 						0
 					],
 					"source": [
@@ -6435,7 +10793,7 @@
 						0
 					],
 					"source": [
-						"msg_pat_4",
+						"msg_step_9_7",
 						0
 					]
 				}
@@ -6443,7 +10801,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"msg_pat_5",
+						"msg_step_9_8",
 						0
 					],
 					"source": [
@@ -6459,7 +10817,7 @@
 						0
 					],
 					"source": [
-						"msg_pat_5",
+						"msg_step_9_8",
 						0
 					]
 				}
@@ -6467,7 +10825,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"msg_pat_6",
+						"msg_step_9_9",
 						0
 					],
 					"source": [
@@ -6483,7 +10841,7 @@
 						0
 					],
 					"source": [
-						"msg_pat_6",
+						"msg_step_9_9",
 						0
 					]
 				}
@@ -6491,7 +10849,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"msg_pat_7",
+						"msg_step_9_10",
 						0
 					],
 					"source": [
@@ -6507,7 +10865,7 @@
 						0
 					],
 					"source": [
-						"msg_pat_7",
+						"msg_step_9_10",
 						0
 					]
 				}
@@ -6515,7 +10873,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"msg_pat_8",
+						"msg_step_9_11",
 						0
 					],
 					"source": [
@@ -6531,7 +10889,7 @@
 						0
 					],
 					"source": [
-						"msg_pat_8",
+						"msg_step_9_11",
 						0
 					]
 				}
@@ -6539,7 +10897,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"msg_pat_9",
+						"msg_patlen_9",
 						0
 					],
 					"source": [
@@ -6555,7 +10913,7 @@
 						0
 					],
 					"source": [
-						"msg_pat_9",
+						"msg_patlen_9",
 						0
 					]
 				}
@@ -6563,7 +10921,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"rand_pat_1",
+						"on_trig_1",
 						0
 					],
 					"source": [
@@ -6575,7 +10933,43 @@
 			{
 				"patchline": {
 					"destination": [
-						"pat_dedup_1",
+						"msg_gate_on_1",
+						0
+					],
+					"source": [
+						"on_trig_1",
+						1
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"step_gate_1",
+						0
+					],
+					"source": [
+						"msg_gate_on_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"rand_pat_1",
+						0
+					],
+					"source": [
+						"on_trig_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_eq_1",
 						0
 					],
 					"source": [
@@ -6587,7 +10981,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"pat_dedup_1",
+						"pat_eq_1",
 						1
 					],
 					"source": [
@@ -6599,36 +10993,60 @@
 			{
 				"patchline": {
 					"destination": [
+						"pat_dedup_1",
+						0
+					],
+					"source": [
+						"pat_eq_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_inc_1",
+						0
+					],
+					"source": [
+						"pat_dedup_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_mod_1",
+						0
+					],
+					"source": [
+						"pat_inc_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"cur_pat_1",
+						0
+					],
+					"source": [
+						"pat_mod_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"cur_pat_1",
 						0
 					],
 					"source": [
 						"pat_dedup_1",
 						1
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"rand_pat_1",
-						0
-					],
-					"source": [
-						"pat_dedup_1",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"cur_pat_1",
-						0
-					],
-					"source": [
-						"rand_pat_1",
-						0
 					]
 				}
 			},
@@ -6659,12 +11077,72 @@
 			{
 				"patchline": {
 					"destination": [
-						"step_gate_1",
+						"patlen_key_1",
+						0
+					],
+					"source": [
+						"cur_pat_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"patlen_fetch_1",
+						0
+					],
+					"source": [
+						"patlen_key_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"patlen_sub1_1",
+						0
+					],
+					"source": [
+						"patlen_fetch_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"patlen_setmax_1",
+						0
+					],
+					"source": [
+						"patlen_sub1_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"step_ctr_1",
+						0
+					],
+					"source": [
+						"patlen_setmax_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_gate_off_1",
 						0
 					],
 					"source": [
 						"voice_ctrl_1",
-						0
+						1
 					]
 				}
 			},
@@ -6675,8 +11153,8 @@
 						0
 					],
 					"source": [
-						"voice_ctrl_1",
-						1
+						"msg_gate_off_1",
+						0
 					]
 				}
 			},
@@ -6827,7 +11305,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"rand_pat_2",
+						"on_trig_2",
 						0
 					],
 					"source": [
@@ -6839,7 +11317,43 @@
 			{
 				"patchline": {
 					"destination": [
-						"pat_dedup_2",
+						"msg_gate_on_2",
+						0
+					],
+					"source": [
+						"on_trig_2",
+						1
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"step_gate_2",
+						0
+					],
+					"source": [
+						"msg_gate_on_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"rand_pat_2",
+						0
+					],
+					"source": [
+						"on_trig_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_eq_2",
 						0
 					],
 					"source": [
@@ -6851,7 +11365,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"pat_dedup_2",
+						"pat_eq_2",
 						1
 					],
 					"source": [
@@ -6863,36 +11377,60 @@
 			{
 				"patchline": {
 					"destination": [
+						"pat_dedup_2",
+						0
+					],
+					"source": [
+						"pat_eq_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_inc_2",
+						0
+					],
+					"source": [
+						"pat_dedup_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_mod_2",
+						0
+					],
+					"source": [
+						"pat_inc_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"cur_pat_2",
+						0
+					],
+					"source": [
+						"pat_mod_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"cur_pat_2",
 						0
 					],
 					"source": [
 						"pat_dedup_2",
 						1
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"rand_pat_2",
-						0
-					],
-					"source": [
-						"pat_dedup_2",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"cur_pat_2",
-						0
-					],
-					"source": [
-						"rand_pat_2",
-						0
 					]
 				}
 			},
@@ -6923,12 +11461,72 @@
 			{
 				"patchline": {
 					"destination": [
-						"step_gate_2",
+						"patlen_key_2",
+						0
+					],
+					"source": [
+						"cur_pat_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"patlen_fetch_2",
+						0
+					],
+					"source": [
+						"patlen_key_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"patlen_sub1_2",
+						0
+					],
+					"source": [
+						"patlen_fetch_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"patlen_setmax_2",
+						0
+					],
+					"source": [
+						"patlen_sub1_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"step_ctr_2",
+						0
+					],
+					"source": [
+						"patlen_setmax_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_gate_off_2",
 						0
 					],
 					"source": [
 						"voice_ctrl_2",
-						0
+						1
 					]
 				}
 			},
@@ -6939,8 +11537,8 @@
 						0
 					],
 					"source": [
-						"voice_ctrl_2",
-						1
+						"msg_gate_off_2",
+						0
 					]
 				}
 			},
@@ -7091,7 +11689,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"rand_pat_3",
+						"on_trig_3",
 						0
 					],
 					"source": [
@@ -7103,7 +11701,43 @@
 			{
 				"patchline": {
 					"destination": [
-						"pat_dedup_3",
+						"msg_gate_on_3",
+						0
+					],
+					"source": [
+						"on_trig_3",
+						1
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"step_gate_3",
+						0
+					],
+					"source": [
+						"msg_gate_on_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"rand_pat_3",
+						0
+					],
+					"source": [
+						"on_trig_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_eq_3",
 						0
 					],
 					"source": [
@@ -7115,7 +11749,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"pat_dedup_3",
+						"pat_eq_3",
 						1
 					],
 					"source": [
@@ -7127,36 +11761,60 @@
 			{
 				"patchline": {
 					"destination": [
+						"pat_dedup_3",
+						0
+					],
+					"source": [
+						"pat_eq_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_inc_3",
+						0
+					],
+					"source": [
+						"pat_dedup_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_mod_3",
+						0
+					],
+					"source": [
+						"pat_inc_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"cur_pat_3",
+						0
+					],
+					"source": [
+						"pat_mod_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"cur_pat_3",
 						0
 					],
 					"source": [
 						"pat_dedup_3",
 						1
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"rand_pat_3",
-						0
-					],
-					"source": [
-						"pat_dedup_3",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"cur_pat_3",
-						0
-					],
-					"source": [
-						"rand_pat_3",
-						0
 					]
 				}
 			},
@@ -7187,12 +11845,72 @@
 			{
 				"patchline": {
 					"destination": [
-						"step_gate_3",
+						"patlen_key_3",
+						0
+					],
+					"source": [
+						"cur_pat_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"patlen_fetch_3",
+						0
+					],
+					"source": [
+						"patlen_key_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"patlen_sub1_3",
+						0
+					],
+					"source": [
+						"patlen_fetch_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"patlen_setmax_3",
+						0
+					],
+					"source": [
+						"patlen_sub1_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"step_ctr_3",
+						0
+					],
+					"source": [
+						"patlen_setmax_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_gate_off_3",
 						0
 					],
 					"source": [
 						"voice_ctrl_3",
-						0
+						1
 					]
 				}
 			},
@@ -7203,8 +11921,8 @@
 						0
 					],
 					"source": [
-						"voice_ctrl_3",
-						1
+						"msg_gate_off_3",
+						0
 					]
 				}
 			},
@@ -7355,7 +12073,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"rand_pat_4",
+						"on_trig_4",
 						0
 					],
 					"source": [
@@ -7367,7 +12085,43 @@
 			{
 				"patchline": {
 					"destination": [
-						"pat_dedup_4",
+						"msg_gate_on_4",
+						0
+					],
+					"source": [
+						"on_trig_4",
+						1
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"step_gate_4",
+						0
+					],
+					"source": [
+						"msg_gate_on_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"rand_pat_4",
+						0
+					],
+					"source": [
+						"on_trig_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_eq_4",
 						0
 					],
 					"source": [
@@ -7379,7 +12133,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"pat_dedup_4",
+						"pat_eq_4",
 						1
 					],
 					"source": [
@@ -7391,36 +12145,60 @@
 			{
 				"patchline": {
 					"destination": [
+						"pat_dedup_4",
+						0
+					],
+					"source": [
+						"pat_eq_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_inc_4",
+						0
+					],
+					"source": [
+						"pat_dedup_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pat_mod_4",
+						0
+					],
+					"source": [
+						"pat_inc_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"cur_pat_4",
+						0
+					],
+					"source": [
+						"pat_mod_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"cur_pat_4",
 						0
 					],
 					"source": [
 						"pat_dedup_4",
 						1
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"rand_pat_4",
-						0
-					],
-					"source": [
-						"pat_dedup_4",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"cur_pat_4",
-						0
-					],
-					"source": [
-						"rand_pat_4",
-						0
 					]
 				}
 			},
@@ -7451,12 +12229,72 @@
 			{
 				"patchline": {
 					"destination": [
-						"step_gate_4",
+						"patlen_key_4",
+						0
+					],
+					"source": [
+						"cur_pat_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"patlen_fetch_4",
+						0
+					],
+					"source": [
+						"patlen_key_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"patlen_sub1_4",
+						0
+					],
+					"source": [
+						"patlen_fetch_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"patlen_setmax_4",
+						0
+					],
+					"source": [
+						"patlen_sub1_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"step_ctr_4",
+						0
+					],
+					"source": [
+						"patlen_setmax_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_gate_off_4",
 						0
 					],
 					"source": [
 						"voice_ctrl_4",
-						0
+						1
 					]
 				}
 			},
@@ -7467,8 +12305,8 @@
 						0
 					],
 					"source": [
-						"voice_ctrl_4",
-						1
+						"msg_gate_off_4",
+						0
 					]
 				}
 			},
@@ -7672,6 +12510,18 @@
 					],
 					"source": [
 						"msg_loopdur_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_loopdur_1",
+						0
+					],
+					"source": [
+						"lb_loopdur_1",
 						0
 					]
 				}
@@ -7919,6 +12769,18 @@
 			{
 				"patchline": {
 					"destination": [
+						"msg_loopdur_2",
+						0
+					],
+					"source": [
+						"lb_loopdur_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"groove_2",
 						1
 					],
@@ -8159,6 +13021,18 @@
 			{
 				"patchline": {
 					"destination": [
+						"msg_loopdur_3",
+						0
+					],
+					"source": [
+						"lb_loopdur_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"groove_3",
 						1
 					],
@@ -8392,6 +13266,18 @@
 					],
 					"source": [
 						"msg_loopdur_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"msg_loopdur_4",
+						0
+					],
+					"source": [
+						"lb_loopdur_4",
 						0
 					]
 				}

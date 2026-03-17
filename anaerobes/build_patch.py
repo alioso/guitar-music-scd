@@ -500,7 +500,7 @@ patch = {
             "architecture": "x64",
             "modernui": 1
         },
-        "classnamespace": "box",
+        "classnamespace": "dsp.toplevel",
         "rect": [50.0, 80.0, 1600.0, 950.0],
         "gridsize": [15.0, 15.0],
         "boxes": boxes,
@@ -518,7 +518,7 @@ patch = {
     }
 }
 
-output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "risset.maxpat")
+output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "anaerobes.maxpat")
 with open(output_path, "w") as f:
     json.dump(patch, f, indent="\t")
 
