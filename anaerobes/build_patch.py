@@ -148,10 +148,11 @@ boxes.append(flonum("min_display", COL_TIMER+140, ROW_TOP+225, 60))
 boxes.append(comment("lbl_minutes", "minutes", COL_TIMER+205, ROW_TOP+225, 60))
 
 # ---- EVOLUTION AMOUNT ----
-# (time - 60) / 420  ->  clip 0 1  ->  evolution (0 during phase1, ramps 0..1 during phase2)
-boxes.append(newobj("evo_sub", "- 60.", 2, 1, ["float"],
+# (time - 10) / 170  ->  clip 0 1  ->  evolution
+# Starts at t=10s, completes at t=180s (3 min). Full Risset effect holds for remaining 5 min.
+boxes.append(newobj("evo_sub", "- 10.", 2, 1, ["float"],
                      COL_TIMER, ROW_TOP+260))
-boxes.append(newobj("evo_div", "/ 420.", 2, 1, ["float"],
+boxes.append(newobj("evo_div", "/ 170.", 2, 1, ["float"],
                      COL_TIMER, ROW_TOP+290))
 boxes.append(newobj("evo_clip", "clip 0. 1.", 3, 1, ["float"],
                      COL_TIMER, ROW_TOP+320))
@@ -204,10 +205,12 @@ lines.append(line("onset_div", 0, "onset_clip", 0))
 #
 
 voices = [
-    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 0.82, "fs_base": 0.3,  "fs_max": 1.2,  "pan": 25.,  "pan_drift": 5.},
-    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 0.78, "fs_base": -0.5, "fs_max": -1.5, "pan": -25., "pan_drift": -5.},
-    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 0.72, "fs_base": 0.7,  "fs_max": 1.8,  "pan": 50.,  "pan_drift": 10.},
-    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 0.68, "fs_base": -0.8, "fs_max": -2.0, "pan": -50., "pan_drift": -10.},
+    # fs_base: audible from note 1 (1-3 Hz = clear beating between voices)
+    # fs_max: strong Risset detuning at peak (4-8 Hz)
+    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 0.82, "fs_base": 1.0,  "fs_max": 4.0,  "pan": 25.,  "pan_drift": 5.},
+    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 0.78, "fs_base": -1.5, "fs_max": -5.0, "pan": -25., "pan_drift": -5.},
+    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 0.72, "fs_base": 2.0,  "fs_max": 6.0,  "pan": 50.,  "pan_drift": 10.},
+    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 0.68, "fs_base": -2.5, "fs_max": -7.0, "pan": -50., "pan_drift": -10.},
 ]
 
 phase_offsets = [0.0, 0.15, 0.35, 0.55]

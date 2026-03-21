@@ -438,7 +438,7 @@
 					"outlettype": [
 						"float"
 					],
-					"text": "- 60."
+					"text": "- 10."
 				}
 			},
 			{
@@ -456,7 +456,7 @@
 					"outlettype": [
 						"float"
 					],
-					"text": "/ 420."
+					"text": "/ 170."
 				}
 			},
 			{
@@ -773,7 +773,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr 0.3 + $f1 * 0.8999999999999999"
+					"text": "expr 1.0 + $f1 * 3.0"
 				}
 			},
 			{
@@ -1043,7 +1043,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr -0.5 + $f1 * -1.0"
+					"text": "expr -1.5 + $f1 * -3.5"
 				}
 			},
 			{
@@ -1313,7 +1313,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr 0.7 + $f1 * 1.1"
+					"text": "expr 2.0 + $f1 * 4.0"
 				}
 			},
 			{
@@ -1583,7 +1583,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr -0.8 + $f1 * -1.2"
+					"text": "expr -2.5 + $f1 * -4.5"
 				}
 			},
 			{
