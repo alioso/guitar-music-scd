@@ -211,10 +211,11 @@ voices = [
     # p2_delay: Phase 2 target (long, clearly audible separate echo)
     # fs_base: immediately audible beating (1-2.5 Hz)
     # fs_max: strong Risset detuning at peak (4-7 Hz)
-    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 0.82, "fs_base": 1.0,  "fs_max": 4.0,  "pan": 25.},
-    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 0.78, "fs_base": -1.5, "fs_max": -5.0, "pan": -25.},
-    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 0.72, "fs_base": 2.0,  "fs_max": 6.0,  "pan": 50.},
-    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 0.68, "fs_base": -2.5, "fs_max": -7.0, "pan": -50.},
+    # vol raised: voices need to compete with dry guitar through *~ 0.25 master gain
+    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 1.4,  "fs_base": 1.0,  "fs_max": 4.0,  "pan": 25.},
+    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 1.4,  "fs_base": -1.5, "fs_max": -5.0, "pan": -25.},
+    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 1.3,  "fs_base": 2.0,  "fs_max": 6.0,  "pan": 50.},
+    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 1.3,  "fs_base": -2.5, "fs_max": -7.0, "pan": -50.},
 ]
 
 boxes.append(comment("lbl_voices", "=== VOICE PARAMETERS ===", COL_PHASE, ROW_TOP-20, 200))

@@ -574,7 +574,7 @@
 						22
 					],
 					"outlettype": [],
-					"text": "--- G1: pan=25.0, vol=0.82 ---"
+					"text": "--- G1: pan=25.0, vol=1.4 ---"
 				}
 			},
 			{
@@ -647,7 +647,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr $f1 * 0.82"
+					"text": "expr $f1 * 1.4"
 				}
 			},
 			{
@@ -772,7 +772,7 @@
 						22
 					],
 					"outlettype": [],
-					"text": "--- G2: pan=-25.0, vol=0.78 ---"
+					"text": "--- G2: pan=-25.0, vol=1.4 ---"
 				}
 			},
 			{
@@ -845,7 +845,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr $f1 * 0.78"
+					"text": "expr $f1 * 1.4"
 				}
 			},
 			{
@@ -970,7 +970,7 @@
 						22
 					],
 					"outlettype": [],
-					"text": "--- G3: pan=50.0, vol=0.72 ---"
+					"text": "--- G3: pan=50.0, vol=1.3 ---"
 				}
 			},
 			{
@@ -1043,7 +1043,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr $f1 * 0.72"
+					"text": "expr $f1 * 1.3"
 				}
 			},
 			{
@@ -1168,7 +1168,7 @@
 						22
 					],
 					"outlettype": [],
-					"text": "--- G4: pan=-50.0, vol=0.68 ---"
+					"text": "--- G4: pan=-50.0, vol=1.3 ---"
 				}
 			},
 			{
@@ -1241,7 +1241,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr $f1 * 0.68"
+					"text": "expr $f1 * 1.3"
 				}
 			},
 			{
