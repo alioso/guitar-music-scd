@@ -547,6 +547,58 @@
 			},
 			{
 				"box": {
+					"id": "chaos_expr",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						410,
+						370,
+						430,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "expr max(0., min(1., ($f1-120.)/165.)) * (1.-max(0., min(1., ($f1-285.)/135.)))"
+				}
+			},
+			{
+				"box": {
+					"id": "chaos_sig",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						410,
+						405,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "sig~ 0."
+				}
+			},
+			{
+				"box": {
+					"id": "lbl_chaos",
+					"maxclass": "comment",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						474,
+						370,
+						160,
+						22
+					],
+					"outlettype": [],
+					"text": "chaos arc (peaks ~4:45)"
+				}
+			},
+			{
+				"box": {
 					"id": "lbl_voices",
 					"maxclass": "comment",
 					"numinlets": 1,
@@ -574,25 +626,25 @@
 						22
 					],
 					"outlettype": [],
-					"text": "--- G1: pan=32.0, vol=1.75 ---"
+					"text": "--- G1: pan=32.0, vol=2.2 ---"
 				}
 			},
 			{
 				"box": {
 					"id": "fs_expr_1",
 					"maxclass": "newobj",
-					"numinlets": 1,
+					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						500,
 						65,
-						200,
+						310,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "expr 1.0 + $f1 * 3.0"
+					"text": "expr 1.0 + $f1 * 3.0 * (1. + $f2 * 1.5)"
 				}
 			},
 			{
@@ -647,7 +699,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr $f1 * 1.75"
+					"text": "expr $f1 * 2.2"
 				}
 			},
 			{
@@ -761,7 +813,7 @@
 			},
 			{
 				"box": {
-					"id": "swell_1",
+					"id": "swell_a_1",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -779,7 +831,7 @@
 			},
 			{
 				"box": {
-					"id": "swell_scale_1",
+					"id": "swell_a_scale_1",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -797,7 +849,7 @@
 			},
 			{
 				"box": {
-					"id": "swell_bias_1",
+					"id": "swell_a_bias_1",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -815,12 +867,84 @@
 			},
 			{
 				"box": {
+					"id": "swell_b_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1090,
+						60,
+						85,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "cycle~ 0.043"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_b_scale_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1090,
+						90,
+						60,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_b_bias_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1090,
+						120,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_prod_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1040,
+						150,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
+				}
+			},
+			{
+				"box": {
 					"id": "breath_1",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1070,
+						1190,
 						60,
 						85,
 						22
@@ -838,7 +962,7 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1070,
+						1190,
 						90,
 						65,
 						22
@@ -856,7 +980,7 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1070,
+						1190,
 						120,
 						55,
 						22
@@ -874,8 +998,8 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						990,
-						155,
+						1140,
+						150,
 						40,
 						22
 					],
@@ -898,25 +1022,25 @@
 						22
 					],
 					"outlettype": [],
-					"text": "--- G2: pan=-28.0, vol=1.75 ---"
+					"text": "--- G2: pan=-28.0, vol=2.2 ---"
 				}
 			},
 			{
 				"box": {
 					"id": "fs_expr_2",
 					"maxclass": "newobj",
-					"numinlets": 1,
+					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						500,
 						265,
-						200,
+						310,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "expr -1.5 + $f1 * -3.5"
+					"text": "expr -1.5 + $f1 * -3.5 * (1. + $f2 * 2.0)"
 				}
 			},
 			{
@@ -971,7 +1095,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr $f1 * 1.75"
+					"text": "expr $f1 * 2.2"
 				}
 			},
 			{
@@ -1085,7 +1209,7 @@
 			},
 			{
 				"box": {
-					"id": "swell_2",
+					"id": "swell_a_2",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -1103,7 +1227,7 @@
 			},
 			{
 				"box": {
-					"id": "swell_scale_2",
+					"id": "swell_a_scale_2",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -1121,7 +1245,7 @@
 			},
 			{
 				"box": {
-					"id": "swell_bias_2",
+					"id": "swell_a_bias_2",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -1139,12 +1263,84 @@
 			},
 			{
 				"box": {
+					"id": "swell_b_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1090,
+						260,
+						85,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "cycle~ 0.029"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_b_scale_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1090,
+						290,
+						60,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_b_bias_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1090,
+						320,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_prod_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1040,
+						350,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
+				}
+			},
+			{
+				"box": {
 					"id": "breath_2",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1070,
+						1190,
 						260,
 						85,
 						22
@@ -1162,7 +1358,7 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1070,
+						1190,
 						290,
 						65,
 						22
@@ -1180,7 +1376,7 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1070,
+						1190,
 						320,
 						55,
 						22
@@ -1198,8 +1394,8 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						990,
-						355,
+						1140,
+						350,
 						40,
 						22
 					],
@@ -1222,25 +1418,25 @@
 						22
 					],
 					"outlettype": [],
-					"text": "--- G3: pan=78.0, vol=1.65 ---"
+					"text": "--- G3: pan=78.0, vol=2.0 ---"
 				}
 			},
 			{
 				"box": {
 					"id": "fs_expr_3",
 					"maxclass": "newobj",
-					"numinlets": 1,
+					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						500,
 						465,
-						200,
+						310,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "expr 2.0 + $f1 * 4.0"
+					"text": "expr 2.0 + $f1 * 4.0 * (1. + $f2 * 2.5)"
 				}
 			},
 			{
@@ -1295,7 +1491,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr $f1 * 1.65"
+					"text": "expr $f1 * 2.0"
 				}
 			},
 			{
@@ -1409,7 +1605,7 @@
 			},
 			{
 				"box": {
-					"id": "swell_3",
+					"id": "swell_a_3",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -1427,7 +1623,7 @@
 			},
 			{
 				"box": {
-					"id": "swell_scale_3",
+					"id": "swell_a_scale_3",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -1445,7 +1641,7 @@
 			},
 			{
 				"box": {
-					"id": "swell_bias_3",
+					"id": "swell_a_bias_3",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -1463,12 +1659,84 @@
 			},
 			{
 				"box": {
+					"id": "swell_b_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1090,
+						460,
+						85,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "cycle~ 0.067"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_b_scale_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1090,
+						490,
+						60,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_b_bias_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1090,
+						520,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_prod_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1040,
+						550,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
+				}
+			},
+			{
+				"box": {
 					"id": "breath_3",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1070,
+						1190,
 						460,
 						85,
 						22
@@ -1486,7 +1754,7 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1070,
+						1190,
 						490,
 						65,
 						22
@@ -1504,7 +1772,7 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1070,
+						1190,
 						520,
 						55,
 						22
@@ -1522,8 +1790,8 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						990,
-						555,
+						1140,
+						550,
 						40,
 						22
 					],
@@ -1546,25 +1814,25 @@
 						22
 					],
 					"outlettype": [],
-					"text": "--- G4: pan=-75.0, vol=1.65 ---"
+					"text": "--- G4: pan=-75.0, vol=2.0 ---"
 				}
 			},
 			{
 				"box": {
 					"id": "fs_expr_4",
 					"maxclass": "newobj",
-					"numinlets": 1,
+					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						500,
 						665,
-						200,
+						310,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "expr -2.5 + $f1 * -4.5"
+					"text": "expr -2.5 + $f1 * -4.5 * (1. + $f2 * 3.0)"
 				}
 			},
 			{
@@ -1619,7 +1887,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr $f1 * 1.65"
+					"text": "expr $f1 * 2.0"
 				}
 			},
 			{
@@ -1733,7 +2001,7 @@
 			},
 			{
 				"box": {
-					"id": "swell_4",
+					"id": "swell_a_4",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -1751,7 +2019,7 @@
 			},
 			{
 				"box": {
-					"id": "swell_scale_4",
+					"id": "swell_a_scale_4",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -1769,7 +2037,7 @@
 			},
 			{
 				"box": {
-					"id": "swell_bias_4",
+					"id": "swell_a_bias_4",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -1787,12 +2055,84 @@
 			},
 			{
 				"box": {
+					"id": "swell_b_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1090,
+						660,
+						85,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "cycle~ 0.053"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_b_scale_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1090,
+						690,
+						60,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_b_bias_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1090,
+						720,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_prod_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1040,
+						750,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
+				}
+			},
+			{
+				"box": {
 					"id": "breath_4",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1070,
+						1190,
 						660,
 						85,
 						22
@@ -1810,7 +2150,7 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1070,
+						1190,
 						690,
 						65,
 						22
@@ -1828,7 +2168,7 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1070,
+						1190,
 						720,
 						55,
 						22
@@ -1846,8 +2186,8 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						990,
-						755,
+						1140,
+						750,
 						40,
 						22
 					],
@@ -2018,13 +2358,49 @@
 			},
 			{
 				"box": {
+					"id": "sat_amt_1",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						815,
+						260,
+						95,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "expr~ 1. + $v1 * 3."
+				}
+			},
+			{
+				"box": {
+					"id": "sat_mult_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						815,
+						290,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
+				}
+			},
+			{
+				"box": {
 					"id": "dyn_mult_1",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						750,
-						300,
+						330,
 						40,
 						22
 					],
@@ -2042,7 +2418,7 @@
 					"numoutlets": 2,
 					"patching_rect": [
 						750,
-						340,
+						370,
 						50,
 						22
 					],
@@ -2198,13 +2574,49 @@
 			},
 			{
 				"box": {
+					"id": "sat_amt_2",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						995,
+						260,
+						95,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "expr~ 1. + $v1 * 3."
+				}
+			},
+			{
+				"box": {
+					"id": "sat_mult_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						995,
+						290,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
+				}
+			},
+			{
+				"box": {
 					"id": "dyn_mult_2",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						930,
-						300,
+						330,
 						40,
 						22
 					],
@@ -2222,7 +2634,7 @@
 					"numoutlets": 2,
 					"patching_rect": [
 						930,
-						340,
+						370,
 						50,
 						22
 					],
@@ -2378,13 +2790,49 @@
 			},
 			{
 				"box": {
+					"id": "sat_amt_3",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						1175,
+						260,
+						95,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "expr~ 1. + $v1 * 3."
+				}
+			},
+			{
+				"box": {
+					"id": "sat_mult_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1175,
+						290,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
+				}
+			},
+			{
+				"box": {
 					"id": "dyn_mult_3",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1110,
-						300,
+						330,
 						40,
 						22
 					],
@@ -2402,7 +2850,7 @@
 					"numoutlets": 2,
 					"patching_rect": [
 						1110,
-						340,
+						370,
 						50,
 						22
 					],
@@ -2558,13 +3006,49 @@
 			},
 			{
 				"box": {
+					"id": "sat_amt_4",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						1355,
+						260,
+						95,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "expr~ 1. + $v1 * 3."
+				}
+			},
+			{
+				"box": {
+					"id": "sat_mult_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1355,
+						290,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
+				}
+			},
+			{
+				"box": {
 					"id": "dyn_mult_4",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1290,
-						300,
+						330,
 						40,
 						22
 					],
@@ -2582,7 +3066,7 @@
 					"numoutlets": 2,
 					"patching_rect": [
 						1290,
-						340,
+						370,
 						50,
 						22
 					],
@@ -3126,6 +3610,19 @@
 			{
 				"patchline": {
 					"destination": [
+						"chaos_expr",
+						0
+					],
+					"source": [
+						"ms_to_sec",
+						0
+					],
+					"order": 4
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"min_display",
 						0
 					],
@@ -3174,11 +3671,35 @@
 			{
 				"patchline": {
 					"destination": [
+						"chaos_sig",
+						0
+					],
+					"source": [
+						"chaos_expr",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"fs_expr_1",
 						0
 					],
 					"source": [
 						"evo_clip",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"fs_expr_1",
+						1
+					],
+					"source": [
+						"chaos_expr",
 						0
 					]
 				}
@@ -3294,11 +3815,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"swell_scale_1",
+						"swell_a_scale_1",
 						0
 					],
 					"source": [
-						"swell_1",
+						"swell_a_1",
 						0
 					]
 				}
@@ -3306,11 +3827,59 @@
 			{
 				"patchline": {
 					"destination": [
-						"swell_bias_1",
+						"swell_a_bias_1",
 						0
 					],
 					"source": [
-						"swell_scale_1",
+						"swell_a_scale_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_b_scale_1",
+						0
+					],
+					"source": [
+						"swell_b_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_b_bias_1",
+						0
+					],
+					"source": [
+						"swell_b_scale_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_prod_1",
+						0
+					],
+					"source": [
+						"swell_a_bias_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_prod_1",
+						1
+					],
+					"source": [
+						"swell_b_bias_1",
 						0
 					]
 				}
@@ -3346,7 +3915,7 @@
 						0
 					],
 					"source": [
-						"swell_bias_1",
+						"swell_prod_1",
 						0
 					]
 				}
@@ -3371,6 +3940,18 @@
 					],
 					"source": [
 						"evo_clip",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"fs_expr_2",
+						1
+					],
+					"source": [
+						"chaos_expr",
 						0
 					]
 				}
@@ -3486,11 +4067,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"swell_scale_2",
+						"swell_a_scale_2",
 						0
 					],
 					"source": [
-						"swell_2",
+						"swell_a_2",
 						0
 					]
 				}
@@ -3498,11 +4079,59 @@
 			{
 				"patchline": {
 					"destination": [
-						"swell_bias_2",
+						"swell_a_bias_2",
 						0
 					],
 					"source": [
-						"swell_scale_2",
+						"swell_a_scale_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_b_scale_2",
+						0
+					],
+					"source": [
+						"swell_b_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_b_bias_2",
+						0
+					],
+					"source": [
+						"swell_b_scale_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_prod_2",
+						0
+					],
+					"source": [
+						"swell_a_bias_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_prod_2",
+						1
+					],
+					"source": [
+						"swell_b_bias_2",
 						0
 					]
 				}
@@ -3538,7 +4167,7 @@
 						0
 					],
 					"source": [
-						"swell_bias_2",
+						"swell_prod_2",
 						0
 					]
 				}
@@ -3563,6 +4192,18 @@
 					],
 					"source": [
 						"evo_clip",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"fs_expr_3",
+						1
+					],
+					"source": [
+						"chaos_expr",
 						0
 					]
 				}
@@ -3678,11 +4319,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"swell_scale_3",
+						"swell_a_scale_3",
 						0
 					],
 					"source": [
-						"swell_3",
+						"swell_a_3",
 						0
 					]
 				}
@@ -3690,11 +4331,59 @@
 			{
 				"patchline": {
 					"destination": [
-						"swell_bias_3",
+						"swell_a_bias_3",
 						0
 					],
 					"source": [
-						"swell_scale_3",
+						"swell_a_scale_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_b_scale_3",
+						0
+					],
+					"source": [
+						"swell_b_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_b_bias_3",
+						0
+					],
+					"source": [
+						"swell_b_scale_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_prod_3",
+						0
+					],
+					"source": [
+						"swell_a_bias_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_prod_3",
+						1
+					],
+					"source": [
+						"swell_b_bias_3",
 						0
 					]
 				}
@@ -3730,7 +4419,7 @@
 						0
 					],
 					"source": [
-						"swell_bias_3",
+						"swell_prod_3",
 						0
 					]
 				}
@@ -3755,6 +4444,18 @@
 					],
 					"source": [
 						"evo_clip",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"fs_expr_4",
+						1
+					],
+					"source": [
+						"chaos_expr",
 						0
 					]
 				}
@@ -3870,11 +4571,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"swell_scale_4",
+						"swell_a_scale_4",
 						0
 					],
 					"source": [
-						"swell_4",
+						"swell_a_4",
 						0
 					]
 				}
@@ -3882,11 +4583,59 @@
 			{
 				"patchline": {
 					"destination": [
-						"swell_bias_4",
+						"swell_a_bias_4",
 						0
 					],
 					"source": [
-						"swell_scale_4",
+						"swell_a_scale_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_b_scale_4",
+						0
+					],
+					"source": [
+						"swell_b_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_b_bias_4",
+						0
+					],
+					"source": [
+						"swell_b_scale_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_prod_4",
+						0
+					],
+					"source": [
+						"swell_a_bias_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"swell_prod_4",
+						1
+					],
+					"source": [
+						"swell_b_bias_4",
 						0
 					]
 				}
@@ -3922,7 +4671,7 @@
 						0
 					],
 					"source": [
-						"swell_bias_4",
+						"swell_prod_4",
 						0
 					]
 				}
@@ -4086,11 +4835,47 @@
 			{
 				"patchline": {
 					"destination": [
-						"dyn_mult_1",
+						"sat_mult_1",
 						0
 					],
 					"source": [
 						"vol_mult_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"sat_amt_1",
+						0
+					],
+					"source": [
+						"chaos_sig",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"sat_mult_1",
+						1
+					],
+					"source": [
+						"sat_amt_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"dyn_mult_1",
+						0
+					],
+					"source": [
+						"sat_mult_1",
 						0
 					]
 				}
@@ -4278,11 +5063,47 @@
 			{
 				"patchline": {
 					"destination": [
-						"dyn_mult_2",
+						"sat_mult_2",
 						0
 					],
 					"source": [
 						"vol_mult_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"sat_amt_2",
+						0
+					],
+					"source": [
+						"chaos_sig",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"sat_mult_2",
+						1
+					],
+					"source": [
+						"sat_amt_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"dyn_mult_2",
+						0
+					],
+					"source": [
+						"sat_mult_2",
 						0
 					]
 				}
@@ -4470,11 +5291,47 @@
 			{
 				"patchline": {
 					"destination": [
-						"dyn_mult_3",
+						"sat_mult_3",
 						0
 					],
 					"source": [
 						"vol_mult_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"sat_amt_3",
+						0
+					],
+					"source": [
+						"chaos_sig",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"sat_mult_3",
+						1
+					],
+					"source": [
+						"sat_amt_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"dyn_mult_3",
+						0
+					],
+					"source": [
+						"sat_mult_3",
 						0
 					]
 				}
@@ -4662,11 +5519,47 @@
 			{
 				"patchline": {
 					"destination": [
-						"dyn_mult_4",
+						"sat_mult_4",
 						0
 					],
 					"source": [
 						"vol_mult_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"sat_amt_4",
+						0
+					],
+					"source": [
+						"chaos_sig",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"sat_mult_4",
+						1
+					],
+					"source": [
+						"sat_amt_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"dyn_mult_4",
+						0
+					],
+					"source": [
+						"sat_mult_4",
 						0
 					]
 				}

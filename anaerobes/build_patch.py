@@ -166,6 +166,16 @@ boxes.append(newobj("onset_clip", "clip 0. 1.", 3, 1, ["float"],
                      COL_TIMER+160, ROW_TOP+290))
 boxes.append(comment("lbl_onset", "onset (0..1)", COL_TIMER+240, ROW_TOP+290, 90))
 
+# ---- CHAOS ARC ----
+# Peaks at t~4:45 (285s). Active t=2min (120s) → t=7min (420s).
+# max()/min() are valid in Max expr; clip() is NOT.
+boxes.append(newobj("chaos_expr",
+                    "expr max(0., min(1., ($f1-120.)/165.)) * (1.-max(0., min(1., ($f1-285.)/135.)))",
+                    1, 1, [""], COL_TIMER+160, ROW_TOP+330, 430))
+boxes.append(newobj("chaos_sig", "sig~ 0.", 1, 1, ["signal"],
+                    COL_TIMER+160, ROW_TOP+365, 55))
+boxes.append(comment("lbl_chaos", "chaos arc (peaks ~4:45)", COL_TIMER+224, ROW_TOP+330, 160))
+
 # Timer connections
 lines.append(line("start_btn", 0, "msg_start", 0))
 lines.append(line("reset_btn", 0, "msg_stop", 0))
@@ -180,7 +190,8 @@ lines.append(line("ticks_to_ms", 0, "ms_to_sec", 0))
 lines.append(line("ms_to_sec", 0, "time_display", 0, 0))
 lines.append(line("ms_to_sec", 0, "sec_to_min", 0, 1))
 lines.append(line("ms_to_sec", 0, "evo_sub", 0, 2))
-lines.append(line("ms_to_sec", 0, "onset_div", 0, 3))
+lines.append(line("ms_to_sec", 0, "onset_div",  0, 3))
+lines.append(line("ms_to_sec", 0, "chaos_expr", 0, 4))
 lines.append(line("sec_to_min", 0, "min_display", 0))
 
 # Evolution chain
@@ -189,6 +200,9 @@ lines.append(line("evo_div", 0, "evo_clip", 0))
 
 # Onset chain
 lines.append(line("onset_div", 0, "onset_clip", 0))
+
+# Chaos signal
+lines.append(line("chaos_expr", 0, "chaos_sig", 0))
 
 
 # ============================================================
@@ -211,15 +225,15 @@ voices = [
     # p2_delay: Phase 2 target (long, clearly audible separate echo)
     # fs_base: immediately audible beating (1-2.5 Hz)
     # fs_max: strong Risset detuning at peak (4-7 Hz)
-    # vol: raised to ~1.75 for ~+2dB peak headroom per voice (swell keeps them from all peaking at once)
-    # swell_rate: slow 0..1 fades (20-40s periods) — voices genuinely disappear/reappear
-    # breath_rate: faster quiver ±15% (6-14s periods) — subtle expression within the swell
-    # pan: widened — inner pair ±30, outer pair ±78 (asymmetric = natural ensemble feel)
-    # All 8 oscillator periods are incommensurate — never align, sounds like independent musicians
-    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 1.75, "swell_rate": 0.025, "breath_rate": 0.11, "fs_base": 1.0,  "fs_max": 4.0,  "pan": 32.},
-    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 1.75, "swell_rate": 0.033, "breath_rate": 0.17, "fs_base": -1.5, "fs_max": -5.0, "pan": -28.},
-    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 1.65, "swell_rate": 0.04,  "breath_rate": 0.07, "fs_base": 2.0,  "fs_max": 6.0,  "pan": 78.},
-    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 1.65, "swell_rate": 0.05,  "breath_rate": 0.13, "fs_base": -2.5, "fs_max": -7.0, "pan": -75.},
+    # vol: raised to 2.2/2.0 — compensates for product-swell avg (0.25 vs 0.5 before)
+    # swell_rate + swell_b_rate: two incommensurate oscillators per voice; product = voice only
+    #   audible when BOTH independently high → irregular swells, genuine silences between
+    # chaos_mult: how much extra freqshift the voice gets at chaos peak (grows toward the end)
+    # All 12 oscillator periods are incommensurate — never repeat within the 8-min piece
+    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 2.2, "swell_rate": 0.025, "swell_b_rate": 0.043, "breath_rate": 0.11, "chaos_mult": 1.5,  "fs_base": 1.0,  "fs_max": 4.0,  "pan": 32.},
+    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 2.2, "swell_rate": 0.033, "swell_b_rate": 0.029, "breath_rate": 0.17, "chaos_mult": 2.0,  "fs_base": -1.5, "fs_max": -5.0, "pan": -28.},
+    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 2.0, "swell_rate": 0.04,  "swell_b_rate": 0.067, "breath_rate": 0.07, "chaos_mult": 2.5,  "fs_base": 2.0,  "fs_max": 6.0,  "pan": 78.},
+    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 2.0, "swell_rate": 0.05,  "swell_b_rate": 0.053, "breath_rate": 0.13, "chaos_mult": 3.0,  "fs_base": -2.5, "fs_max": -7.0, "pan": -75.},
 ]
 
 boxes.append(comment("lbl_voices", "=== VOICE PARAMETERS ===", COL_PHASE, ROW_TOP-20, 200))
@@ -232,13 +246,14 @@ for i, v in enumerate(voices):
     fs_delta = v["fs_max"] - fs_b
     base_vol = v["vol"]
     pan_b = v["pan"]
+    chaos_mult_v = v["chaos_mult"]
 
     boxes.append(comment(f"lbl_v{idx}", f"--- {v['name']}: pan={pan_b}, vol={base_vol} ---",
                          vx, vy, 250))
 
-    # Freqshift: fs_base + evo * fs_delta  (evolves from beating → Risset detuning)
-    boxes.append(newobj(f"fs_expr_{idx}", f"expr {fs_b} + $f1 * {fs_delta}",
-                        1, 1, [""], vx, vy+25, 200))
+    # Freqshift: base + evo*delta grows detuning; chaos multiplies the delta further at peak
+    boxes.append(newobj(f"fs_expr_{idx}", f"expr {fs_b} + $f1 * {fs_delta} * (1. + $f2 * {chaos_mult_v})",
+                        2, 1, [""], vx, vy+25, 310))
     boxes.append(newobj(f"fs_pack_{idx}", "pack 0. 100", 2, 1, [""], vx, vy+55, 85))
     boxes.append(newobj(f"fs_line_{idx}", "line~ 0.", 2, 2, ["signal", "bang"], vx, vy+85, 70))
 
@@ -257,7 +272,8 @@ for i, v in enumerate(voices):
     boxes.append(newobj(f"inv_sig_{idx}", "sig~ 0.", 1, 1, ["signal"], vx+290, vy+150, 55))
 
     # ==== WIRING ====
-    lines.append(line("evo_clip", 0, f"fs_expr_{idx}", 0))
+    lines.append(line("evo_clip",   0, f"fs_expr_{idx}", 0))  # hot inlet — triggers output
+    lines.append(line("chaos_expr", 0, f"fs_expr_{idx}", 1))  # cold inlet — chaos scale
     lines.append(line(f"fs_expr_{idx}", 0, f"fs_pack_{idx}", 0))
     lines.append(line(f"fs_pack_{idx}", 0, f"fs_line_{idx}", 0))
 
@@ -271,28 +287,39 @@ for i, v in enumerate(voices):
     lines.append(line("evo_clip", 0, f"inv_evo_{idx}", 0))
     lines.append(line(f"inv_evo_{idx}", 0, f"inv_sig_{idx}", 0))
 
-    # Per-voice swell + breath: voices fade in/out independently (decoupled from input dynamics)
-    # Swell: cycle~ (0..1) — voice goes fully silent at trough, full volume at peak
-    # Breath: cycle~ (0.85..1.15) — subtle quiver within the swell
-    swell_r  = v["swell_rate"]
-    breath_r = v["breath_rate"]
+    # Per-voice swell (product of two oscillators) + breath: fully decoupled from input dynamics.
+    # swell_a × swell_b = voice audible only when BOTH independently near their peaks →
+    # irregular quiet gaps and swells, never locked to input rhythm.
+    swell_a_r = v["swell_rate"]
+    swell_b_r = v["swell_b_rate"]
+    breath_r  = v["breath_rate"]
 
-    boxes.append(newobj(f"swell_{idx}",       f"cycle~ {swell_r}",  2, 1, ["signal"], vx+490, vy+20, 85))
-    boxes.append(newobj(f"swell_scale_{idx}", "*~ 0.5",             2, 1, ["signal"], vx+490, vy+50, 60))
-    boxes.append(newobj(f"swell_bias_{idx}",  "+~ 0.5",             2, 1, ["signal"], vx+490, vy+80, 55))
+    boxes.append(newobj(f"swell_a_{idx}",       f"cycle~ {swell_a_r}", 2, 1, ["signal"], vx+490, vy+20, 85))
+    boxes.append(newobj(f"swell_a_scale_{idx}", "*~ 0.5",              2, 1, ["signal"], vx+490, vy+50, 60))
+    boxes.append(newobj(f"swell_a_bias_{idx}",  "+~ 0.5",              2, 1, ["signal"], vx+490, vy+80, 55))
 
-    boxes.append(newobj(f"breath_{idx}",       f"cycle~ {breath_r}", 2, 1, ["signal"], vx+570, vy+20, 85))
-    boxes.append(newobj(f"breath_scale_{idx}", "*~ 0.15",            2, 1, ["signal"], vx+570, vy+50, 65))
-    boxes.append(newobj(f"breath_bias_{idx}",  "+~ 1.0",             2, 1, ["signal"], vx+570, vy+80, 55))
+    boxes.append(newobj(f"swell_b_{idx}",       f"cycle~ {swell_b_r}", 2, 1, ["signal"], vx+590, vy+20, 85))
+    boxes.append(newobj(f"swell_b_scale_{idx}", "*~ 0.5",              2, 1, ["signal"], vx+590, vy+50, 60))
+    boxes.append(newobj(f"swell_b_bias_{idx}",  "+~ 0.5",              2, 1, ["signal"], vx+590, vy+80, 55))
 
-    boxes.append(newobj(f"dyn_env_{idx}", "*~", 2, 1, ["signal"], vx+490, vy+115, 40))
+    boxes.append(newobj(f"swell_prod_{idx}", "*~", 2, 1, ["signal"], vx+540, vy+110, 40))
 
-    lines.append(line(f"swell_{idx}",       0, f"swell_scale_{idx}", 0))
-    lines.append(line(f"swell_scale_{idx}", 0, f"swell_bias_{idx}",  0))
-    lines.append(line(f"breath_{idx}",       0, f"breath_scale_{idx}", 0))
-    lines.append(line(f"breath_scale_{idx}", 0, f"breath_bias_{idx}",  0))
-    lines.append(line(f"swell_bias_{idx}",  0, f"dyn_env_{idx}", 0))
-    lines.append(line(f"breath_bias_{idx}", 0, f"dyn_env_{idx}", 1))
+    boxes.append(newobj(f"breath_{idx}",       f"cycle~ {breath_r}", 2, 1, ["signal"], vx+690, vy+20, 85))
+    boxes.append(newobj(f"breath_scale_{idx}", "*~ 0.15",             2, 1, ["signal"], vx+690, vy+50, 65))
+    boxes.append(newobj(f"breath_bias_{idx}",  "+~ 1.0",              2, 1, ["signal"], vx+690, vy+80, 55))
+
+    boxes.append(newobj(f"dyn_env_{idx}", "*~", 2, 1, ["signal"], vx+640, vy+110, 40))
+
+    lines.append(line(f"swell_a_{idx}",       0, f"swell_a_scale_{idx}", 0))
+    lines.append(line(f"swell_a_scale_{idx}", 0, f"swell_a_bias_{idx}",  0))
+    lines.append(line(f"swell_b_{idx}",       0, f"swell_b_scale_{idx}", 0))
+    lines.append(line(f"swell_b_scale_{idx}", 0, f"swell_b_bias_{idx}",  0))
+    lines.append(line(f"swell_a_bias_{idx}",  0, f"swell_prod_{idx}", 0))
+    lines.append(line(f"swell_b_bias_{idx}",  0, f"swell_prod_{idx}", 1))
+    lines.append(line(f"breath_{idx}",        0, f"breath_scale_{idx}", 0))
+    lines.append(line(f"breath_scale_{idx}",  0, f"breath_bias_{idx}",  0))
+    lines.append(line(f"swell_prod_{idx}",    0, f"dyn_env_{idx}", 0))
+    lines.append(line(f"breath_bias_{idx}",   0, f"dyn_env_{idx}", 1))
 
 
 # ============================================================
@@ -334,11 +361,16 @@ for i, v in enumerate(voices):
     # Volume
     boxes.append(newobj(f"vol_mult_{idx}", "*~ 0.", 2, 1, ["signal"], ax, ay+220, 55))
 
-    # Dynamic envelope: swell (0..1) * breath (0.85..1.15) — fully autonomous, not driven by input
-    boxes.append(newobj(f"dyn_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+260, 40))
+    # Chaos saturation: expr~ drives extra gain; at chaos=1 → 4× amplitude → hard clip distortion
+    # Only happens when chaos arc is high (t=2–7min, peak 4:45) and voice swell is near peak
+    boxes.append(newobj(f"sat_amt_{idx}", "expr~ 1. + $v1 * 3.", 1, 1, ["signal"], ax+65, ay+220, 95))
+    boxes.append(newobj(f"sat_mult_{idx}", "*~",                 2, 1, ["signal"], ax+65, ay+250, 40))
+
+    # Dynamic envelope: swell_prod (0..1) × breath (0.85..1.15) — fully autonomous
+    boxes.append(newobj(f"dyn_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+290, 40))
 
     # Panner
-    boxes.append(newobj(f"pan_{idx}", "pan2", 4, 2, ["signal", "signal"], ax, ay+300, 50))
+    boxes.append(newobj(f"pan_{idx}", "pan2", 4, 2, ["signal", "signal"], ax, ay+330, 50))
 
     # ---- Audio wiring ----
     lines.append(line("tapin", 0, f"tapout_a_{idx}", 0))
@@ -358,10 +390,13 @@ for i, v in enumerate(voices):
     lines.append(line(f"xf_sum_{idx}",    0, f"freqshift_{idx}", 0))
     lines.append(line(f"fs_line_{idx}",   0, f"freqshift_{idx}", 1))
 
-    # vol -> dyn_mult (swell*breath) -> pan
+    # vol → sat → dyn → pan
     lines.append(line(f"freqshift_{idx}", 0, f"vol_mult_{idx}", 0))
     lines.append(line(f"vol_line_{idx}",  0, f"vol_mult_{idx}", 1))
-    lines.append(line(f"vol_mult_{idx}",  0, f"dyn_mult_{idx}", 0))
+    lines.append(line(f"vol_mult_{idx}",  0, f"sat_mult_{idx}", 0))
+    lines.append(line("chaos_sig",         0, f"sat_amt_{idx}",  0))
+    lines.append(line(f"sat_amt_{idx}",   0, f"sat_mult_{idx}", 1))
+    lines.append(line(f"sat_mult_{idx}",  0, f"dyn_mult_{idx}", 0))
     lines.append(line(f"dyn_env_{idx}",   0, f"dyn_mult_{idx}", 1))
 
     # pan
