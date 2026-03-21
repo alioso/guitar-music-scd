@@ -761,6 +761,60 @@
 			},
 			{
 				"box": {
+					"id": "lfo_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						65,
+						80,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "cycle~ 0.07"
+				}
+			},
+			{
+				"box": {
+					"id": "lfo_scale_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						95,
+						65,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~ 0.25"
+				}
+			},
+			{
+				"box": {
+					"id": "lfo_bias_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						125,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 1.0"
+				}
+			},
+			{
+				"box": {
 					"id": "lbl_v2",
 					"maxclass": "comment",
 					"numinlets": 1,
@@ -955,6 +1009,60 @@
 						"signal"
 					],
 					"text": "sig~ 0."
+				}
+			},
+			{
+				"box": {
+					"id": "lfo_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						265,
+						80,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "cycle~ 0.11"
+				}
+			},
+			{
+				"box": {
+					"id": "lfo_scale_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						295,
+						65,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~ 0.25"
+				}
+			},
+			{
+				"box": {
+					"id": "lfo_bias_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						325,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 1.0"
 				}
 			},
 			{
@@ -1157,6 +1265,60 @@
 			},
 			{
 				"box": {
+					"id": "lfo_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						465,
+						80,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "cycle~ 0.13"
+				}
+			},
+			{
+				"box": {
+					"id": "lfo_scale_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						495,
+						65,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~ 0.25"
+				}
+			},
+			{
+				"box": {
+					"id": "lfo_bias_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						525,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 1.0"
+				}
+			},
+			{
+				"box": {
 					"id": "lbl_v4",
 					"maxclass": "comment",
 					"numinlets": 1,
@@ -1355,6 +1517,60 @@
 			},
 			{
 				"box": {
+					"id": "lfo_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						665,
+						80,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "cycle~ 0.19"
+				}
+			},
+			{
+				"box": {
+					"id": "lfo_scale_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						695,
+						65,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~ 0.25"
+				}
+			},
+			{
+				"box": {
+					"id": "lfo_bias_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						725,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 1.0"
+				}
+			},
+			{
+				"box": {
 					"id": "lbl_audio",
 					"maxclass": "comment",
 					"numinlets": 1,
@@ -1514,13 +1730,31 @@
 			},
 			{
 				"box": {
+					"id": "lfo_mult_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						750,
+						300,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
+				}
+			},
+			{
+				"box": {
 					"id": "pan_1",
 					"maxclass": "newobj",
 					"numinlets": 4,
 					"numoutlets": 2,
 					"patching_rect": [
 						750,
-						300,
+						340,
 						50,
 						22
 					],
@@ -1676,13 +1910,31 @@
 			},
 			{
 				"box": {
+					"id": "lfo_mult_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						930,
+						300,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
+				}
+			},
+			{
+				"box": {
 					"id": "pan_2",
 					"maxclass": "newobj",
 					"numinlets": 4,
 					"numoutlets": 2,
 					"patching_rect": [
 						930,
-						300,
+						340,
 						50,
 						22
 					],
@@ -1838,13 +2090,31 @@
 			},
 			{
 				"box": {
+					"id": "lfo_mult_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1110,
+						300,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
+				}
+			},
+			{
+				"box": {
 					"id": "pan_3",
 					"maxclass": "newobj",
 					"numinlets": 4,
 					"numoutlets": 2,
 					"patching_rect": [
 						1110,
-						300,
+						340,
 						50,
 						22
 					],
@@ -2000,13 +2270,31 @@
 			},
 			{
 				"box": {
+					"id": "lfo_mult_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1290,
+						300,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
+				}
+			},
+			{
+				"box": {
 					"id": "pan_4",
 					"maxclass": "newobj",
 					"numinlets": 4,
 					"numoutlets": 2,
 					"patching_rect": [
 						1290,
-						300,
+						340,
 						50,
 						22
 					],
@@ -2718,6 +3006,30 @@
 			{
 				"patchline": {
 					"destination": [
+						"lfo_scale_1",
+						0
+					],
+					"source": [
+						"lfo_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"lfo_bias_1",
+						0
+					],
+					"source": [
+						"lfo_scale_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"fs_expr_2",
 						0
 					],
@@ -2831,6 +3143,30 @@
 					],
 					"source": [
 						"inv_evo_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"lfo_scale_2",
+						0
+					],
+					"source": [
+						"lfo_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"lfo_bias_2",
+						0
+					],
+					"source": [
+						"lfo_scale_2",
 						0
 					]
 				}
@@ -2958,6 +3294,30 @@
 			{
 				"patchline": {
 					"destination": [
+						"lfo_scale_3",
+						0
+					],
+					"source": [
+						"lfo_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"lfo_bias_3",
+						0
+					],
+					"source": [
+						"lfo_scale_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"fs_expr_4",
 						0
 					],
@@ -3071,6 +3431,30 @@
 					],
 					"source": [
 						"inv_evo_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"lfo_scale_4",
+						0
+					],
+					"source": [
+						"lfo_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"lfo_bias_4",
+						0
+					],
+					"source": [
+						"lfo_scale_4",
 						0
 					]
 				}
@@ -3222,11 +3606,35 @@
 			{
 				"patchline": {
 					"destination": [
-						"pan_1",
+						"lfo_mult_1",
 						0
 					],
 					"source": [
 						"vol_mult_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"lfo_mult_1",
+						1
+					],
+					"source": [
+						"lfo_bias_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pan_1",
+						0
+					],
+					"source": [
+						"lfo_mult_1",
 						0
 					]
 				}
@@ -3390,11 +3798,35 @@
 			{
 				"patchline": {
 					"destination": [
-						"pan_2",
+						"lfo_mult_2",
 						0
 					],
 					"source": [
 						"vol_mult_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"lfo_mult_2",
+						1
+					],
+					"source": [
+						"lfo_bias_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pan_2",
+						0
+					],
+					"source": [
+						"lfo_mult_2",
 						0
 					]
 				}
@@ -3558,11 +3990,35 @@
 			{
 				"patchline": {
 					"destination": [
-						"pan_3",
+						"lfo_mult_3",
 						0
 					],
 					"source": [
 						"vol_mult_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"lfo_mult_3",
+						1
+					],
+					"source": [
+						"lfo_bias_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pan_3",
+						0
+					],
+					"source": [
+						"lfo_mult_3",
 						0
 					]
 				}
@@ -3726,11 +4182,35 @@
 			{
 				"patchline": {
 					"destination": [
-						"pan_4",
+						"lfo_mult_4",
 						0
 					],
 					"source": [
 						"vol_mult_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"lfo_mult_4",
+						1
+					],
+					"source": [
+						"lfo_bias_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pan_4",
+						0
+					],
+					"source": [
+						"lfo_mult_4",
 						0
 					]
 				}

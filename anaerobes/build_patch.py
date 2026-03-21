@@ -211,11 +211,12 @@ voices = [
     # p2_delay: Phase 2 target (long, clearly audible separate echo)
     # fs_base: immediately audible beating (1-2.5 Hz)
     # fs_max: strong Risset detuning at peak (4-7 Hz)
-    # vol raised: voices need to compete with dry guitar through *~ 0.25 master gain
-    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 1.4,  "fs_base": 1.0,  "fs_max": 4.0,  "pan": 25.},
-    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 1.4,  "fs_base": -1.5, "fs_max": -5.0, "pan": -25.},
-    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 1.3,  "fs_base": 2.0,  "fs_max": 6.0,  "pan": 50.},
-    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 1.3,  "fs_base": -2.5, "fs_max": -7.0, "pan": -50.},
+    # vol: voices compete with dry guitar through *~ 0.25 master gain
+    # lfo_rate: incommensurate slow periods (14s/9s/8s/5s) — never align = apparent randomness
+    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 1.4, "lfo_rate": 0.07, "fs_base": 1.0,  "fs_max": 4.0,  "pan": 25.},
+    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 1.4, "lfo_rate": 0.11, "fs_base": -1.5, "fs_max": -5.0, "pan": -25.},
+    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 1.3, "lfo_rate": 0.13, "fs_base": 2.0,  "fs_max": 6.0,  "pan": 50.},
+    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 1.3, "lfo_rate": 0.19, "fs_base": -2.5, "fs_max": -7.0, "pan": -50.},
 ]
 
 boxes.append(comment("lbl_voices", "=== VOICE PARAMETERS ===", COL_PHASE, ROW_TOP-20, 200))
@@ -267,6 +268,19 @@ for i, v in enumerate(voices):
     lines.append(line("evo_clip", 0, f"inv_evo_{idx}", 0))
     lines.append(line(f"inv_evo_{idx}", 0, f"inv_sig_{idx}", 0))
 
+    # Per-voice slow LFO: autonomous breathing, breaks the mechanical delay feel
+    # cycle~ (-1..1) -> *~ 0.25 (-0.25..0.25) -> +~ 1.0 (0.75..1.25)
+    lfo_r = v["lfo_rate"]
+    boxes.append(newobj(f"lfo_{idx}", f"cycle~ {lfo_r}", 2, 1, ["signal"],
+                        vx+490, vy+25, 80))
+    boxes.append(newobj(f"lfo_scale_{idx}", "*~ 0.25", 2, 1, ["signal"],
+                        vx+490, vy+55, 65))
+    boxes.append(newobj(f"lfo_bias_{idx}", "+~ 1.0", 2, 1, ["signal"],
+                        vx+490, vy+85, 55))
+
+    lines.append(line(f"lfo_{idx}", 0, f"lfo_scale_{idx}", 0))
+    lines.append(line(f"lfo_scale_{idx}", 0, f"lfo_bias_{idx}", 0))
+
 
 # ============================================================
 # SECTION 4: VOICE AUDIO PROCESSING
@@ -307,8 +321,11 @@ for i, v in enumerate(voices):
     # Volume
     boxes.append(newobj(f"vol_mult_{idx}", "*~ 0.", 2, 1, ["signal"], ax, ay+220, 55))
 
+    # LFO modulation — per-voice random breathing
+    boxes.append(newobj(f"lfo_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+260, 40))
+
     # Panner
-    boxes.append(newobj(f"pan_{idx}", "pan2", 4, 2, ["signal", "signal"], ax, ay+260, 50))
+    boxes.append(newobj(f"pan_{idx}", "pan2", 4, 2, ["signal", "signal"], ax, ay+300, 50))
 
     # ---- Audio wiring ----
     lines.append(line("tapin", 0, f"tapout_a_{idx}", 0))
@@ -328,12 +345,14 @@ for i, v in enumerate(voices):
     lines.append(line(f"xf_sum_{idx}",    0, f"freqshift_{idx}", 0))
     lines.append(line(f"fs_line_{idx}",   0, f"freqshift_{idx}", 1))
 
-    # vol
+    # vol -> lfo_mult -> pan
     lines.append(line(f"freqshift_{idx}", 0, f"vol_mult_{idx}", 0))
     lines.append(line(f"vol_line_{idx}",  0, f"vol_mult_{idx}", 1))
+    lines.append(line(f"vol_mult_{idx}", 0, f"lfo_mult_{idx}", 0))
+    lines.append(line(f"lfo_bias_{idx}", 0, f"lfo_mult_{idx}", 1))
 
     # pan
-    lines.append(line(f"vol_mult_{idx}", 0, f"pan_{idx}", 0))
+    lines.append(line(f"lfo_mult_{idx}", 0, f"pan_{idx}", 0))
     lines.append(line(f"pan_val_{idx}",  0, f"pan_{idx}", 1))
 
 
