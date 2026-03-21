@@ -17,11 +17,12 @@ import os
 import sys
 from collections import defaultdict
 
+_REPO = os.path.dirname(os.path.abspath(__file__))
 PATCHES = [
-    "/Users/abailly/Repos/guitar-music-msp/anaerobes/anaerobes.maxpat",
-    "/Users/abailly/Repos/guitar-music-msp/chimera/chimera.maxpat",
-    "/Users/abailly/Repos/guitar-music-msp/fan-fiction/fan-fiction.maxpat",
-    "/Users/abailly/Repos/guitar-music-msp/lapopie/lapopie.maxpat",
+    os.path.join(_REPO, "anaerobes", "anaerobes.maxpat"),
+    os.path.join(_REPO, "chimera", "chimera.maxpat"),
+    os.path.join(_REPO, "fan-fiction", "fan-fiction.maxpat"),
+    os.path.join(_REPO, "lapopie", "lapopie.maxpat"),
 ]
 
 # Max inlet counts for common objects (override when numinlets in JSON is wrong/missing)
