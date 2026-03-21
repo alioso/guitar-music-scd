@@ -211,12 +211,15 @@ voices = [
     # p2_delay: Phase 2 target (long, clearly audible separate echo)
     # fs_base: immediately audible beating (1-2.5 Hz)
     # fs_max: strong Risset detuning at peak (4-7 Hz)
-    # vol: voices compete with dry guitar through *~ 0.25 master gain
-    # lfo_rate: incommensurate slow periods (14s/9s/8s/5s) — never align = apparent randomness
-    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 1.4, "lfo_rate": 0.07, "fs_base": 1.0,  "fs_max": 4.0,  "pan": 25.},
-    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 1.4, "lfo_rate": 0.11, "fs_base": -1.5, "fs_max": -5.0, "pan": -25.},
-    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 1.3, "lfo_rate": 0.13, "fs_base": 2.0,  "fs_max": 6.0,  "pan": 50.},
-    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 1.3, "lfo_rate": 0.19, "fs_base": -2.5, "fs_max": -7.0, "pan": -50.},
+    # vol: raised to ~1.75 for ~+2dB peak headroom per voice (swell keeps them from all peaking at once)
+    # swell_rate: slow 0..1 fades (20-40s periods) — voices genuinely disappear/reappear
+    # breath_rate: faster quiver ±15% (6-14s periods) — subtle expression within the swell
+    # pan: widened — inner pair ±30, outer pair ±78 (asymmetric = natural ensemble feel)
+    # All 8 oscillator periods are incommensurate — never align, sounds like independent musicians
+    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 1.75, "swell_rate": 0.025, "breath_rate": 0.11, "fs_base": 1.0,  "fs_max": 4.0,  "pan": 32.},
+    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 1.75, "swell_rate": 0.033, "breath_rate": 0.17, "fs_base": -1.5, "fs_max": -5.0, "pan": -28.},
+    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 1.65, "swell_rate": 0.04,  "breath_rate": 0.07, "fs_base": 2.0,  "fs_max": 6.0,  "pan": 78.},
+    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 1.65, "swell_rate": 0.05,  "breath_rate": 0.13, "fs_base": -2.5, "fs_max": -7.0, "pan": -75.},
 ]
 
 boxes.append(comment("lbl_voices", "=== VOICE PARAMETERS ===", COL_PHASE, ROW_TOP-20, 200))
@@ -268,18 +271,28 @@ for i, v in enumerate(voices):
     lines.append(line("evo_clip", 0, f"inv_evo_{idx}", 0))
     lines.append(line(f"inv_evo_{idx}", 0, f"inv_sig_{idx}", 0))
 
-    # Per-voice slow LFO: autonomous breathing, breaks the mechanical delay feel
-    # cycle~ (-1..1) -> *~ 0.25 (-0.25..0.25) -> +~ 1.0 (0.75..1.25)
-    lfo_r = v["lfo_rate"]
-    boxes.append(newobj(f"lfo_{idx}", f"cycle~ {lfo_r}", 2, 1, ["signal"],
-                        vx+490, vy+25, 80))
-    boxes.append(newobj(f"lfo_scale_{idx}", "*~ 0.25", 2, 1, ["signal"],
-                        vx+490, vy+55, 65))
-    boxes.append(newobj(f"lfo_bias_{idx}", "+~ 1.0", 2, 1, ["signal"],
-                        vx+490, vy+85, 55))
+    # Per-voice swell + breath: voices fade in/out independently (decoupled from input dynamics)
+    # Swell: cycle~ (0..1) — voice goes fully silent at trough, full volume at peak
+    # Breath: cycle~ (0.85..1.15) — subtle quiver within the swell
+    swell_r  = v["swell_rate"]
+    breath_r = v["breath_rate"]
 
-    lines.append(line(f"lfo_{idx}", 0, f"lfo_scale_{idx}", 0))
-    lines.append(line(f"lfo_scale_{idx}", 0, f"lfo_bias_{idx}", 0))
+    boxes.append(newobj(f"swell_{idx}",       f"cycle~ {swell_r}",  2, 1, ["signal"], vx+490, vy+20, 85))
+    boxes.append(newobj(f"swell_scale_{idx}", "*~ 0.5",             2, 1, ["signal"], vx+490, vy+50, 60))
+    boxes.append(newobj(f"swell_bias_{idx}",  "+~ 0.5",             2, 1, ["signal"], vx+490, vy+80, 55))
+
+    boxes.append(newobj(f"breath_{idx}",       f"cycle~ {breath_r}", 2, 1, ["signal"], vx+570, vy+20, 85))
+    boxes.append(newobj(f"breath_scale_{idx}", "*~ 0.15",            2, 1, ["signal"], vx+570, vy+50, 65))
+    boxes.append(newobj(f"breath_bias_{idx}",  "+~ 1.0",             2, 1, ["signal"], vx+570, vy+80, 55))
+
+    boxes.append(newobj(f"dyn_env_{idx}", "*~", 2, 1, ["signal"], vx+490, vy+115, 40))
+
+    lines.append(line(f"swell_{idx}",       0, f"swell_scale_{idx}", 0))
+    lines.append(line(f"swell_scale_{idx}", 0, f"swell_bias_{idx}",  0))
+    lines.append(line(f"breath_{idx}",       0, f"breath_scale_{idx}", 0))
+    lines.append(line(f"breath_scale_{idx}", 0, f"breath_bias_{idx}",  0))
+    lines.append(line(f"swell_bias_{idx}",  0, f"dyn_env_{idx}", 0))
+    lines.append(line(f"breath_bias_{idx}", 0, f"dyn_env_{idx}", 1))
 
 
 # ============================================================
@@ -321,8 +334,8 @@ for i, v in enumerate(voices):
     # Volume
     boxes.append(newobj(f"vol_mult_{idx}", "*~ 0.", 2, 1, ["signal"], ax, ay+220, 55))
 
-    # LFO modulation — per-voice random breathing
-    boxes.append(newobj(f"lfo_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+260, 40))
+    # Dynamic envelope: swell (0..1) * breath (0.85..1.15) — fully autonomous, not driven by input
+    boxes.append(newobj(f"dyn_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+260, 40))
 
     # Panner
     boxes.append(newobj(f"pan_{idx}", "pan2", 4, 2, ["signal", "signal"], ax, ay+300, 50))
@@ -345,14 +358,14 @@ for i, v in enumerate(voices):
     lines.append(line(f"xf_sum_{idx}",    0, f"freqshift_{idx}", 0))
     lines.append(line(f"fs_line_{idx}",   0, f"freqshift_{idx}", 1))
 
-    # vol -> lfo_mult -> pan
+    # vol -> dyn_mult (swell*breath) -> pan
     lines.append(line(f"freqshift_{idx}", 0, f"vol_mult_{idx}", 0))
     lines.append(line(f"vol_line_{idx}",  0, f"vol_mult_{idx}", 1))
-    lines.append(line(f"vol_mult_{idx}", 0, f"lfo_mult_{idx}", 0))
-    lines.append(line(f"lfo_bias_{idx}", 0, f"lfo_mult_{idx}", 1))
+    lines.append(line(f"vol_mult_{idx}",  0, f"dyn_mult_{idx}", 0))
+    lines.append(line(f"dyn_env_{idx}",   0, f"dyn_mult_{idx}", 1))
 
     # pan
-    lines.append(line(f"lfo_mult_{idx}", 0, f"pan_{idx}", 0))
+    lines.append(line(f"dyn_mult_{idx}", 0, f"pan_{idx}", 0))
     lines.append(line(f"pan_val_{idx}",  0, f"pan_{idx}", 1))
 
 

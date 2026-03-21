@@ -574,7 +574,7 @@
 						22
 					],
 					"outlettype": [],
-					"text": "--- G1: pan=25.0, vol=1.4 ---"
+					"text": "--- G1: pan=32.0, vol=1.75 ---"
 				}
 			},
 			{
@@ -647,7 +647,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr $f1 * 1.4"
+					"text": "expr $f1 * 1.75"
 				}
 			},
 			{
@@ -702,7 +702,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr 25.0"
+					"text": "expr 32.0"
 				}
 			},
 			{
@@ -761,49 +761,103 @@
 			},
 			{
 				"box": {
-					"id": "lfo_1",
+					"id": "swell_1",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						990,
-						65,
-						80,
+						60,
+						85,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "cycle~ 0.07"
+					"text": "cycle~ 0.025"
 				}
 			},
 			{
 				"box": {
-					"id": "lfo_scale_1",
+					"id": "swell_scale_1",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						990,
-						95,
+						90,
+						60,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_bias_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						120,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "breath_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1070,
+						60,
+						85,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "cycle~ 0.11"
+				}
+			},
+			{
+				"box": {
+					"id": "breath_scale_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1070,
+						90,
 						65,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "*~ 0.25"
+					"text": "*~ 0.15"
 				}
 			},
 			{
 				"box": {
-					"id": "lfo_bias_1",
+					"id": "breath_bias_1",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						990,
-						125,
+						1070,
+						120,
 						55,
 						22
 					],
@@ -811,6 +865,24 @@
 						"signal"
 					],
 					"text": "+~ 1.0"
+				}
+			},
+			{
+				"box": {
+					"id": "dyn_env_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						155,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
 				}
 			},
 			{
@@ -826,7 +898,7 @@
 						22
 					],
 					"outlettype": [],
-					"text": "--- G2: pan=-25.0, vol=1.4 ---"
+					"text": "--- G2: pan=-28.0, vol=1.75 ---"
 				}
 			},
 			{
@@ -899,7 +971,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr $f1 * 1.4"
+					"text": "expr $f1 * 1.75"
 				}
 			},
 			{
@@ -954,7 +1026,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr -25.0"
+					"text": "expr -28.0"
 				}
 			},
 			{
@@ -1013,49 +1085,103 @@
 			},
 			{
 				"box": {
-					"id": "lfo_2",
+					"id": "swell_2",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						990,
-						265,
-						80,
+						260,
+						85,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "cycle~ 0.11"
+					"text": "cycle~ 0.033"
 				}
 			},
 			{
 				"box": {
-					"id": "lfo_scale_2",
+					"id": "swell_scale_2",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						990,
-						295,
+						290,
+						60,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_bias_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						320,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "breath_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1070,
+						260,
+						85,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "cycle~ 0.17"
+				}
+			},
+			{
+				"box": {
+					"id": "breath_scale_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1070,
+						290,
 						65,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "*~ 0.25"
+					"text": "*~ 0.15"
 				}
 			},
 			{
 				"box": {
-					"id": "lfo_bias_2",
+					"id": "breath_bias_2",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						990,
-						325,
+						1070,
+						320,
 						55,
 						22
 					],
@@ -1063,6 +1189,24 @@
 						"signal"
 					],
 					"text": "+~ 1.0"
+				}
+			},
+			{
+				"box": {
+					"id": "dyn_env_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						355,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
 				}
 			},
 			{
@@ -1078,7 +1222,7 @@
 						22
 					],
 					"outlettype": [],
-					"text": "--- G3: pan=50.0, vol=1.3 ---"
+					"text": "--- G3: pan=78.0, vol=1.65 ---"
 				}
 			},
 			{
@@ -1151,7 +1295,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr $f1 * 1.3"
+					"text": "expr $f1 * 1.65"
 				}
 			},
 			{
@@ -1206,7 +1350,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr 50.0"
+					"text": "expr 78.0"
 				}
 			},
 			{
@@ -1265,49 +1409,103 @@
 			},
 			{
 				"box": {
-					"id": "lfo_3",
+					"id": "swell_3",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						990,
-						465,
-						80,
+						460,
+						85,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "cycle~ 0.13"
+					"text": "cycle~ 0.04"
 				}
 			},
 			{
 				"box": {
-					"id": "lfo_scale_3",
+					"id": "swell_scale_3",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						990,
-						495,
+						490,
+						60,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_bias_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						520,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "breath_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1070,
+						460,
+						85,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "cycle~ 0.07"
+				}
+			},
+			{
+				"box": {
+					"id": "breath_scale_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1070,
+						490,
 						65,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "*~ 0.25"
+					"text": "*~ 0.15"
 				}
 			},
 			{
 				"box": {
-					"id": "lfo_bias_3",
+					"id": "breath_bias_3",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						990,
-						525,
+						1070,
+						520,
 						55,
 						22
 					],
@@ -1315,6 +1513,24 @@
 						"signal"
 					],
 					"text": "+~ 1.0"
+				}
+			},
+			{
+				"box": {
+					"id": "dyn_env_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						555,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
 				}
 			},
 			{
@@ -1330,7 +1546,7 @@
 						22
 					],
 					"outlettype": [],
-					"text": "--- G4: pan=-50.0, vol=1.3 ---"
+					"text": "--- G4: pan=-75.0, vol=1.65 ---"
 				}
 			},
 			{
@@ -1403,7 +1619,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr $f1 * 1.3"
+					"text": "expr $f1 * 1.65"
 				}
 			},
 			{
@@ -1458,7 +1674,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "expr -50.0"
+					"text": "expr -75.0"
 				}
 			},
 			{
@@ -1517,49 +1733,103 @@
 			},
 			{
 				"box": {
-					"id": "lfo_4",
+					"id": "swell_4",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						990,
-						665,
-						80,
+						660,
+						85,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "cycle~ 0.19"
+					"text": "cycle~ 0.05"
 				}
 			},
 			{
 				"box": {
-					"id": "lfo_scale_4",
+					"id": "swell_scale_4",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						990,
-						695,
+						690,
+						60,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "swell_bias_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						720,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 0.5"
+				}
+			},
+			{
+				"box": {
+					"id": "breath_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1070,
+						660,
+						85,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "cycle~ 0.13"
+				}
+			},
+			{
+				"box": {
+					"id": "breath_scale_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1070,
+						690,
 						65,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "*~ 0.25"
+					"text": "*~ 0.15"
 				}
 			},
 			{
 				"box": {
-					"id": "lfo_bias_4",
+					"id": "breath_bias_4",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						990,
-						725,
+						1070,
+						720,
 						55,
 						22
 					],
@@ -1567,6 +1837,24 @@
 						"signal"
 					],
 					"text": "+~ 1.0"
+				}
+			},
+			{
+				"box": {
+					"id": "dyn_env_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						990,
+						755,
+						40,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "*~"
 				}
 			},
 			{
@@ -1730,7 +2018,7 @@
 			},
 			{
 				"box": {
-					"id": "lfo_mult_1",
+					"id": "dyn_mult_1",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -1910,7 +2198,7 @@
 			},
 			{
 				"box": {
-					"id": "lfo_mult_2",
+					"id": "dyn_mult_2",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -2090,7 +2378,7 @@
 			},
 			{
 				"box": {
-					"id": "lfo_mult_3",
+					"id": "dyn_mult_3",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -2270,7 +2558,7 @@
 			},
 			{
 				"box": {
-					"id": "lfo_mult_4",
+					"id": "dyn_mult_4",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
@@ -3006,11 +3294,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_scale_1",
+						"swell_scale_1",
 						0
 					],
 					"source": [
-						"lfo_1",
+						"swell_1",
 						0
 					]
 				}
@@ -3018,11 +3306,59 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_bias_1",
+						"swell_bias_1",
 						0
 					],
 					"source": [
-						"lfo_scale_1",
+						"swell_scale_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"breath_scale_1",
+						0
+					],
+					"source": [
+						"breath_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"breath_bias_1",
+						0
+					],
+					"source": [
+						"breath_scale_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"dyn_env_1",
+						0
+					],
+					"source": [
+						"swell_bias_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"dyn_env_1",
+						1
+					],
+					"source": [
+						"breath_bias_1",
 						0
 					]
 				}
@@ -3150,11 +3486,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_scale_2",
+						"swell_scale_2",
 						0
 					],
 					"source": [
-						"lfo_2",
+						"swell_2",
 						0
 					]
 				}
@@ -3162,11 +3498,59 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_bias_2",
+						"swell_bias_2",
 						0
 					],
 					"source": [
-						"lfo_scale_2",
+						"swell_scale_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"breath_scale_2",
+						0
+					],
+					"source": [
+						"breath_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"breath_bias_2",
+						0
+					],
+					"source": [
+						"breath_scale_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"dyn_env_2",
+						0
+					],
+					"source": [
+						"swell_bias_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"dyn_env_2",
+						1
+					],
+					"source": [
+						"breath_bias_2",
 						0
 					]
 				}
@@ -3294,11 +3678,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_scale_3",
+						"swell_scale_3",
 						0
 					],
 					"source": [
-						"lfo_3",
+						"swell_3",
 						0
 					]
 				}
@@ -3306,11 +3690,59 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_bias_3",
+						"swell_bias_3",
 						0
 					],
 					"source": [
-						"lfo_scale_3",
+						"swell_scale_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"breath_scale_3",
+						0
+					],
+					"source": [
+						"breath_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"breath_bias_3",
+						0
+					],
+					"source": [
+						"breath_scale_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"dyn_env_3",
+						0
+					],
+					"source": [
+						"swell_bias_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"dyn_env_3",
+						1
+					],
+					"source": [
+						"breath_bias_3",
 						0
 					]
 				}
@@ -3438,11 +3870,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_scale_4",
+						"swell_scale_4",
 						0
 					],
 					"source": [
-						"lfo_4",
+						"swell_4",
 						0
 					]
 				}
@@ -3450,11 +3882,59 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_bias_4",
+						"swell_bias_4",
 						0
 					],
 					"source": [
-						"lfo_scale_4",
+						"swell_scale_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"breath_scale_4",
+						0
+					],
+					"source": [
+						"breath_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"breath_bias_4",
+						0
+					],
+					"source": [
+						"breath_scale_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"dyn_env_4",
+						0
+					],
+					"source": [
+						"swell_bias_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"dyn_env_4",
+						1
+					],
+					"source": [
+						"breath_bias_4",
 						0
 					]
 				}
@@ -3606,7 +4086,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_mult_1",
+						"dyn_mult_1",
 						0
 					],
 					"source": [
@@ -3618,11 +4098,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_mult_1",
+						"dyn_mult_1",
 						1
 					],
 					"source": [
-						"lfo_bias_1",
+						"dyn_env_1",
 						0
 					]
 				}
@@ -3634,7 +4114,7 @@
 						0
 					],
 					"source": [
-						"lfo_mult_1",
+						"dyn_mult_1",
 						0
 					]
 				}
@@ -3798,7 +4278,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_mult_2",
+						"dyn_mult_2",
 						0
 					],
 					"source": [
@@ -3810,11 +4290,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_mult_2",
+						"dyn_mult_2",
 						1
 					],
 					"source": [
-						"lfo_bias_2",
+						"dyn_env_2",
 						0
 					]
 				}
@@ -3826,7 +4306,7 @@
 						0
 					],
 					"source": [
-						"lfo_mult_2",
+						"dyn_mult_2",
 						0
 					]
 				}
@@ -3990,7 +4470,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_mult_3",
+						"dyn_mult_3",
 						0
 					],
 					"source": [
@@ -4002,11 +4482,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_mult_3",
+						"dyn_mult_3",
 						1
 					],
 					"source": [
-						"lfo_bias_3",
+						"dyn_env_3",
 						0
 					]
 				}
@@ -4018,7 +4498,7 @@
 						0
 					],
 					"source": [
-						"lfo_mult_3",
+						"dyn_mult_3",
 						0
 					]
 				}
@@ -4182,7 +4662,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_mult_4",
+						"dyn_mult_4",
 						0
 					],
 					"source": [
@@ -4194,11 +4674,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"lfo_mult_4",
+						"dyn_mult_4",
 						1
 					],
 					"source": [
-						"lfo_bias_4",
+						"dyn_env_4",
 						0
 					]
 				}
@@ -4210,7 +4690,7 @@
 						0
 					],
 					"source": [
-						"lfo_mult_4",
+						"dyn_mult_4",
 						0
 					]
 				}
