@@ -109,8 +109,32 @@ boxes.append(newobj("tapin", "tapin~ 30000", 1, 1, ["tapconnect"],
 lines.append(line("adc", 0, "dry_gain", 0, 0))
 lines.append(line("adc", 0, "tapin", 0, 1))
 
-# ============================================================
-# SECTION 2: TIMER & TIMELINE
+# ---- REVERSE DELAY INFRASTRUCTURE ----
+# 3-second looping buffer: record~ writes from ADC, groove~ plays at -1.0 (backward).
+# By t=6min the buffer has been refreshing for 6+ minutes; groove~ is a live reverse window.
+# Startup triggered from start_btn (via 200ms delay to ensure metro/dac are already running).
+boxes.append(newobj("rev_buf_def", "buffer~ rev_buf 3000",  1, 0, [],               COL_INPUT+270, ROW_TOP+40))
+boxes.append(newobj("rev_rec",     "record~ rev_buf",       2, 1, [""],             COL_INPUT+270, ROW_TOP+75))
+boxes.append(newobj("rev_groove",  "groove~ rev_buf",       2, 2, ["signal", "signal"], COL_INPUT+270, ROW_TOP+115))
+boxes.append(newobj("rev_init_delay", "delay 200",          2, 1, ["bang"],         COL_INPUT+380, ROW_TOP+40))
+boxes.append(msg("rev_rec_loop",  "loop 1",   COL_INPUT+380, ROW_TOP+75))
+boxes.append(msg("rev_rec_on",    "1",        COL_INPUT+450, ROW_TOP+75))
+boxes.append(msg("rev_grv_loop",  "loop 1",   COL_INPUT+380, ROW_TOP+110))
+boxes.append(msg("rev_grv_rate",  "rate -1.", COL_INPUT+450, ROW_TOP+110))
+boxes.append(msg("rev_grv_on",    "1",        COL_INPUT+520, ROW_TOP+110))
+
+lines.append(line("adc",           0, "rev_rec",       0, 2))  # ADC feeds record buffer
+lines.append(line("start_btn",     0, "rev_init_delay", 0))  # triggered on performer START
+lines.append(line("rev_init_delay", 0, "rev_rec_loop",  0))   # loop 1 → rec (before start)
+lines.append(line("rev_init_delay", 0, "rev_rec_on",    0))   # 1 → rec start
+lines.append(line("rev_init_delay", 0, "rev_grv_loop",  0))   # loop 1 → groove
+lines.append(line("rev_init_delay", 0, "rev_grv_rate",  0))   # rate -1. → groove
+lines.append(line("rev_init_delay", 0, "rev_grv_on",    0))   # 1 → groove start
+lines.append(line("rev_rec_loop",  0, "rev_rec",     0))
+lines.append(line("rev_rec_on",    0, "rev_rec",     0))
+lines.append(line("rev_grv_loop",  0, "rev_groove",  0))
+lines.append(line("rev_grv_rate",  0, "rev_groove",  0))
+lines.append(line("rev_grv_on",    0, "rev_groove",  0))
 # ============================================================
 
 boxes.append(comment("lbl_timer", "=== TIMER (8min = 480s) ===", COL_TIMER, ROW_TOP-20, 200))
@@ -192,6 +216,7 @@ lines.append(line("ms_to_sec", 0, "sec_to_min", 0, 1))
 lines.append(line("ms_to_sec", 0, "evo_sub", 0, 2))
 lines.append(line("ms_to_sec", 0, "onset_div",  0, 3))
 lines.append(line("ms_to_sec", 0, "chaos_expr", 0, 4))
+lines.append(line("ms_to_sec", 0, "rev_sub",    0, 5))
 lines.append(line("sec_to_min", 0, "min_display", 0))
 
 # Evolution chain
@@ -203,6 +228,18 @@ lines.append(line("onset_div", 0, "onset_clip", 0))
 
 # Chaos signal
 lines.append(line("chaos_expr", 0, "chaos_sig", 0))
+
+# ---- REVERSE ARC (last 2 minutes: t=360s rise, full by t=390s) ----
+# clip() not available in expr — use two cascaded max/min via separate clip object paths
+boxes.append(newobj("rev_sub",  "- 360.",     2, 1, ["float"],  COL_TIMER+320, ROW_TOP+330))
+boxes.append(newobj("rev_div",  "/ 30.",      2, 1, ["float"],  COL_TIMER+320, ROW_TOP+360))
+boxes.append(newobj("rev_clip", "clip 0. 1.", 3, 1, ["float"],  COL_TIMER+320, ROW_TOP+390))
+boxes.append(newobj("rev_sig",  "sig~ 0.",    1, 1, ["signal"], COL_TIMER+320, ROW_TOP+420))
+boxes.append(comment("lbl_rev", "reverse arc (last 2min)", COL_TIMER+384, ROW_TOP+330, 160))
+
+lines.append(line("rev_sub",  0, "rev_div",  0))
+lines.append(line("rev_div",  0, "rev_clip", 0))
+lines.append(line("rev_clip", 0, "rev_sig",  0))
 
 
 # ============================================================
@@ -225,15 +262,18 @@ voices = [
     # p2_delay: Phase 2 target (long, clearly audible separate echo)
     # fs_base: immediately audible beating (1-2.5 Hz)
     # fs_max: strong Risset detuning at peak (4-7 Hz)
-    # vol: raised to 2.2/2.0 — compensates for product-swell avg (0.25 vs 0.5 before)
-    # swell_rate + swell_b_rate: two incommensurate oscillators per voice; product = voice only
-    #   audible when BOTH independently high → irregular swells, genuine silences between
-    # chaos_mult: how much extra freqshift the voice gets at chaos peak (grows toward the end)
-    # All 12 oscillator periods are incommensurate — never repeat within the 8-min piece
-    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 2.2, "swell_rate": 0.025, "swell_b_rate": 0.043, "breath_rate": 0.11, "chaos_mult": 1.5,  "fs_base": 1.0,  "fs_max": 4.0,  "pan": 32.},
-    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 2.2, "swell_rate": 0.033, "swell_b_rate": 0.029, "breath_rate": 0.17, "chaos_mult": 2.0,  "fs_base": -1.5, "fs_max": -5.0, "pan": -28.},
-    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 2.0, "swell_rate": 0.04,  "swell_b_rate": 0.067, "breath_rate": 0.07, "chaos_mult": 2.5,  "fs_base": 2.0,  "fs_max": 6.0,  "pan": 78.},
-    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 2.0, "swell_rate": 0.05,  "swell_b_rate": 0.053, "breath_rate": 0.13, "chaos_mult": 3.0,  "fs_base": -2.5, "fs_max": -7.0, "pan": -75.},
+    # vol: 3.0/2.8 — product swell avg ≈0.25, so peak per voice ≈3.0*1.0*0.30 = 0.9
+    # swell_rate (swell_a): NOW fast (8-12s) — clearly audible rise/fall gestures
+    # swell_b_rate (swell_gate): very slow (60-90s) — occasional long silences between swell bursts
+    # product: random occurrence of swells (only loud when BOTH independently near peak)
+    # chaos_mult: REDUCED to 0.6-0.9 — subtle extra detuning only, no big pitch jumps
+    # wobble_rate: 0.4-0.7 Hz per voice — rapid microtonal flutter that scales up with chaos
+    # rev_gate_rate: sparse gate oscillator for reverse (30-50s period, active only last 2min)
+    # rev_depth: blend level of reverse signal (outer voices more dramatic)
+    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 3.0, "swell_rate": 0.10,  "swell_b_rate": 0.013, "breath_rate": 0.11, "chaos_mult": 0.6, "wobble_rate": 0.37, "wobble_depth": 0.5, "rev_gate_rate": 0.019, "rev_depth": 0.35, "fs_base": 1.0,  "fs_max": 4.0,  "pan": 32.},
+    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 3.0, "swell_rate": 0.13,  "swell_b_rate": 0.017, "breath_rate": 0.17, "chaos_mult": 0.7, "wobble_rate": 0.53, "wobble_depth": 0.6, "rev_gate_rate": 0.023, "rev_depth": 0.40, "fs_base": -1.5, "fs_max": -5.0, "pan": -28.},
+    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 2.8, "swell_rate": 0.083, "swell_b_rate": 0.011, "breath_rate": 0.07, "chaos_mult": 0.8, "wobble_rate": 0.67, "wobble_depth": 0.4, "rev_gate_rate": 0.031, "rev_depth": 0.55, "fs_base": 2.0,  "fs_max": 6.0,  "pan": 78.},
+    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 2.8, "swell_rate": 0.11,  "swell_b_rate": 0.015, "breath_rate": 0.13, "chaos_mult": 0.9, "wobble_rate": 0.43, "wobble_depth": 0.7, "rev_gate_rate": 0.027, "rev_depth": 0.50, "fs_base": -2.5, "fs_max": -7.0, "pan": -75.},
 ]
 
 boxes.append(comment("lbl_voices", "=== VOICE PARAMETERS ===", COL_PHASE, ROW_TOP-20, 200))
@@ -321,6 +361,32 @@ for i, v in enumerate(voices):
     lines.append(line(f"swell_prod_{idx}",    0, f"dyn_env_{idx}", 0))
     lines.append(line(f"breath_bias_{idx}",   0, f"dyn_env_{idx}", 1))
 
+    # Per-voice microtonal wobble LFO — activates with chaos_sig
+    # At chaos=0: no wobble; at chaos=1: rapid ±{wobble_depth}Hz flutter added to freqshift
+    wobble_r = v["wobble_rate"]
+    wobble_d = v["wobble_depth"]
+    boxes.append(newobj(f"wobble_osc_{idx}", f"cycle~ {wobble_r}",  2, 1, ["signal"], vx+800, vy+20, 90))
+    boxes.append(newobj(f"wobble_cm_{idx}",  "*~",                   2, 1, ["signal"], vx+800, vy+55, 40))
+    boxes.append(newobj(f"wobble_d_{idx}",   f"*~ {wobble_d}",       2, 1, ["signal"], vx+800, vy+85, 60))
+    boxes.append(newobj(f"wobble_sum_{idx}", "+~",                   2, 1, ["signal"], vx+800, vy+115, 40))
+
+    lines.append(line(f"wobble_osc_{idx}", 0, f"wobble_cm_{idx}", 0))
+    lines.append(line("chaos_sig",          0, f"wobble_cm_{idx}", 1))
+    lines.append(line(f"wobble_cm_{idx}",   0, f"wobble_d_{idx}",  0))
+    lines.append(line(f"wobble_d_{idx}",    0, f"wobble_sum_{idx}", 1))
+
+    # Reverse gate: sparse random occurrences, gated by the last-2-min arc (rev_sig = 0 before t=6min)
+    rev_gate_r = v["rev_gate_rate"]
+    boxes.append(newobj(f"rev_gate_osc_{idx}",   f"cycle~ {rev_gate_r}", 2, 1, ["signal"], vx+920, vy+20, 90))
+    boxes.append(newobj(f"rev_gate_scale_{idx}",  "*~ 0.5",               2, 1, ["signal"], vx+920, vy+52, 60))
+    boxes.append(newobj(f"rev_gate_bias_{idx}",   "+~ 0.5",               2, 1, ["signal"], vx+920, vy+82, 55))
+    boxes.append(newobj(f"rev_gate_sig_{idx}",    "*~",                   2, 1, ["signal"], vx+920, vy+112, 40))
+
+    lines.append(line(f"rev_gate_osc_{idx}",   0, f"rev_gate_scale_{idx}", 0))
+    lines.append(line(f"rev_gate_scale_{idx}",  0, f"rev_gate_bias_{idx}",  0))
+    lines.append(line(f"rev_gate_bias_{idx}",   0, f"rev_gate_sig_{idx}",   0))
+    lines.append(line("rev_sig",                 0, f"rev_gate_sig_{idx}",   1))
+
 
 # ============================================================
 # SECTION 4: VOICE AUDIO PROCESSING
@@ -361,17 +427,14 @@ for i, v in enumerate(voices):
     # Volume
     boxes.append(newobj(f"vol_mult_{idx}", "*~ 0.", 2, 1, ["signal"], ax, ay+220, 55))
 
-    # Chaos saturation: at chaos=1 → 4× amplitude → hard clip distortion
+    # Chaos saturation: gentle overdrive — *~ 1.5 → at chaos=1: ×2.5 → soft clip~ distortion
     # Uses only *~ and +~ (expr~ unavailable)
-    boxes.append(newobj(f"sat_scale_{idx}", "*~ 3.", 2, 1, ["signal"], ax+65, ay+220, 55))
+    boxes.append(newobj(f"sat_scale_{idx}", "*~ 1.5", 2, 1, ["signal"], ax+65, ay+220, 55))
     boxes.append(newobj(f"sat_add_{idx}",   "+~ 1.", 2, 1, ["signal"], ax+65, ay+248, 55))
     boxes.append(newobj(f"sat_mult_{idx}",  "*~",    2, 1, ["signal"], ax+65, ay+276, 40))
 
     # Dynamic envelope: swell_prod (0..1) × breath (0.85..1.15) — fully autonomous
     boxes.append(newobj(f"dyn_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+290, 40))
-
-    # Panner
-    boxes.append(newobj(f"pan_{idx}", "pan2", 4, 2, ["signal", "signal"], ax, ay+330, 50))
 
     # ---- Audio wiring ----
     lines.append(line("tapin", 0, f"tapout_a_{idx}", 0))
@@ -387,9 +450,10 @@ for i, v in enumerate(voices):
     lines.append(line(f"xf_a_{idx}", 0, f"xf_sum_{idx}", 0))
     lines.append(line(f"xf_b_{idx}", 0, f"xf_sum_{idx}", 1))
 
-    # freqshift
-    lines.append(line(f"xf_sum_{idx}",    0, f"freqshift_{idx}", 0))
-    lines.append(line(f"fs_line_{idx}",   0, f"freqshift_{idx}", 1))
+    # freqshift: base signal through wobble_sum (+wobble at chaos peak)
+    lines.append(line(f"xf_sum_{idx}",     0, f"freqshift_{idx}", 0))
+    lines.append(line(f"fs_line_{idx}",    0, f"wobble_sum_{idx}", 0))
+    lines.append(line(f"wobble_sum_{idx}", 0, f"freqshift_{idx}", 1))
 
     # vol → sat → dyn → pan
     lines.append(line(f"freqshift_{idx}", 0, f"vol_mult_{idx}", 0))
@@ -401,8 +465,23 @@ for i, v in enumerate(voices):
     lines.append(line(f"sat_mult_{idx}",  0, f"dyn_mult_{idx}", 0))
     lines.append(line(f"dyn_env_{idx}",   0, f"dyn_mult_{idx}", 1))
 
+    # Reverse blend: backward audio gated by per-voice sparse arc, added to forward signal
+    rev_d = v["rev_depth"]
+    boxes.append(newobj(f"rev_gated_{idx}",   "*~",          2, 1, ["signal"], ax+120, ay+330, 40))
+    boxes.append(newobj(f"rev_scaled_{idx}",  f"*~ {rev_d}", 2, 1, ["signal"], ax+120, ay+362, 55))
+    boxes.append(newobj(f"rev_mix_{idx}",     "+~",          2, 1, ["signal"], ax,     ay+400, 40))
+
+    # Panner
+    boxes.append(newobj(f"pan_{idx}", "pan2", 4, 2, ["signal", "signal"], ax, ay+445, 50))
+
+    lines.append(line("rev_groove",            0, f"rev_gated_{idx}",  0))
+    lines.append(line(f"rev_gate_sig_{idx}",   0, f"rev_gated_{idx}",  1))
+    lines.append(line(f"rev_gated_{idx}",      0, f"rev_scaled_{idx}", 0))
+    lines.append(line(f"rev_scaled_{idx}",     0, f"rev_mix_{idx}",    1))
+    lines.append(line(f"dyn_mult_{idx}",       0, f"rev_mix_{idx}",    0))
+
     # pan
-    lines.append(line(f"dyn_mult_{idx}", 0, f"pan_{idx}", 0))
+    lines.append(line(f"rev_mix_{idx}", 0, f"pan_{idx}", 0))
     lines.append(line(f"pan_val_{idx}",  0, f"pan_{idx}", 1))
 
 
@@ -426,11 +505,9 @@ boxes.append(newobj("sum_R_all", "+~", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+90)
 boxes.append(newobj("mix_L", "+~", 2, 1, ["signal"], COL_MIX, ROW_TOP+130))
 boxes.append(newobj("mix_R", "+~", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+130))
 
-# Master gain
-# Master gain — 0.25 gives safe headroom: 4 voices (~0.75 avg) + dry (0.35) = ~3.35 sum,
-# x0.25 = 0.84 peak, well below clip~ at 1.0
-boxes.append(newobj("master_gain_L", "*~ 0.25", 2, 1, ["signal"], COL_MIX, ROW_TOP+165))
-boxes.append(newobj("master_gain_R", "*~ 0.25", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+165))
+# Master gain — 0.30: slightly higher than before to push clip~ more gently for soft saturation
+boxes.append(newobj("master_gain_L", "*~ 0.30", 2, 1, ["signal"], COL_MIX, ROW_TOP+165))
+boxes.append(newobj("master_gain_R", "*~ 0.30", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+165))
 
 # Safety limiter
 boxes.append(newobj("clip_L", "clip~ -1. 1.", 3, 1, ["signal"], COL_MIX, ROW_TOP+200))
