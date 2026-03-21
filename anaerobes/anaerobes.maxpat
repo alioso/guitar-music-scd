@@ -101,7 +101,7 @@
 					"outlettype": [
 						"signal"
 					],
-					"text": "*~ 0.85"
+					"text": "*~ 0.35"
 				}
 			},
 			{
@@ -676,13 +676,13 @@
 					"patching_rect": [
 						500,
 						210,
-						80,
+						90,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "pack 0. 50"
+					"text": "pack 0. 2000"
 				}
 			},
 			{
@@ -694,13 +694,13 @@
 					"patching_rect": [
 						500,
 						240,
-						85,
+						95,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "line 12.0 50"
+					"text": "line 12.0 2000"
 				}
 			},
 			{
@@ -946,13 +946,13 @@
 					"patching_rect": [
 						500,
 						460,
-						80,
+						90,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "pack 0. 50"
+					"text": "pack 0. 2000"
 				}
 			},
 			{
@@ -964,13 +964,13 @@
 					"patching_rect": [
 						500,
 						490,
-						85,
+						95,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "line 23.0 50"
+					"text": "line 23.0 2000"
 				}
 			},
 			{
@@ -1216,13 +1216,13 @@
 					"patching_rect": [
 						500,
 						710,
-						80,
+						90,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "pack 0. 50"
+					"text": "pack 0. 2000"
 				}
 			},
 			{
@@ -1234,13 +1234,13 @@
 					"patching_rect": [
 						500,
 						740,
-						85,
+						95,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "line 37.0 50"
+					"text": "line 37.0 2000"
 				}
 			},
 			{
@@ -1486,13 +1486,13 @@
 					"patching_rect": [
 						500,
 						960,
-						80,
+						90,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "pack 0. 50"
+					"text": "pack 0. 2000"
 				}
 			},
 			{
@@ -1504,13 +1504,13 @@
 					"patching_rect": [
 						500,
 						990,
-						85,
+						95,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "line 48.0 50"
+					"text": "line 48.0 2000"
 				}
 			},
 			{

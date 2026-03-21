@@ -96,8 +96,8 @@ boxes.append(comment("lbl_ezdac", "<-- click to enable audio", COL_INPUT+210, RO
 boxes.append(newobj("adc", "adc~ 1", 1, 1, ["signal"],
                      COL_INPUT, ROW_TOP+40))
 
-# Dry signal path
-boxes.append(newobj("dry_gain", "*~ 0.85", 2, 1, ["signal"],
+# Dry signal path — reduced to 0.35 so partners are present in the mix
+boxes.append(newobj("dry_gain", "*~ 0.35", 2, 1, ["signal"],
                      COL_INPUT, ROW_TOP+80))
 boxes.append(comment("lbl_dry", "dry guitar (center)", COL_INPUT+80, ROW_TOP+80, 140))
 
@@ -251,11 +251,12 @@ for i, v in enumerate(voices):
                         2, 1, [""],
                         vx, vy+140, 220))
     
-    # Pack delay value + ramp time (50ms smooth), then message-rate line -> tapout~
-    boxes.append(newobj(f"delay_pack_{idx}", "pack 0. 50", 2, 1, [""],
-                        vx, vy+170, 80))
-    boxes.append(newobj(f"delay_line_{idx}", f"line {p1d} 50", 2, 1, [""],
-                        vx, vy+200, 85))
+    # Pack delay value + ramp time (2000ms smooth) — slow ramp prevents tapout~ head
+    # snapping which causes the clipping thud artifact
+    boxes.append(newobj(f"delay_pack_{idx}", "pack 0. 2000", 2, 1, [""],
+                        vx, vy+170, 90))
+    boxes.append(newobj(f"delay_line_{idx}", f"line {p1d} 2000", 2, 1, [""],
+                        vx, vy+200, 95))
     
     # ---- STEP 4: Volume = onset * (base_vol - 0.25 * risset_env * evolution) ----
     # $f1 = risset_env, $f2 = evolution, $f3 = onset
