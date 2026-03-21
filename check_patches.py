@@ -563,17 +563,14 @@ def _check_anaerobes(boxes, inputs_to, outputs_from, errors, warnings):
         if not ti_ins:
             errors.append("tapin~ has no inputs — delay voices receive no audio")
 
-    # B) All 4 tapout~ must connect to tapin~ and to freqshift~
+    # B) All 4 voices must have tapout~ connected to tapin~
+    # v3 design uses tapout_a_{idx} + tapout_b_{idx}; v1 used tapout_{idx}
     for idx in range(1, 5):
-        to_id = f"tapout_{idx}"
-        if to_id in boxes:
-            to_ins = [src for (src, so, di) in inputs_to.get(to_id, [])]
-            if "tapin" not in to_ins:
-                errors.append(f"{to_id} not connected to tapin~ — no audio input to delay voice {idx}")
-            to_outs = [dst for (dst, so, di) in outputs_from.get(to_id, [])]
-            fs = f"freqshift_{idx}"
-            if fs in boxes and fs not in to_outs:
-                errors.append(f"{to_id} doesn't feed {fs} — freq shift voice {idx} has no input")
+        for to_id in [f"tapout_a_{idx}", f"tapout_b_{idx}", f"tapout_{idx}"]:
+            if to_id in boxes:
+                to_ins = [src for (src, so, di) in inputs_to.get(to_id, [])]
+                if "tapin" not in to_ins:
+                    errors.append(f"{to_id} not connected to tapin~ — no audio input to delay voice {idx}")
 
     # C) freqshift~ shift inlet must be connected
     for idx in range(1, 5):

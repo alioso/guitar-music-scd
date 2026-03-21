@@ -192,194 +192,148 @@ lines.append(line("onset_div", 0, "onset_clip", 0))
 
 
 # ============================================================
-# SECTION 3: PER-VOICE PARAMETER CALCULATION
+# SECTION 3: PER-VOICE CONTROL PARAMETERS
 # ============================================================
 #
-# Strategy: NO clip() inside expr. Instead:
-#   1. Per voice: compute voice_phase = (evolution - offset) / period -> clip 0 1
-#   2. Compute risset_env = 1 - abs(2*phase - 1) using expr (abs IS supported)
-#   3. Compute delay = base + risset_env * evolution * delta using expr
-#   4. Compute volume = onset * (base_vol - 0.25 * risset_env * evolution) using expr
-#   5. Compute freqshift = fs_base + evolution * fs_delta using expr
-#   6. Compute pan = pan_base + evolution * pan_drift using expr
+# Two-tap crossfade approach — avoids dynamic tapout~ delay changes which
+# are unreliable in Max 9 when the inlet also carries a tap-wire from tapin~.
+#
+# Per voice:
+#   - tapout_a (short P1 delay) and tapout_b (long P2 delay) are FIXED
+#   - evo_clip crossfades between them at signal rate: out = a*(1-evo) + b*evo
+#   - freqshift evolves from fs_base to fs_max as evo_clip rises (Risset effect)
+#   - volume = onset * base_vol (simple fade-in at start)
+#   - pan is static per voice
 #
 
 voices = [
-    # fs_base: audible from note 1 (1-3 Hz = clear beating between voices)
-    # fs_max: strong Risset detuning at peak (4-8 Hz)
-    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 0.82, "fs_base": 1.0,  "fs_max": 4.0,  "pan": 25.,  "pan_drift": 5.},
-    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 0.78, "fs_base": -1.5, "fs_max": -5.0, "pan": -25., "pan_drift": -5.},
-    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 0.72, "fs_base": 2.0,  "fs_max": 6.0,  "pan": 50.,  "pan_drift": 10.},
-    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 0.68, "fs_base": -2.5, "fs_max": -7.0, "pan": -50., "pan_drift": -10.},
+    # p1_delay: Phase 1 chorus (short, <50ms)
+    # p2_delay: Phase 2 target (long, clearly audible separate echo)
+    # fs_base: immediately audible beating (1-2.5 Hz)
+    # fs_max: strong Risset detuning at peak (4-7 Hz)
+    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 0.82, "fs_base": 1.0,  "fs_max": 4.0,  "pan": 25.},
+    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 0.78, "fs_base": -1.5, "fs_max": -5.0, "pan": -25.},
+    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 0.72, "fs_base": 2.0,  "fs_max": 6.0,  "pan": 50.},
+    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 0.68, "fs_base": -2.5, "fs_max": -7.0, "pan": -50.},
 ]
-
-phase_offsets = [0.0, 0.15, 0.35, 0.55]
-phase_periods = [1.0, 0.85, 0.7, 0.55]
 
 boxes.append(comment("lbl_voices", "=== VOICE PARAMETERS ===", COL_PHASE, ROW_TOP-20, 200))
 
 for i, v in enumerate(voices):
     vx = COL_PHASE
-    vy = ROW_TOP + i * 250
+    vy = ROW_TOP + i * 200
     idx = v["idx"]
-    off = phase_offsets[i]
-    per = phase_periods[i]
-    p1d = v["p1_delay"]
-    delta_d = v["p2_delay"] - p1d
-    base_vol = v["vol"]
     fs_b = v["fs_base"]
     fs_delta = v["fs_max"] - fs_b
+    base_vol = v["vol"]
     pan_b = v["pan"]
-    pan_dr = v["pan_drift"]
-    
-    boxes.append(comment(f"lbl_v{idx}", f"--- {v['name']}: pan={v['pan']}, vol={v['vol']} ---",
+
+    boxes.append(comment(f"lbl_v{idx}", f"--- {v['name']}: pan={pan_b}, vol={base_vol} ---",
                          vx, vy, 250))
-    
-    # ---- STEP 1: Voice phase = (evolution - offset) / period -> clip 0 1 ----
-    boxes.append(newobj(f"ph_sub_{idx}", f"- {off}", 2, 1, ["float"],
-                        vx, vy+25, 60))
-    boxes.append(newobj(f"ph_div_{idx}", f"/ {per}", 2, 1, ["float"],
-                        vx, vy+50, 60))
-    boxes.append(newobj(f"ph_clip_{idx}", "clip 0. 1.", 3, 1, ["float"],
-                        vx, vy+75, 75))
-    
-    # ---- STEP 2: Risset envelope = 1 - abs(2*phase - 1) ----
-    boxes.append(newobj(f"risset_env_{idx}", "expr 1. - abs(2. * $f1 - 1.)", 1, 1, [""],
-                        vx, vy+105, 200))
-    
-    # ---- STEP 3: Delay = p1_delay + risset_env * evolution * delta ----
-    # $f1 = risset_env, $f2 = evolution
-    boxes.append(newobj(f"delay_expr_{idx}",
-                        f"expr {p1d} + $f1 * $f2 * {delta_d}",
-                        2, 1, [""],
-                        vx, vy+140, 220))
-    
-    # Pack delay value + ramp time (300ms) — smooth enough to prevent tapout~ snap/thud,
-    # fast enough that the 7-minute evolution is clearly audible
-    boxes.append(newobj(f"delay_pack_{idx}", "pack 0. 300", 2, 1, [""],
-                        vx, vy+170, 90))
-    boxes.append(newobj(f"delay_line_{idx}", f"line {p1d} 300", 2, 1, [""],
-                        vx, vy+200, 95))
-    
-    # ---- STEP 4: Volume = onset * (base_vol - 0.25 * risset_env * evolution) ----
-    # $f1 = risset_env, $f2 = evolution, $f3 = onset
-    boxes.append(newobj(f"vol_expr_{idx}",
-                        f"expr $f3 * ({base_vol} - 0.25 * $f1 * $f2)",
-                        3, 1, [""],
-                        vx+230, vy+140, 250))
-    
-    # Smooth volume -> line~ -> *~
-    boxes.append(newobj(f"vol_pack_{idx}", "pack 0. 50", 2, 1, [""],
-                        vx+230, vy+170, 80))
-    boxes.append(newobj(f"vol_line_{idx}", "line~ 0.", 2, 2, ["signal", "bang"],
-                        vx+230, vy+200, 70))
-    
-    # ---- STEP 5: Freq shift = fs_base + evolution * fs_delta ----
-    boxes.append(newobj(f"fs_expr_{idx}",
-                        f"expr {fs_b} + $f1 * {fs_delta}",
-                        1, 1, [""],
-                        vx+230, vy+25, 180))
-    boxes.append(newobj(f"fs_pack_{idx}", "pack 0. 100", 2, 1, [""],
-                        vx+230, vy+50, 85))
-    boxes.append(newobj(f"fs_line_{idx}", "line~ 0.", 2, 2, ["signal", "bang"],
-                        vx+230, vy+75, 70))
-    
-    # ---- STEP 6: Pan = pan_base + evolution * pan_drift ----
-    boxes.append(newobj(f"pan_expr_{idx}",
-                        f"expr {pan_b} + $f1 * {pan_dr}",
-                        1, 1, [""],
-                        vx+420, vy+25, 160))
-    
+
+    # Freqshift: fs_base + evo * fs_delta  (evolves from beating → Risset detuning)
+    boxes.append(newobj(f"fs_expr_{idx}", f"expr {fs_b} + $f1 * {fs_delta}",
+                        1, 1, [""], vx, vy+25, 200))
+    boxes.append(newobj(f"fs_pack_{idx}", "pack 0. 100", 2, 1, [""], vx, vy+55, 85))
+    boxes.append(newobj(f"fs_line_{idx}", "line~ 0.", 2, 2, ["signal", "bang"], vx, vy+85, 70))
+
+    # Volume: onset * base_vol  (fade-in only, voices stay present throughout)
+    boxes.append(newobj(f"vol_expr_{idx}", f"expr $f1 * {base_vol}",
+                        1, 1, [""], vx+220, vy+25, 160))
+    boxes.append(newobj(f"vol_pack_{idx}", "pack 0. 50", 2, 1, [""], vx+220, vy+55, 80))
+    boxes.append(newobj(f"vol_line_{idx}", "line~ 0.", 2, 2, ["signal", "bang"], vx+220, vy+85, 70))
+
+    # Static pan — sent every tick via evo_clip trigger (pan2 inlet 1 is control-rate)
+    boxes.append(newobj(f"pan_val_{idx}", f"expr {pan_b}", 1, 1, [""], vx+400, vy+25, 80))
+
+    # Crossfade helpers — signal-rate versions of evo and (1-evo) for the audio section
+    boxes.append(newobj(f"evo_sig_{idx}", "sig~ 0.", 1, 1, ["signal"], vx+220, vy+120, 55))
+    boxes.append(newobj(f"inv_evo_{idx}", "expr 1. - $f1", 1, 1, [""], vx+290, vy+120, 100))
+    boxes.append(newobj(f"inv_sig_{idx}", "sig~ 0.", 1, 1, ["signal"], vx+290, vy+150, 55))
+
     # ==== WIRING ====
-    
-    # evo_clip -> ph_sub (evolution into voice phase calc)
-    lines.append(line("evo_clip", 0, f"ph_sub_{idx}", 0))
-    # ph_sub -> ph_div -> ph_clip -> risset_env
-    lines.append(line(f"ph_sub_{idx}", 0, f"ph_div_{idx}", 0))
-    lines.append(line(f"ph_div_{idx}", 0, f"ph_clip_{idx}", 0))
-    lines.append(line(f"ph_clip_{idx}", 0, f"risset_env_{idx}", 0))
-    
-    # risset_env -> delay_expr inlet 0, vol_expr inlet 0
-    lines.append(line(f"risset_env_{idx}", 0, f"delay_expr_{idx}", 0))
-    lines.append(line(f"risset_env_{idx}", 0, f"vol_expr_{idx}", 0))
-    
-    # evo_clip -> delay_expr inlet 1, vol_expr inlet 1, fs_expr, pan_expr
-    lines.append(line("evo_clip", 0, f"delay_expr_{idx}", 1))
-    lines.append(line("evo_clip", 0, f"vol_expr_{idx}", 1))
     lines.append(line("evo_clip", 0, f"fs_expr_{idx}", 0))
-    lines.append(line("evo_clip", 0, f"pan_expr_{idx}", 0))
-    
-    # onset_clip -> vol_expr inlet 2
-    lines.append(line("onset_clip", 0, f"vol_expr_{idx}", 2))
-    
-    # delay_expr -> delay_pack -> delay_line
-    lines.append(line(f"delay_expr_{idx}", 0, f"delay_pack_{idx}", 0))
-    lines.append(line(f"delay_pack_{idx}", 0, f"delay_line_{idx}", 0))
-    
-    # vol_expr -> vol_pack -> vol_line
-    lines.append(line(f"vol_expr_{idx}", 0, f"vol_pack_{idx}", 0))
-    lines.append(line(f"vol_pack_{idx}", 0, f"vol_line_{idx}", 0))
-    
-    # fs_expr -> fs_pack -> fs_line
     lines.append(line(f"fs_expr_{idx}", 0, f"fs_pack_{idx}", 0))
     lines.append(line(f"fs_pack_{idx}", 0, f"fs_line_{idx}", 0))
+
+    lines.append(line("onset_clip", 0, f"vol_expr_{idx}", 0))
+    lines.append(line(f"vol_expr_{idx}", 0, f"vol_pack_{idx}", 0))
+    lines.append(line(f"vol_pack_{idx}", 0, f"vol_line_{idx}", 0))
+
+    lines.append(line("evo_clip", 0, f"pan_val_{idx}", 0))
+
+    lines.append(line("evo_clip", 0, f"evo_sig_{idx}", 0))
+    lines.append(line("evo_clip", 0, f"inv_evo_{idx}", 0))
+    lines.append(line(f"inv_evo_{idx}", 0, f"inv_sig_{idx}", 0))
 
 
 # ============================================================
 # SECTION 4: VOICE AUDIO PROCESSING
 # ============================================================
+#
+# Per voice: two fixed tapout~ (P1 short + P2 long), crossfaded at signal rate.
+# At evo=0: only P1 short delay (chorus feel)
+# At evo=1: only P2 long delay (clear separate echo, up to 5.5s)
+# freqshift~ evolves in parallel (Risset detuning)
+#
 
 boxes.append(comment("lbl_audio", "=== AUDIO PROCESSING ===", COL_VOICE, ROW_TOP-20, 200))
 
 for i, v in enumerate(voices):
-    ax = COL_VOICE + i * 150
+    ax = COL_VOICE + i * 180
     ay = ROW_TOP
     idx = v["idx"]
     p1d = v["p1_delay"]
-    
+    p2d = v["p2_delay"]
+
     boxes.append(comment(f"lbl_a{idx}", f"{v['name']}", ax+20, ay, 40))
-    
-    # tapout~ - initial delay is phase1 value
-    boxes.append(newobj(f"tapout_{idx}", f"tapout~ {p1d}", 1, 1, ["signal"],
-                        ax, ay+30, 90))
-    
-    # freqshift~ for artifact-free micro-detuning
+
+    # Two fixed tapouts — P1 (short) and P2 (long)
+    boxes.append(newobj(f"tapout_a_{idx}", f"tapout~ {p1d}", 1, 1, ["signal"],
+                        ax, ay+30, 100))
+    boxes.append(newobj(f"tapout_b_{idx}", f"tapout~ {p2d}", 1, 1, ["signal"],
+                        ax, ay+65, 100))
+
+    # Signal-rate crossfade: out = tapout_a * (1-evo) + tapout_b * evo
+    boxes.append(newobj(f"xf_a_{idx}", "*~", 2, 1, ["signal"], ax,    ay+105, 40))
+    boxes.append(newobj(f"xf_b_{idx}", "*~", 2, 1, ["signal"], ax+50, ay+105, 40))
+    boxes.append(newobj(f"xf_sum_{idx}", "+~", 2, 1, ["signal"], ax+20, ay+140, 40))
+
+    # freqshift~ — Risset additive detuning
     boxes.append(newobj(f"freqshift_{idx}", "freqshift~", 2, 2, ["signal", "signal"],
-                        ax, ay+70, 80))
-    
-    # Volume control
-    boxes.append(newobj(f"vol_mult_{idx}", "*~ 0.", 2, 1, ["signal"],
-                        ax, ay+110, 55))
-    
+                        ax, ay+180, 80))
+
+    # Volume
+    boxes.append(newobj(f"vol_mult_{idx}", "*~ 0.", 2, 1, ["signal"], ax, ay+220, 55))
+
     # Panner
-    boxes.append(newobj(f"pan_{idx}", "pan2", 4, 2, ["signal", "signal"],
-                        ax, ay+150, 50))
-    
+    boxes.append(newobj(f"pan_{idx}", "pan2", 4, 2, ["signal", "signal"], ax, ay+260, 50))
+
     # ---- Audio wiring ----
-    
-    # tapin -> tapout
-    lines.append(line("tapin", 0, f"tapout_{idx}", 0))
-    
-    # delay_line (message-rate) -> tapout (sets delay time)
-    lines.append(line(f"delay_line_{idx}", 0, f"tapout_{idx}", 0))
-    
-    # tapout -> freqshift
-    lines.append(line(f"tapout_{idx}", 0, f"freqshift_{idx}", 0))
-    
-    # fs_line~ -> freqshift inlet 1 (shift amount)
-    lines.append(line(f"fs_line_{idx}", 0, f"freqshift_{idx}", 1))
-    
-    # freqshift -> vol_mult
+    lines.append(line("tapin", 0, f"tapout_a_{idx}", 0))
+    lines.append(line("tapin", 0, f"tapout_b_{idx}", 0))
+
+    # crossfade: P1 * (1-evo)
+    lines.append(line(f"tapout_a_{idx}", 0, f"xf_a_{idx}", 0))
+    lines.append(line(f"inv_sig_{idx}",  0, f"xf_a_{idx}", 1))
+    # crossfade: P2 * evo
+    lines.append(line(f"tapout_b_{idx}", 0, f"xf_b_{idx}", 0))
+    lines.append(line(f"evo_sig_{idx}",  0, f"xf_b_{idx}", 1))
+    # sum
+    lines.append(line(f"xf_a_{idx}", 0, f"xf_sum_{idx}", 0))
+    lines.append(line(f"xf_b_{idx}", 0, f"xf_sum_{idx}", 1))
+
+    # freqshift
+    lines.append(line(f"xf_sum_{idx}",    0, f"freqshift_{idx}", 0))
+    lines.append(line(f"fs_line_{idx}",   0, f"freqshift_{idx}", 1))
+
+    # vol
     lines.append(line(f"freqshift_{idx}", 0, f"vol_mult_{idx}", 0))
-    
-    # vol_line~ -> vol_mult inlet 1 (volume envelope)
-    lines.append(line(f"vol_line_{idx}", 0, f"vol_mult_{idx}", 1))
-    
-    # vol_mult -> pan
+    lines.append(line(f"vol_line_{idx}",  0, f"vol_mult_{idx}", 1))
+
+    # pan
     lines.append(line(f"vol_mult_{idx}", 0, f"pan_{idx}", 0))
-    
-    # pan_expr -> pan position inlet 1
-    lines.append(line(f"pan_expr_{idx}", 0, f"pan_{idx}", 1))
+    lines.append(line(f"pan_val_{idx}",  0, f"pan_{idx}", 1))
 
 
 # ============================================================
