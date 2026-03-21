@@ -214,6 +214,19 @@ All patches include both:
 
 ## Critical Max Constraints
 
+### `expr~` is NOT available
+
+The signal-rate `expr~` object is not present on this install. Replace any `expr~ <formula>` with equivalent `*~` / `+~` / `-~` chains.
+
+```python
+# WRONG:
+newobj("x", "expr~ 1. + $v1 * 3.")
+
+# CORRECT:
+newobj("x_scale", "*~ 3.")
+newobj("x_add", "+~ 1.")
+```
+
 ### `expr` does NOT support `clip()`
 
 ```python

@@ -2358,20 +2358,38 @@
 			},
 			{
 				"box": {
-					"id": "sat_amt_1",
+					"id": "sat_scale_1",
 					"maxclass": "newobj",
-					"numinlets": 1,
+					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						815,
 						260,
-						95,
+						55,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "expr~ 1. + $v1 * 3."
+					"text": "*~ 3."
+				}
+			},
+			{
+				"box": {
+					"id": "sat_add_1",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						815,
+						288,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 1."
 				}
 			},
 			{
@@ -2382,7 +2400,7 @@
 					"numoutlets": 1,
 					"patching_rect": [
 						815,
-						290,
+						316,
 						40,
 						22
 					],
@@ -2574,20 +2592,38 @@
 			},
 			{
 				"box": {
-					"id": "sat_amt_2",
+					"id": "sat_scale_2",
 					"maxclass": "newobj",
-					"numinlets": 1,
+					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						995,
 						260,
-						95,
+						55,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "expr~ 1. + $v1 * 3."
+					"text": "*~ 3."
+				}
+			},
+			{
+				"box": {
+					"id": "sat_add_2",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						995,
+						288,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 1."
 				}
 			},
 			{
@@ -2598,7 +2634,7 @@
 					"numoutlets": 1,
 					"patching_rect": [
 						995,
-						290,
+						316,
 						40,
 						22
 					],
@@ -2790,20 +2826,38 @@
 			},
 			{
 				"box": {
-					"id": "sat_amt_3",
+					"id": "sat_scale_3",
 					"maxclass": "newobj",
-					"numinlets": 1,
+					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1175,
 						260,
-						95,
+						55,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "expr~ 1. + $v1 * 3."
+					"text": "*~ 3."
+				}
+			},
+			{
+				"box": {
+					"id": "sat_add_3",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1175,
+						288,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 1."
 				}
 			},
 			{
@@ -2814,7 +2868,7 @@
 					"numoutlets": 1,
 					"patching_rect": [
 						1175,
-						290,
+						316,
 						40,
 						22
 					],
@@ -3006,20 +3060,38 @@
 			},
 			{
 				"box": {
-					"id": "sat_amt_4",
+					"id": "sat_scale_4",
 					"maxclass": "newobj",
-					"numinlets": 1,
+					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1355,
 						260,
-						95,
+						55,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "expr~ 1. + $v1 * 3."
+					"text": "*~ 3."
+				}
+			},
+			{
+				"box": {
+					"id": "sat_add_4",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1355,
+						288,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "+~ 1."
 				}
 			},
 			{
@@ -3030,7 +3102,7 @@
 					"numoutlets": 1,
 					"patching_rect": [
 						1355,
-						290,
+						316,
 						40,
 						22
 					],
@@ -4847,7 +4919,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"sat_amt_1",
+						"sat_scale_1",
 						0
 					],
 					"source": [
@@ -4859,11 +4931,23 @@
 			{
 				"patchline": {
 					"destination": [
+						"sat_add_1",
+						0
+					],
+					"source": [
+						"sat_scale_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"sat_mult_1",
 						1
 					],
 					"source": [
-						"sat_amt_1",
+						"sat_add_1",
 						0
 					]
 				}
@@ -5075,7 +5159,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"sat_amt_2",
+						"sat_scale_2",
 						0
 					],
 					"source": [
@@ -5087,11 +5171,23 @@
 			{
 				"patchline": {
 					"destination": [
+						"sat_add_2",
+						0
+					],
+					"source": [
+						"sat_scale_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"sat_mult_2",
 						1
 					],
 					"source": [
-						"sat_amt_2",
+						"sat_add_2",
 						0
 					]
 				}
@@ -5303,7 +5399,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"sat_amt_3",
+						"sat_scale_3",
 						0
 					],
 					"source": [
@@ -5315,11 +5411,23 @@
 			{
 				"patchline": {
 					"destination": [
+						"sat_add_3",
+						0
+					],
+					"source": [
+						"sat_scale_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"sat_mult_3",
 						1
 					],
 					"source": [
-						"sat_amt_3",
+						"sat_add_3",
 						0
 					]
 				}
@@ -5531,7 +5639,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"sat_amt_4",
+						"sat_scale_4",
 						0
 					],
 					"source": [
@@ -5543,11 +5651,23 @@
 			{
 				"patchline": {
 					"destination": [
+						"sat_add_4",
+						0
+					],
+					"source": [
+						"sat_scale_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"sat_mult_4",
 						1
 					],
 					"source": [
-						"sat_amt_4",
+						"sat_add_4",
 						0
 					]
 				}

@@ -361,10 +361,11 @@ for i, v in enumerate(voices):
     # Volume
     boxes.append(newobj(f"vol_mult_{idx}", "*~ 0.", 2, 1, ["signal"], ax, ay+220, 55))
 
-    # Chaos saturation: expr~ drives extra gain; at chaos=1 → 4× amplitude → hard clip distortion
-    # Only happens when chaos arc is high (t=2–7min, peak 4:45) and voice swell is near peak
-    boxes.append(newobj(f"sat_amt_{idx}", "expr~ 1. + $v1 * 3.", 1, 1, ["signal"], ax+65, ay+220, 95))
-    boxes.append(newobj(f"sat_mult_{idx}", "*~",                 2, 1, ["signal"], ax+65, ay+250, 40))
+    # Chaos saturation: at chaos=1 → 4× amplitude → hard clip distortion
+    # Uses only *~ and +~ (expr~ unavailable)
+    boxes.append(newobj(f"sat_scale_{idx}", "*~ 3.", 2, 1, ["signal"], ax+65, ay+220, 55))
+    boxes.append(newobj(f"sat_add_{idx}",   "+~ 1.", 2, 1, ["signal"], ax+65, ay+248, 55))
+    boxes.append(newobj(f"sat_mult_{idx}",  "*~",    2, 1, ["signal"], ax+65, ay+276, 40))
 
     # Dynamic envelope: swell_prod (0..1) × breath (0.85..1.15) — fully autonomous
     boxes.append(newobj(f"dyn_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+290, 40))
@@ -394,8 +395,9 @@ for i, v in enumerate(voices):
     lines.append(line(f"freqshift_{idx}", 0, f"vol_mult_{idx}", 0))
     lines.append(line(f"vol_line_{idx}",  0, f"vol_mult_{idx}", 1))
     lines.append(line(f"vol_mult_{idx}",  0, f"sat_mult_{idx}", 0))
-    lines.append(line("chaos_sig",         0, f"sat_amt_{idx}",  0))
-    lines.append(line(f"sat_amt_{idx}",   0, f"sat_mult_{idx}", 1))
+    lines.append(line("chaos_sig",         0, f"sat_scale_{idx}", 0))
+    lines.append(line(f"sat_scale_{idx}", 0, f"sat_add_{idx}",  0))
+    lines.append(line(f"sat_add_{idx}",   0, f"sat_mult_{idx}",  1))
     lines.append(line(f"sat_mult_{idx}",  0, f"dyn_mult_{idx}", 0))
     lines.append(line(f"dyn_env_{idx}",   0, f"dyn_mult_{idx}", 1))
 
