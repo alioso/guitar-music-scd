@@ -682,7 +682,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "pack 0. 2000"
+					"text": "pack 0. 300"
 				}
 			},
 			{
@@ -700,7 +700,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "line 12.0 2000"
+					"text": "line 12.0 300"
 				}
 			},
 			{
@@ -952,7 +952,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "pack 0. 2000"
+					"text": "pack 0. 300"
 				}
 			},
 			{
@@ -970,7 +970,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "line 23.0 2000"
+					"text": "line 23.0 300"
 				}
 			},
 			{
@@ -1222,7 +1222,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "pack 0. 2000"
+					"text": "pack 0. 300"
 				}
 			},
 			{
@@ -1240,7 +1240,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "line 37.0 2000"
+					"text": "line 37.0 300"
 				}
 			},
 			{
@@ -1492,7 +1492,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "pack 0. 2000"
+					"text": "pack 0. 300"
 				}
 			},
 			{
@@ -1510,7 +1510,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "line 48.0 2000"
+					"text": "line 48.0 300"
 				}
 			},
 			{
@@ -2186,13 +2186,13 @@
 					"patching_rect": [
 						1350,
 						205,
-						62,
+						69,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "*~ 0.5"
+					"text": "*~ 0.25"
 				}
 			},
 			{
@@ -2204,13 +2204,13 @@
 					"patching_rect": [
 						1430,
 						205,
-						62,
+						69,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "*~ 0.5"
+					"text": "*~ 0.25"
 				}
 			},
 			{

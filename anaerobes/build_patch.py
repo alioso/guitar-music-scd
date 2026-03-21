@@ -251,11 +251,11 @@ for i, v in enumerate(voices):
                         2, 1, [""],
                         vx, vy+140, 220))
     
-    # Pack delay value + ramp time (2000ms smooth) — slow ramp prevents tapout~ head
-    # snapping which causes the clipping thud artifact
-    boxes.append(newobj(f"delay_pack_{idx}", "pack 0. 2000", 2, 1, [""],
+    # Pack delay value + ramp time (300ms) — smooth enough to prevent tapout~ snap/thud,
+    # fast enough that the 7-minute evolution is clearly audible
+    boxes.append(newobj(f"delay_pack_{idx}", "pack 0. 300", 2, 1, [""],
                         vx, vy+170, 90))
-    boxes.append(newobj(f"delay_line_{idx}", f"line {p1d} 2000", 2, 1, [""],
+    boxes.append(newobj(f"delay_line_{idx}", f"line {p1d} 300", 2, 1, [""],
                         vx, vy+200, 95))
     
     # ---- STEP 4: Volume = onset * (base_vol - 0.25 * risset_env * evolution) ----
@@ -400,8 +400,10 @@ boxes.append(newobj("mix_L", "+~", 2, 1, ["signal"], COL_MIX, ROW_TOP+130))
 boxes.append(newobj("mix_R", "+~", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+130))
 
 # Master gain
-boxes.append(newobj("master_gain_L", "*~ 0.5", 2, 1, ["signal"], COL_MIX, ROW_TOP+165))
-boxes.append(newobj("master_gain_R", "*~ 0.5", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+165))
+# Master gain — 0.25 gives safe headroom: 4 voices (~0.75 avg) + dry (0.35) = ~3.35 sum,
+# x0.25 = 0.84 peak, well below clip~ at 1.0
+boxes.append(newobj("master_gain_L", "*~ 0.25", 2, 1, ["signal"], COL_MIX, ROW_TOP+165))
+boxes.append(newobj("master_gain_R", "*~ 0.25", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+165))
 
 # Safety limiter
 boxes.append(newobj("clip_L", "clip~ -1. 1.", 3, 1, ["signal"], COL_MIX, ROW_TOP+200))
