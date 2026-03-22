@@ -430,7 +430,7 @@ for v in voices:
     # Buffer + looper
     boxes.append(newobj(f"buf_{idx}", f"buffer~ v{idx}_buf {v['buf_ms']}", 1, 0, [], ax, ay+25, 140))
     boxes.append(newobj(f"rec_{idx}", f"record~ v{idx}_buf",               2, 1, [""], ax, ay+60, 110))
-    boxes.append(newobj(f"grv_{idx}", f"groove~ v{idx}_buf 1",             2, 2, ["signal","signal"], ax, ay+100, 115))
+    boxes.append(newobj(f"grv_{idx}", f"groove~ v{idx}_buf 0",             2, 2, ["signal","signal"], ax, ay+100, 115))
 
     # freqshift~ — inlet 0 = audio, inlet 1 = Hz offset (signal)
     boxes.append(newobj(f"fs_{idx}", "freqshift~", 2, 2, ["signal","signal"], ax, ay+145, 80))

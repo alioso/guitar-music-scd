@@ -2987,7 +2987,7 @@
 						"signal",
 						"signal"
 					],
-					"text": "groove~ v1_buf 1"
+					"text": "groove~ v1_buf 0"
 				}
 			},
 			{
@@ -3201,7 +3201,7 @@
 						"signal",
 						"signal"
 					],
-					"text": "groove~ v2_buf 1"
+					"text": "groove~ v2_buf 0"
 				}
 			},
 			{
@@ -3415,7 +3415,7 @@
 						"signal",
 						"signal"
 					],
-					"text": "groove~ v3_buf 1"
+					"text": "groove~ v3_buf 0"
 				}
 			},
 			{
@@ -3629,7 +3629,7 @@
 						"signal",
 						"signal"
 					],
-					"text": "groove~ v4_buf 1"
+					"text": "groove~ v4_buf 0"
 				}
 			},
 			{
