@@ -2856,7 +2856,25 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1340,
+						1330,
+						40,
+						20,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "1"
+				}
+			},
+			{
+				"box": {
+					"id": "grv_on_msg",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1360,
 						40,
 						20,
 						22
@@ -2874,8 +2892,8 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1340,
-						65,
+						1330,
+						70,
 						60,
 						22
 					],
@@ -2892,8 +2910,8 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1410,
-						65,
+						1400,
+						70,
 						60,
 						22
 					],
@@ -3085,38 +3103,39 @@
 			},
 			{
 				"box": {
-					"id": "pan_L_1",
+					"id": "pan_1",
 					"maxclass": "newobj",
-					"numinlets": 2,
-					"numoutlets": 1,
+					"numinlets": 4,
+					"numoutlets": 2,
 					"patching_rect": [
 						1250,
 						430,
-						60,
+						50,
 						22
 					],
 					"outlettype": [
+						"signal",
 						"signal"
 					],
-					"text": "*~ 0.34"
+					"text": "pan2"
 				}
 			},
 			{
 				"box": {
-					"id": "pan_R_1",
-					"maxclass": "newobj",
+					"id": "pan_msg_1",
+					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1315,
+						1310,
 						430,
-						60,
+						50,
 						22
 					],
 					"outlettype": [
-						"signal"
+						""
 					],
-					"text": "*~ 0.66"
+					"text": "0.66"
 				}
 			},
 			{
@@ -3301,38 +3320,39 @@
 			},
 			{
 				"box": {
-					"id": "pan_L_2",
+					"id": "pan_2",
 					"maxclass": "newobj",
-					"numinlets": 2,
-					"numoutlets": 1,
+					"numinlets": 4,
+					"numoutlets": 2,
 					"patching_rect": [
 						1445,
 						430,
-						60,
+						50,
 						22
 					],
 					"outlettype": [
+						"signal",
 						"signal"
 					],
-					"text": "*~ 0.64"
+					"text": "pan2"
 				}
 			},
 			{
 				"box": {
-					"id": "pan_R_2",
-					"maxclass": "newobj",
+					"id": "pan_msg_2",
+					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1510,
+						1505,
 						430,
-						60,
+						50,
 						22
 					],
 					"outlettype": [
-						"signal"
+						""
 					],
-					"text": "*~ 0.36"
+					"text": "0.36"
 				}
 			},
 			{
@@ -3517,38 +3537,39 @@
 			},
 			{
 				"box": {
-					"id": "pan_L_3",
+					"id": "pan_3",
 					"maxclass": "newobj",
-					"numinlets": 2,
-					"numoutlets": 1,
+					"numinlets": 4,
+					"numoutlets": 2,
 					"patching_rect": [
 						1640,
 						430,
-						60,
+						50,
 						22
 					],
 					"outlettype": [
+						"signal",
 						"signal"
 					],
-					"text": "*~ 0.11"
+					"text": "pan2"
 				}
 			},
 			{
 				"box": {
-					"id": "pan_R_3",
-					"maxclass": "newobj",
+					"id": "pan_msg_3",
+					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1705,
+						1700,
 						430,
-						60,
+						50,
 						22
 					],
 					"outlettype": [
-						"signal"
+						""
 					],
-					"text": "*~ 0.89"
+					"text": "0.89"
 				}
 			},
 			{
@@ -3733,38 +3754,39 @@
 			},
 			{
 				"box": {
-					"id": "pan_L_4",
+					"id": "pan_4",
 					"maxclass": "newobj",
-					"numinlets": 2,
-					"numoutlets": 1,
+					"numinlets": 4,
+					"numoutlets": 2,
 					"patching_rect": [
 						1835,
 						430,
-						60,
+						50,
 						22
 					],
 					"outlettype": [
+						"signal",
 						"signal"
 					],
-					"text": "*~ 0.87"
+					"text": "pan2"
 				}
 			},
 			{
 				"box": {
-					"id": "pan_R_4",
-					"maxclass": "newobj",
+					"id": "pan_msg_4",
+					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1900,
+						1895,
 						430,
-						60,
+						50,
 						22
 					],
 					"outlettype": [
-						"signal"
+						""
 					],
-					"text": "*~ 0.13"
+					"text": "0.13"
 				}
 			},
 			{
@@ -5668,6 +5690,18 @@
 			{
 				"patchline": {
 					"destination": [
+						"grv_on_msg",
+						0
+					],
+					"source": [
+						"rec_delay",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"rec_loop_msg",
 						0
 					],
@@ -5733,6 +5767,18 @@
 					],
 					"source": [
 						"grv_loop_msg",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"grv_1",
+						0
+					],
+					"source": [
+						"grv_on_msg",
 						0
 					]
 				}
@@ -5860,7 +5906,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"pan_L_1",
+						"pan_1",
 						0
 					],
 					"source": [
@@ -5872,11 +5918,23 @@
 			{
 				"patchline": {
 					"destination": [
-						"pan_R_1",
+						"pan_1",
+						1
+					],
+					"source": [
+						"pan_msg_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pan_msg_1",
 						0
 					],
 					"source": [
-						"dyn_mult_1",
+						"rec_delay",
 						0
 					]
 				}
@@ -5925,6 +5983,18 @@
 					],
 					"source": [
 						"grv_loop_msg",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"grv_2",
+						0
+					],
+					"source": [
+						"grv_on_msg",
 						0
 					]
 				}
@@ -6052,7 +6122,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"pan_L_2",
+						"pan_2",
 						0
 					],
 					"source": [
@@ -6064,11 +6134,23 @@
 			{
 				"patchline": {
 					"destination": [
-						"pan_R_2",
+						"pan_2",
+						1
+					],
+					"source": [
+						"pan_msg_2",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pan_msg_2",
 						0
 					],
 					"source": [
-						"dyn_mult_2",
+						"rec_delay",
 						0
 					]
 				}
@@ -6117,6 +6199,18 @@
 					],
 					"source": [
 						"grv_loop_msg",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"grv_3",
+						0
+					],
+					"source": [
+						"grv_on_msg",
 						0
 					]
 				}
@@ -6244,7 +6338,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"pan_L_3",
+						"pan_3",
 						0
 					],
 					"source": [
@@ -6256,11 +6350,23 @@
 			{
 				"patchline": {
 					"destination": [
-						"pan_R_3",
+						"pan_3",
+						1
+					],
+					"source": [
+						"pan_msg_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pan_msg_3",
 						0
 					],
 					"source": [
-						"dyn_mult_3",
+						"rec_delay",
 						0
 					]
 				}
@@ -6309,6 +6415,18 @@
 					],
 					"source": [
 						"grv_loop_msg",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"grv_4",
+						0
+					],
+					"source": [
+						"grv_on_msg",
 						0
 					]
 				}
@@ -6436,7 +6554,7 @@
 			{
 				"patchline": {
 					"destination": [
-						"pan_L_4",
+						"pan_4",
 						0
 					],
 					"source": [
@@ -6448,11 +6566,23 @@
 			{
 				"patchline": {
 					"destination": [
-						"pan_R_4",
+						"pan_4",
+						1
+					],
+					"source": [
+						"pan_msg_4",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pan_msg_4",
 						0
 					],
 					"source": [
-						"dyn_mult_4",
+						"rec_delay",
 						0
 					]
 				}
@@ -6464,7 +6594,7 @@
 						0
 					],
 					"source": [
-						"pan_L_1",
+						"pan_1",
 						0
 					]
 				}
@@ -6476,8 +6606,8 @@
 						0
 					],
 					"source": [
-						"pan_R_1",
-						0
+						"pan_1",
+						1
 					]
 				}
 			},
@@ -6488,7 +6618,7 @@
 						1
 					],
 					"source": [
-						"pan_L_2",
+						"pan_2",
 						0
 					]
 				}
@@ -6500,8 +6630,8 @@
 						1
 					],
 					"source": [
-						"pan_R_2",
-						0
+						"pan_2",
+						1
 					]
 				}
 			},
@@ -6512,7 +6642,7 @@
 						0
 					],
 					"source": [
-						"pan_L_3",
+						"pan_3",
 						0
 					]
 				}
@@ -6524,8 +6654,8 @@
 						0
 					],
 					"source": [
-						"pan_R_3",
-						0
+						"pan_3",
+						1
 					]
 				}
 			},
@@ -6536,7 +6666,7 @@
 						1
 					],
 					"source": [
-						"pan_L_4",
+						"pan_4",
 						0
 					]
 				}
@@ -6548,8 +6678,8 @@
 						1
 					],
 					"source": [
-						"pan_R_4",
-						0
+						"pan_4",
+						1
 					]
 				}
 			},
@@ -6758,7 +6888,14 @@
 				}
 			}
 		],
-		"dependency_cache": [],
+		"dependency_cache": [
+			{
+				"name": "pan2.maxpat",
+				"bootpath": "~/Library/Application Support/Cycling '74/Max 9/Examples/spatialization/panning/lib",
+				"type": "JSON",
+				"implicit": 1
+			}
+		],
 		"autosave": 0
 	}
 }

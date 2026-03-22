@@ -402,22 +402,24 @@ for v in voices:
 # Saturation: chaos_sig → *~ sat_boost → +~ 1.0 → sat_mult (gains 1.0..3.0 at chaos=1)
 #
 # Startup:
-#   loadbang  → "loop 1" to groove~ and record~ (set loop mode immediately)
-#   START btn → delay 200 → "1" to record~ gate (start recording)
-#   groove~ starts automatically once rate signal is present and loop mode set
+#   loadbang  → "loop 1" to groove~ and record~ (set loop mode at patch open)
+#   START btn → delay 200 → "1" to record~ gate (inlet 1) AND groove~ (inlet 0)
+#   groove~ plays once started; record~ writes continuously until stopped
 
 boxes.append(comment("lbl_audio", "=== VOICE AUDIO ===", COL_VOICE, ROW_TOP-20, 150))
 
-# Startup trigger for recording gate
-boxes.append(newobj("rec_delay", "delay 200", 2, 1, ["bang"], COL_VOICE,     ROW_TOP))
-boxes.append(msg("rec_on_msg",   "1",         COL_VOICE+90,  ROW_TOP,    20))
+# Shared startup trigger — fires 200ms after START
+boxes.append(newobj("rec_delay",    "delay 200", 2, 1, ["bang"], COL_VOICE,     ROW_TOP))
+boxes.append(msg("rec_on_msg",    "1",         COL_VOICE+80,  ROW_TOP,    20))   # record~ gate
+boxes.append(msg("grv_on_msg",    "1",         COL_VOICE+110, ROW_TOP,    20))   # groove~ start
 
-# Loop mode messages — triggered by loadbang (like chimera)
-boxes.append(msg("rec_loop_msg", "loop 1",    COL_VOICE+90,  ROW_TOP+25, 60))
-boxes.append(msg("grv_loop_msg", "loop 1",    COL_VOICE+160, ROW_TOP+25, 60))
+# Loop mode messages — sent from loadbang so loop is set before START is pressed
+boxes.append(msg("rec_loop_msg",    "loop 1",    COL_VOICE+80,  ROW_TOP+30, 60))
+boxes.append(msg("grv_loop_msg",    "loop 1",    COL_VOICE+150, ROW_TOP+30, 60))
 
 lines.append(line("start_btn",   0, "rec_delay",    0))
-lines.append(line("rec_delay",   0, "rec_on_msg",   0))
+lines.append(line("rec_delay",   0, "rec_on_msg",   0))   # 1 → record~ gate
+lines.append(line("rec_delay",   0, "grv_on_msg",   0))   # 1 → groove~ start
 lines.append(line("loadbang",    0, "rec_loop_msg", 0))   # loop mode at patch open
 lines.append(line("loadbang",    0, "grv_loop_msg", 0))   # loop mode at patch open
 
@@ -448,17 +450,16 @@ for v in voices:
     # Dynamic envelope (swell)
     boxes.append(newobj(f"dyn_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+290, 40))
 
-    # Panner — manual *~ L/R (no pan2 dependency)
-    pan_r = v['pan']            # 0..1
-    pan_l = round(1.0 - pan_r, 4)
-    boxes.append(newobj(f"pan_L_{idx}", f"*~ {pan_l}", 2, 1, ["signal"], ax,    ay+330, 60))
-    boxes.append(newobj(f"pan_R_{idx}", f"*~ {pan_r}", 2, 1, ["signal"], ax+65, ay+330, 60))
+    # Panner (pan2: confirmed working in v1)
+    boxes.append(newobj(f"pan_{idx}",     "pan2",            4, 2, ["signal","signal"], ax,    ay+330, 50))
+    boxes.append(msg(   f"pan_msg_{idx}", str(v['pan']),                                 ax+60, ay+330, 50))
 
     # ---- Audio wiring ----
     lines.append(line("adc",          0, f"rec_{idx}",  0))          # ADC → record~
     lines.append(line("rec_loop_msg", 0, f"rec_{idx}",  0))          # loop 1 → rec~ (msg inlet)
     lines.append(line("rec_on_msg",   0, f"rec_{idx}",  1))          # 1 → rec~ gate (start)
-    lines.append(line("grv_loop_msg", 0, f"grv_{idx}",  0))          # loop 1 → groove~
+    lines.append(line("grv_loop_msg", 0, f"grv_{idx}",  0))          # loop 1 → groove~ (loop mode)
+    lines.append(line("grv_on_msg",   0, f"grv_{idx}",  0))          # 1 → groove~ (start playback)
     lines.append(line(f"rate_sig_{idx}", 0, f"grv_{idx}",  1))       # rate signal
 
     lines.append(line(f"grv_{idx}",   0, f"fs_{idx}",   0))          # groove~ → freqshift~
@@ -473,8 +474,9 @@ for v in voices:
     lines.append(line(f"vclip_{idx}",       0, f"dyn_mult_{idx}",  0))  # swell envelope
     lines.append(line(f"dyn_env_{idx}",     0, f"dyn_mult_{idx}",  1))
 
-    lines.append(line(f"dyn_mult_{idx}",    0, f"pan_L_{idx}",    0))  # panner L
-    lines.append(line(f"dyn_mult_{idx}",    0, f"pan_R_{idx}",    0))  # panner R
+    lines.append(line(f"dyn_mult_{idx}",    0, f"pan_{idx}",       0))  # panner
+    lines.append(line(f"pan_msg_{idx}",     0, f"pan_{idx}",       1))  # pan position
+    lines.append(line("rec_delay",          0, f"pan_msg_{idx}",   0))  # trigger pan msg at start
 
 # ============================================================
 # SECTION 5: MIX & OUTPUT
@@ -511,15 +513,15 @@ boxes.append(newobj("dac", "dac~", 2, 0, [], COL_MIX+30, ROW_TOP+240, 40))
 boxes.append(newobj("meter_L", "meter~", 1, 1, ["float"], COL_MIX,    ROW_TOP+280, 60))
 boxes.append(newobj("meter_R", "meter~", 1, 1, ["float"], COL_MIX+80, ROW_TOP+280, 60))
 
-# Pan L/R → sum
-lines.append(line("pan_L_1", 0, "sum_L_12",  0))
-lines.append(line("pan_R_1", 0, "sum_R_12",  0))
-lines.append(line("pan_L_2", 0, "sum_L_12",  1))
-lines.append(line("pan_R_2", 0, "sum_R_12",  1))
-lines.append(line("pan_L_3", 0, "sum_L_34",  0))
-lines.append(line("pan_R_3", 0, "sum_R_34",  0))
-lines.append(line("pan_L_4", 0, "sum_L_34",  1))
-lines.append(line("pan_R_4", 0, "sum_R_34",  1))
+# pan_{N} → sum
+lines.append(line("pan_1", 0, "sum_L_12",  0))
+lines.append(line("pan_1", 1, "sum_R_12",  0))
+lines.append(line("pan_2", 0, "sum_L_12",  1))
+lines.append(line("pan_2", 1, "sum_R_12",  1))
+lines.append(line("pan_3", 0, "sum_L_34",  0))
+lines.append(line("pan_3", 1, "sum_R_34",  0))
+lines.append(line("pan_4", 0, "sum_L_34",  1))
+lines.append(line("pan_4", 1, "sum_R_34",  1))
 
 lines.append(line("sum_L_12", 0, "sum_L_all", 0))
 lines.append(line("sum_L_34", 0, "sum_L_all", 1))
@@ -571,7 +573,11 @@ patch = {
         "gridsize": [15.0, 15.0],
         "boxes": boxes,
         "lines": lines,
-        "dependency_cache": [],
+        "dependency_cache": [
+            {"name": "pan2.maxpat",
+             "bootpath": "~/Library/Application Support/Cycling '74/Max 9/Examples/spatialization/panning/lib",
+             "type": "JSON", "implicit": 1}
+        ],
         "autosave": 0
     }
 }
