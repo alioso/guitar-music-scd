@@ -46,7 +46,8 @@ boxes.append(newobj("lb_rec",  "delay 200",           2, 1, ["bang"],          3
 boxes.append(newobj("lb_grv",  "delay 3100",          2, 1, ["bang"],          300, 225))
 boxes.append(msg(   "rec_loop","loop 1",                                        300, 265, 55))
 boxes.append(msg(   "rec_on",  "1",                                             370, 265, 30))
-boxes.append(msg(   "grv_on",  "startloop",                                     300, 305, 70))
+boxes.append(msg(   "grv_loop","loop 1",                                        300, 305, 55))  # explicit, in case @loop 1 attr is ignored
+boxes.append(msg(   "grv_on",  "startloop",                                     370, 305, 70))
 boxes.append(comment("lbl", "Click ezdac~ then wait 3s -- 440Hz tone should loop automatically",
                      40, 360, 520))
 
@@ -59,7 +60,9 @@ lines.append(line("lb_rec",  0, "rec_loop", 0))
 lines.append(line("lb_rec",  0, "rec_on",   0))
 lines.append(line("rec_loop",0, "rec",      0))
 lines.append(line("rec_on",  0, "rec",      0))
+lines.append(line("lb_grv",  0, "grv_loop", 0))
 lines.append(line("lb_grv",  0, "grv_on",   0))
+lines.append(line("grv_loop",0, "grv",      0))
 lines.append(line("grv_on",  0, "grv",      0))
 lines.append(line("tone",    0, "rec",      0))
 lines.append(line("rate",    0, "grv",      0))

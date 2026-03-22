@@ -413,13 +413,14 @@ boxes.append(newobj("rec_delay",    "delay 200", 2, 1, ["bang"], COL_VOICE,     
 boxes.append(msg("rec_on_msg",    "1",         COL_VOICE+80,  ROW_TOP,    20))   # record~ start (int 1)
 boxes.append(msg("grv_on_msg",    "startloop", COL_VOICE+110, ROW_TOP,    65))   # groove~ startloop (documented)
 
-# Loop mode on record~ — sent from loadbang
+# Loop mode on record~ and groove~ — sent from loadbang
 boxes.append(msg("rec_loop_msg",    "loop 1",    COL_VOICE+80,  ROW_TOP+30, 60))
-# Note: groove~ loop mode is baked in via @loop 1 attribute — no runtime message needed
+boxes.append(msg("grv_loop_msg",    "loop 1",    COL_VOICE+150, ROW_TOP+30, 60))  # belt+suspenders: @loop 1 may be silently ignored
 
 lines.append(line("start_btn",   0, "rec_delay",    0))
 lines.append(line("rec_delay",   0, "grv_on_msg",   0))   # startloop → groove~ (on START)
 lines.append(line("loadbang",    0, "rec_loop_msg", 0))   # loop 1 → record~ at patch open
+lines.append(line("loadbang",    0, "grv_loop_msg", 0))   # loop 1 → groove~ at patch open (explicit, belt+suspenders)
 lines.append(line("loadbang",    0, "rec_on_msg",   0))   # record~ starts on patch open (fills buffer BEFORE START)
 
 for v in voices:
@@ -457,6 +458,7 @@ for v in voices:
     lines.append(line("adc",          0, f"rec_{idx}",  0))          # ADC → record~
     lines.append(line("rec_loop_msg", 0, f"rec_{idx}",  0))          # "loop 1" → rec~ inlet 0
     lines.append(line("rec_on_msg",   0, f"rec_{idx}",  0))          # "1" → rec~ inlet 0 (starts recording)
+    lines.append(line("grv_loop_msg", 0, f"grv_{idx}",  0))          # "loop 1" → groove~ (explicit loop enable)
     lines.append(line("grv_on_msg",   0, f"grv_{idx}",  0))          # startloop → groove~ (starts playback)
     lines.append(line(f"rate_sig_{idx}", 0, f"grv_{idx}",  0))       # rate signal → left inlet (inlet 0, per docs)
 

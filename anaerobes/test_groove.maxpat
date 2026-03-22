@@ -271,12 +271,30 @@
 			},
 			{
 				"box": {
-					"id": "grv_on",
+					"id": "grv_loop",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						300,
+						305,
+						55,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "loop 1"
+				}
+			},
+			{
+				"box": {
+					"id": "grv_on",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						370,
 						305,
 						70,
 						22
@@ -420,7 +438,31 @@
 						0
 					],
 					"destination": [
+						"grv_loop",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"lb_grv",
+						0
+					],
+					"destination": [
 						"grv_on",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"grv_loop",
+						0
+					],
+					"destination": [
+						"grv",
 						0
 					]
 				}

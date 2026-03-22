@@ -2905,6 +2905,24 @@
 			},
 			{
 				"box": {
+					"id": "grv_loop_msg",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1400,
+						70,
+						60,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "loop 1"
+				}
+			},
+			{
+				"box": {
 					"id": "lbl_a1",
 					"maxclass": "comment",
 					"numinlets": 1,
@@ -5684,6 +5702,18 @@
 			{
 				"patchline": {
 					"destination": [
+						"grv_loop_msg",
+						0
+					],
+					"source": [
+						"loadbang",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"rec_on_msg",
 						0
 					],
@@ -5725,6 +5755,18 @@
 					],
 					"source": [
 						"rec_on_msg",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"grv_1",
+						0
+					],
+					"source": [
+						"grv_loop_msg",
 						0
 					]
 				}
@@ -5940,6 +5982,18 @@
 						0
 					],
 					"source": [
+						"grv_loop_msg",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"grv_2",
+						0
+					],
+					"source": [
 						"grv_on_msg",
 						0
 					]
@@ -6144,6 +6198,18 @@
 						0
 					],
 					"source": [
+						"grv_loop_msg",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"grv_3",
+						0
+					],
+					"source": [
 						"grv_on_msg",
 						0
 					]
@@ -6337,6 +6403,18 @@
 					],
 					"source": [
 						"rec_on_msg",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"grv_4",
+						0
+					],
+					"source": [
+						"grv_loop_msg",
 						0
 					]
 				}
