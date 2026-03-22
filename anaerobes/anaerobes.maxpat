@@ -5678,18 +5678,6 @@
 			{
 				"patchline": {
 					"destination": [
-						"rec_on_msg",
-						0
-					],
-					"source": [
-						"rec_delay",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
 						"grv_on_msg",
 						0
 					],
@@ -5715,6 +5703,18 @@
 				"patchline": {
 					"destination": [
 						"grv_loop_msg",
+						0
+					],
+					"source": [
+						"loadbang",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"rec_on_msg",
 						0
 					],
 					"source": [

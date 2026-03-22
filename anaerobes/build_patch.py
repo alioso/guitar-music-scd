@@ -418,10 +418,10 @@ boxes.append(msg("rec_loop_msg",    "loop 1",    COL_VOICE+80,  ROW_TOP+30, 60))
 boxes.append(msg("grv_loop_msg",    "loop 1",    COL_VOICE+150, ROW_TOP+30, 60))
 
 lines.append(line("start_btn",   0, "rec_delay",    0))
-lines.append(line("rec_delay",   0, "rec_on_msg",   0))   # 1 → record~ gate
-lines.append(line("rec_delay",   0, "grv_on_msg",   0))   # 1 → groove~ start
+lines.append(line("rec_delay",   0, "grv_on_msg",   0))   # 1 → groove~ start (on START)
 lines.append(line("loadbang",    0, "rec_loop_msg", 0))   # loop mode at patch open
 lines.append(line("loadbang",    0, "grv_loop_msg", 0))   # loop mode at patch open
+lines.append(line("loadbang",    0, "rec_on_msg",   0))   # record~ starts on patch open (fills buffer BEFORE START)
 
 for v in voices:
     idx = v["idx"]
