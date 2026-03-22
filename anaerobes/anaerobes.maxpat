@@ -2851,31 +2851,13 @@
 			},
 			{
 				"box": {
-					"id": "rec_loop_msg",
-					"maxclass": "message",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						1340,
-						40,
-						60,
-						22
-					],
-					"outlettype": [
-						""
-					],
-					"text": "loop 1"
-				}
-			},
-			{
-				"box": {
 					"id": "rec_on_msg",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
 						1340,
-						65,
+						40,
 						20,
 						22
 					],
@@ -2883,6 +2865,24 @@
 						""
 					],
 					"text": "1"
+				}
+			},
+			{
+				"box": {
+					"id": "rec_loop_msg",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						1340,
+						65,
+						60,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "loop 1"
 				}
 			},
 			{
@@ -2892,8 +2892,8 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						1375,
-						40,
+						1410,
+						65,
 						60,
 						22
 					],
@@ -2901,24 +2901,6 @@
 						""
 					],
 					"text": "loop 1"
-				}
-			},
-			{
-				"box": {
-					"id": "grv_on_msg",
-					"maxclass": "message",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						1375,
-						65,
-						20,
-						22
-					],
-					"outlettype": [
-						""
-					],
-					"text": "1"
 				}
 			},
 			{
@@ -2942,14 +2924,16 @@
 					"id": "buf_1",
 					"maxclass": "newobj",
 					"numinlets": 1,
-					"numoutlets": 0,
+					"numoutlets": 1,
 					"patching_rect": [
 						1250,
 						125,
 						140,
 						22
 					],
-					"outlettype": [],
+					"outlettype": [
+						"bang"
+					],
 					"text": "buffer~ v1_buf 4700"
 				}
 			},
@@ -2966,7 +2950,7 @@
 						22
 					],
 					"outlettype": [
-						""
+						"bang"
 					],
 					"text": "record~ v1_buf"
 				}
@@ -3156,14 +3140,16 @@
 					"id": "buf_2",
 					"maxclass": "newobj",
 					"numinlets": 1,
-					"numoutlets": 0,
+					"numoutlets": 1,
 					"patching_rect": [
 						1445,
 						125,
 						140,
 						22
 					],
-					"outlettype": [],
+					"outlettype": [
+						"bang"
+					],
 					"text": "buffer~ v2_buf 7300"
 				}
 			},
@@ -3180,7 +3166,7 @@
 						22
 					],
 					"outlettype": [
-						""
+						"bang"
 					],
 					"text": "record~ v2_buf"
 				}
@@ -3370,14 +3356,16 @@
 					"id": "buf_3",
 					"maxclass": "newobj",
 					"numinlets": 1,
-					"numoutlets": 0,
+					"numoutlets": 1,
 					"patching_rect": [
 						1640,
 						125,
 						140,
 						22
 					],
-					"outlettype": [],
+					"outlettype": [
+						"bang"
+					],
 					"text": "buffer~ v3_buf 11100"
 				}
 			},
@@ -3394,7 +3382,7 @@
 						22
 					],
 					"outlettype": [
-						""
+						"bang"
 					],
 					"text": "record~ v3_buf"
 				}
@@ -3584,14 +3572,16 @@
 					"id": "buf_4",
 					"maxclass": "newobj",
 					"numinlets": 1,
-					"numoutlets": 0,
+					"numoutlets": 1,
 					"patching_rect": [
 						1835,
 						125,
 						140,
 						22
 					],
-					"outlettype": [],
+					"outlettype": [
+						"bang"
+					],
 					"text": "buffer~ v4_buf 13900"
 				}
 			},
@@ -3608,7 +3598,7 @@
 						22
 					],
 					"outlettype": [
-						""
+						"bang"
 					],
 					"text": "record~ v4_buf"
 				}
@@ -5666,18 +5656,6 @@
 			{
 				"patchline": {
 					"destination": [
-						"rec_loop_msg",
-						0
-					],
-					"source": [
-						"rec_delay",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
 						"rec_on_msg",
 						0
 					],
@@ -5690,11 +5668,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"grv_loop_msg",
+						"rec_loop_msg",
 						0
 					],
 					"source": [
-						"rec_delay",
+						"loadbang",
 						0
 					]
 				}
@@ -5702,11 +5680,11 @@
 			{
 				"patchline": {
 					"destination": [
-						"grv_on_msg",
+						"grv_loop_msg",
 						0
 					],
 					"source": [
-						"rec_delay",
+						"loadbang",
 						0
 					]
 				}
@@ -5757,19 +5735,6 @@
 						"grv_loop_msg",
 						0
 					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"grv_1",
-						0
-					],
-					"source": [
-						"grv_on_msg",
-						0
-					],
-					"order": 1
 				}
 			},
 			{
@@ -5968,19 +5933,6 @@
 				"patchline": {
 					"destination": [
 						"grv_2",
-						0
-					],
-					"source": [
-						"grv_on_msg",
-						0
-					],
-					"order": 1
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"grv_2",
 						1
 					],
 					"source": [
@@ -6173,19 +6125,6 @@
 				"patchline": {
 					"destination": [
 						"grv_3",
-						0
-					],
-					"source": [
-						"grv_on_msg",
-						0
-					],
-					"order": 1
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"grv_3",
 						1
 					],
 					"source": [
@@ -6372,19 +6311,6 @@
 						"grv_loop_msg",
 						0
 					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"grv_4",
-						0
-					],
-					"source": [
-						"grv_on_msg",
-						0
-					],
-					"order": 1
 				}
 			},
 			{

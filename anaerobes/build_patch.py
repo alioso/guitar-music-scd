@@ -394,31 +394,32 @@ for v in voices:
 #
 # buffer~ v{N}_buf {buf_ms}   — unique loop  (incommensurate lengths)
 # record~ v{N}_buf             — continuous write from ADC
-# groove~ v{N}_buf 1           — looping playback; rate from rate_sig (Section 3)
+# groove~ v{N}_buf 0           — looping playback; rate from rate_sig (Section 3)
 #
 # Signal chain:
-#   groove~ → freqshift~ [fs_sig] → *~ onset_sig → *~ sat_scale → clip~ → *~ dyn_env → pan2
+#   groove~ → freqshift~ [fs_sig] → *~ sat_scale → clip~ → *~ dyn_env → pan_L/pan_R
 #
 # Saturation: chaos_sig → *~ sat_boost → +~ 1.0 → sat_mult (gains 1.0..3.0 at chaos=1)
 #
-# Startup (200ms after START btn):
-#   record~  → loop 1, then 1 (start recording)
-#   groove~  → loop 1, then 1 (start playback); rate is driven by signal at inlet 1
+# Startup:
+#   loadbang  → "loop 1" to groove~ and record~ (set loop mode immediately)
+#   START btn → delay 200 → "1" to record~ gate (start recording)
+#   groove~ starts automatically once rate signal is present and loop mode set
 
 boxes.append(comment("lbl_audio", "=== VOICE AUDIO ===", COL_VOICE, ROW_TOP-20, 150))
 
-# Shared startup trigger
+# Startup trigger for recording gate
 boxes.append(newobj("rec_delay", "delay 200", 2, 1, ["bang"], COL_VOICE,     ROW_TOP))
-boxes.append(msg("rec_loop_msg", "loop 1",    COL_VOICE+90,  ROW_TOP,    60))
-boxes.append(msg("rec_on_msg",   "1",         COL_VOICE+90,  ROW_TOP+25, 20))
-boxes.append(msg("grv_loop_msg", "loop 1",    COL_VOICE+125, ROW_TOP,    60))
-boxes.append(msg("grv_on_msg",   "1",         COL_VOICE+125, ROW_TOP+25, 20))
+boxes.append(msg("rec_on_msg",   "1",         COL_VOICE+90,  ROW_TOP,    20))
+
+# Loop mode messages — triggered by loadbang (like chimera)
+boxes.append(msg("rec_loop_msg", "loop 1",    COL_VOICE+90,  ROW_TOP+25, 60))
+boxes.append(msg("grv_loop_msg", "loop 1",    COL_VOICE+160, ROW_TOP+25, 60))
 
 lines.append(line("start_btn",   0, "rec_delay",    0))
-lines.append(line("rec_delay",   0, "rec_loop_msg", 0))
 lines.append(line("rec_delay",   0, "rec_on_msg",   0))
-lines.append(line("rec_delay",   0, "grv_loop_msg", 0))
-lines.append(line("rec_delay",   0, "grv_on_msg",   0))
+lines.append(line("loadbang",    0, "rec_loop_msg", 0))   # loop mode at patch open
+lines.append(line("loadbang",    0, "grv_loop_msg", 0))   # loop mode at patch open
 
 for v in voices:
     idx = v["idx"]
@@ -428,8 +429,8 @@ for v in voices:
     boxes.append(comment(f"lbl_a{idx}", v["name"], ax+80, ay, 40))
 
     # Buffer + looper
-    boxes.append(newobj(f"buf_{idx}", f"buffer~ v{idx}_buf {v['buf_ms']}", 1, 0, [], ax, ay+25, 140))
-    boxes.append(newobj(f"rec_{idx}", f"record~ v{idx}_buf",               2, 1, [""], ax, ay+60, 110))
+    boxes.append(newobj(f"buf_{idx}", f"buffer~ v{idx}_buf {v['buf_ms']}", 1, 1, ["bang"], ax, ay+25, 140))
+    boxes.append(newobj(f"rec_{idx}", f"record~ v{idx}_buf",               2, 1, ["bang"], ax, ay+60, 110))
     boxes.append(newobj(f"grv_{idx}", f"groove~ v{idx}_buf 0",             2, 2, ["signal","signal"], ax, ay+100, 115))
 
     # freqshift~ — inlet 0 = audio, inlet 1 = Hz offset (signal)
@@ -455,10 +456,9 @@ for v in voices:
 
     # ---- Audio wiring ----
     lines.append(line("adc",          0, f"rec_{idx}",  0))          # ADC → record~
-    lines.append(line("rec_loop_msg", 0, f"rec_{idx}",  0))          # loop 1 → rec~ (msg to inlet 0)
+    lines.append(line("rec_loop_msg", 0, f"rec_{idx}",  0))          # loop 1 → rec~ (msg inlet)
     lines.append(line("rec_on_msg",   0, f"rec_{idx}",  1))          # 1 → rec~ gate (start)
     lines.append(line("grv_loop_msg", 0, f"grv_{idx}",  0))          # loop 1 → groove~
-    lines.append(line("grv_on_msg",   0, f"grv_{idx}",  0, 1))       # 1 → groove~ (start)
     lines.append(line(f"rate_sig_{idx}", 0, f"grv_{idx}",  1))       # rate signal
 
     lines.append(line(f"grv_{idx}",   0, f"fs_{idx}",   0))          # groove~ → freqshift~
