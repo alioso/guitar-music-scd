@@ -48,55 +48,55 @@ boxes = []
 lines = []
 
 # --- AUDIO OBJECTS ---
-boxes.append(newobj("adc",    "adc~ 1",         1, 1, ["signal"],          40, 40))
-boxes.append(newobj("buf",    "buffer~ test_buf 5000", 1, 1, ["bang"],     40, 80,  140))
-boxes.append(newobj("rec",    "record~ test_buf",2, 1, ["bang"],            40, 120, 120))
-boxes.append(newobj("grv",    "groove~ test_buf 0", 2, 2, ["signal","signal"], 40, 175, 130))
-boxes.append(newobj("ezdac",  "ezdac~",          2, 0, [],                 280, 40,  50))
-boxes.append(newobj("dac",    "dac~",            2, 0, [],                 40,  240, 40))
+boxes.append(newobj("adc",    "adc~ 1",              1, 1, ["signal"],             40,  40))
+boxes.append(newobj("buf",    "buffer~ test_buf 5000", 1, 1, ["bang"],             40,  80,  140))
+boxes.append(newobj("rec",    "record~ test_buf",     2, 1, ["bang"],              40,  120, 120))
+boxes.append(newobj("grv",    "groove~ test_buf 0",   2, 2, ["signal","signal"],   40,  170, 130))
+boxes.append(newobj("rate",   "sig~ 1.",              1, 1, ["signal"],            200, 170, 55))   # explicit rate=1
+boxes.append(newobj("ezdac",  "ezdac~",               2, 0, [],                    320, 40,  50))
+boxes.append(newobj("dac",    "dac~",                 2, 0, [],                    40,  240, 40))
 
-# --- CONTROLS ---
+# --- STARTUP: loadbang → delay 100 → startwindow → dac~ ---
+boxes.append(newobj("lb",          "loadbang",   1, 1, ["bang"],   320,  80))
+boxes.append(newobj("lb_delay",    "delay 100",  2, 1, ["bang"],   320, 110))
+boxes.append(msg(   "msg_sw",      "startwindow",                  320, 145))
+boxes.append(msg(   "rec_loop",    "loop 1",                       320, 185, 60))
+boxes.append(msg(   "grv_loop",    "loop 1",                       320, 215, 60))
+
+# --- START BUTTON ---
 boxes.append(btn(    "start_btn",                40,  300))
 boxes.append(comment("lbl_start", "START",       70,  304))
-boxes.append(newobj("start_delay", "delay 200",  2, 1, ["bang"],           40,  335))
-
-# "loop 1" messages — sent at loadbang
-boxes.append(newobj("lb",     "loadbang",        1, 1, ["bang"],           220, 80))
-boxes.append(msg(   "rec_loop", "loop 1",        220, 120, 60))
-boxes.append(msg(   "grv_loop", "loop 1",        220, 160, 60))
-
-# "1" messages — sent 200ms after START
-boxes.append(msg(   "rec_start", "1",            130, 370, 20))  # record~ gate
-boxes.append(msg(   "grv_start", "1",            165, 370, 20))  # groove~ start
+boxes.append(newobj("start_delay", "delay 200",  2, 1, ["bang"],   40,  335))
+boxes.append(msg(   "rec_start",   "1",          130, 370, 20))   # record~ gate
+boxes.append(msg(   "grv_start",   "1",          165, 370, 20))   # groove~ start
 
 # Status labels
 boxes.append(comment("lbl_info",
-    "Open patch → loadbang sets loop mode. Press START → waits 200ms → starts recording + playback.",
-    40, 430, 600))
-boxes.append(comment("lbl_info2",
-    "You will hear the looping guitar after ~5 seconds (buffer fills). Pitch/timing may drift slightly — that is normal.",
-    40, 455, 600))
+    "1) Click ezdac~   2) Press START   3) Play guitar   4) Wait 5s — loop should begin",
+    40, 430, 560))
 
 # --- WIRING ---
-# loadbang → loop mode
-lines.append(line("lb",         0, "rec_loop",    0))
-lines.append(line("lb",         0, "grv_loop",    0))
-lines.append(line("rec_loop",   0, "rec",         0))   # "loop 1" → record~ inlet 0
-lines.append(line("grv_loop",   0, "grv",         0))   # "loop 1" → groove~ inlet 0
+# loadbang chain
+lines.append(line("lb",          0, "lb_delay",   0))
+lines.append(line("lb_delay",    0, "msg_sw",      0))
+lines.append(line("msg_sw",      0, "dac",         0))   # startwindow → dac~
+lines.append(line("lb",          0, "rec_loop",    0))
+lines.append(line("lb",          0, "grv_loop",    0))
+lines.append(line("rec_loop",    0, "rec",         0))   # "loop 1" → record~ msg inlet
+lines.append(line("grv_loop",    0, "grv",         0))   # "loop 1" → groove~ msg inlet
 
 # START button chain
-lines.append(line("start_btn",  0, "start_delay", 0))
-lines.append(line("start_delay",0, "rec_start",   0))
-lines.append(line("start_delay",0, "grv_start",   0))
-lines.append(line("rec_start",  0, "rec",         1))   # "1" → record~ gate (inlet 1)
-lines.append(line("grv_start",  0, "grv",         0))   # "1" → groove~ start (inlet 0)
+lines.append(line("start_btn",   0, "start_delay", 0))
+lines.append(line("start_delay", 0, "rec_start",   0))
+lines.append(line("start_delay", 0, "grv_start",   0))
+lines.append(line("rec_start",   0, "rec",         1))   # "1" → record~ gate (inlet 1)
+lines.append(line("grv_start",   0, "grv",         0))   # "1" → groove~ start (inlet 0)
 
-# ADC → record~
-lines.append(line("adc",        0, "rec",         0))
-
-# groove~ → dac~
-lines.append(line("grv",        0, "dac",         0))   # L
-lines.append(line("grv",        0, "dac",         1))   # R (mono out to both channels)
+# ADC → record~, rate → groove~, groove~ → dac~
+lines.append(line("adc",         0, "rec",         0))
+lines.append(line("rate",        0, "grv",         1))   # explicit rate signal = 1.0
+lines.append(line("grv",         0, "dac",         0))   # L
+lines.append(line("grv",         0, "dac",         1))   # R
 
 # ============================================================
 patch = {

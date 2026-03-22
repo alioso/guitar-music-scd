@@ -82,7 +82,7 @@
 					"numoutlets": 2,
 					"patching_rect": [
 						40,
-						175,
+						170,
 						130,
 						22
 					],
@@ -95,12 +95,30 @@
 			},
 			{
 				"box": {
+					"id": "rate",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						200,
+						170,
+						55,
+						22
+					],
+					"outlettype": [
+						"signal"
+					],
+					"text": "sig~ 1."
+				}
+			},
+			{
+				"box": {
 					"id": "ezdac",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 0,
 					"patching_rect": [
-						280,
+						320,
 						40,
 						50,
 						22
@@ -123,6 +141,96 @@
 					],
 					"outlettype": [],
 					"text": "dac~"
+				}
+			},
+			{
+				"box": {
+					"id": "lb",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"patching_rect": [
+						320,
+						80,
+						76,
+						22
+					],
+					"outlettype": [
+						"bang"
+					],
+					"text": "loadbang"
+				}
+			},
+			{
+				"box": {
+					"id": "lb_delay",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						320,
+						110,
+						83,
+						22
+					],
+					"outlettype": [
+						"bang"
+					],
+					"text": "delay 100"
+				}
+			},
+			{
+				"box": {
+					"id": "msg_sw",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						320,
+						145,
+						91,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "startwindow"
+				}
+			},
+			{
+				"box": {
+					"id": "rec_loop",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						320,
+						185,
+						60,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "loop 1"
+				}
+			},
+			{
+				"box": {
+					"id": "grv_loop",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						320,
+						215,
+						60,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "loop 1"
 				}
 			},
 			{
@@ -179,60 +287,6 @@
 			},
 			{
 				"box": {
-					"id": "lb",
-					"maxclass": "newobj",
-					"numinlets": 1,
-					"numoutlets": 1,
-					"patching_rect": [
-						220,
-						80,
-						76,
-						22
-					],
-					"outlettype": [
-						"bang"
-					],
-					"text": "loadbang"
-				}
-			},
-			{
-				"box": {
-					"id": "rec_loop",
-					"maxclass": "message",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						220,
-						120,
-						60,
-						22
-					],
-					"outlettype": [
-						""
-					],
-					"text": "loop 1"
-				}
-			},
-			{
-				"box": {
-					"id": "grv_loop",
-					"maxclass": "message",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						220,
-						160,
-						60,
-						22
-					],
-					"outlettype": [
-						""
-					],
-					"text": "loop 1"
-				}
-			},
-			{
-				"box": {
 					"id": "rec_start",
 					"maxclass": "message",
 					"numinlets": 2,
@@ -276,31 +330,51 @@
 					"patching_rect": [
 						40,
 						430,
-						600,
+						560,
 						22
 					],
 					"outlettype": [],
-					"text": "Open patch \u2192 loadbang sets loop mode. Press START \u2192 waits 200ms \u2192 starts recording + playback."
-				}
-			},
-			{
-				"box": {
-					"id": "lbl_info2",
-					"maxclass": "comment",
-					"numinlets": 1,
-					"numoutlets": 0,
-					"patching_rect": [
-						40,
-						455,
-						600,
-						22
-					],
-					"outlettype": [],
-					"text": "You will hear the looping guitar after ~5 seconds (buffer fills). Pitch/timing may drift slightly \u2014 that is normal."
+					"text": "1) Click ezdac~   2) Press START   3) Play guitar   4) Wait 5s \u2014 loop should begin"
 				}
 			}
 		],
 		"lines": [
+			{
+				"patchline": {
+					"source": [
+						"lb",
+						0
+					],
+					"destination": [
+						"lb_delay",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"lb_delay",
+						0
+					],
+					"destination": [
+						"msg_sw",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"msg_sw",
+						0
+					],
+					"destination": [
+						"dac",
+						0
+					]
+				}
+			},
 			{
 				"patchline": {
 					"source": [
@@ -418,6 +492,18 @@
 					"destination": [
 						"rec",
 						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"rate",
+						0
+					],
+					"destination": [
+						"grv",
+						1
 					]
 				}
 			},
