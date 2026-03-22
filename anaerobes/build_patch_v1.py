@@ -1,0 +1,638 @@
+#!/usr/bin/env python3
+"""
+Build the Risset Guitar Quartet patch for Max/MSP 9.
+8-minute live piece: 4 partner guitars + dry input.
+
+Phase 1 (0:00-1:00): Quintet echo - short delays, sounds like 5 real guitarists
+Phase 2 (1:00-8:00): Risset evolution - delays diverge, volumes evolve, psychoacoustic effect
+
+IMPORTANT: Max's expr does NOT support clip(). We use separate clip objects.
+"""
+
+import json
+import os
+
+# ============================================================
+# HELPERS
+# ============================================================
+
+def box(id, maxclass, text=None, numinlets=1, numoutlets=1,
+        outlettype=None, x=0, y=0, w=None, h=22, extra=None):
+    b = {
+        "id": id,
+        "maxclass": maxclass,
+        "numinlets": numinlets,
+        "numoutlets": numoutlets,
+        "patching_rect": [x, y, w if w else (len(text)*7+20 if text else 60), h],
+    }
+    if outlettype is not None:
+        b["outlettype"] = outlettype
+    if text is not None:
+        b["text"] = text
+    if extra:
+        b.update(extra)
+    return {"box": b}
+
+def newobj(id, text, numinlets=1, numoutlets=1, outlettype=None, x=0, y=0, w=None, extra=None):
+    ot = outlettype if outlettype else (["signal"] if numoutlets == 1 else ["signal"]*numoutlets)
+    return box(id, "newobj", text, numinlets, numoutlets, ot, x, y, w, extra=extra)
+
+def flonum(id, x=0, y=0, w=50):
+    return box(id, "flonum", numinlets=1, numoutlets=2,
+               outlettype=["", "bang"], x=x, y=y, w=w,
+               extra={"format": 6, "parameter_enable": 0})
+
+def msg(id, text, x=0, y=0, w=None):
+    return box(id, "message", text, numinlets=2, numoutlets=1,
+               outlettype=[""], x=x, y=y, w=w)
+
+def button(id, x=0, y=0):
+    return box(id, "button", numinlets=1, numoutlets=1,
+               outlettype=["bang"], x=x, y=y, w=24, h=24,
+               extra={"parameter_enable": 0})
+
+def comment(id, text, x=0, y=0, w=None):
+    return box(id, "comment", text, numinlets=1, numoutlets=0,
+               outlettype=[], x=x, y=y, w=w or (len(text)*7+10))
+
+def toggle_box(id, x=0, y=0):
+    return box(id, "toggle", numinlets=1, numoutlets=1,
+               outlettype=["int"], x=x, y=y, w=24, h=24,
+               extra={"parameter_enable": 0})
+
+def line(src, src_outlet, dst, dst_inlet, order=None):
+    d = {"destination": [dst, dst_inlet], "source": [src, src_outlet]}
+    if order is not None:
+        d["order"] = order
+    return {"patchline": d}
+
+
+# ============================================================
+# BUILD PATCH
+# ============================================================
+
+boxes = []
+lines = []
+
+COL_INPUT     = 50
+COL_TIMER     = 250
+COL_PHASE     = 500
+COL_VOICE     = 750
+COL_MIX       = 1350
+
+ROW_TOP       = 40
+
+# ============================================================
+# SECTION 1: INPUT + EZDAC
+# ============================================================
+
+boxes.append(comment("lbl_input", "=== INPUT ===", COL_INPUT, ROW_TOP-20, 120))
+
+# ezdac~ toggle for audio on/off
+boxes.append(newobj("ezdac", "ezdac~", 2, 0, [],
+                     COL_INPUT+150, ROW_TOP, 50))
+boxes.append(comment("lbl_ezdac", "<-- click to enable audio", COL_INPUT+210, ROW_TOP+4, 170))
+
+boxes.append(newobj("adc", "adc~ 1", 1, 1, ["signal"],
+                     COL_INPUT, ROW_TOP+40))
+
+# Dry signal path — reduced to 0.35 so partners are present in the mix
+boxes.append(newobj("dry_gain", "*~ 0.35", 2, 1, ["signal"],
+                     COL_INPUT, ROW_TOP+80))
+boxes.append(comment("lbl_dry", "dry guitar (center)", COL_INPUT+80, ROW_TOP+80, 140))
+
+# Delay buffer - 30 seconds
+boxes.append(newobj("tapin", "tapin~ 30000", 1, 1, ["tapconnect"],
+                     COL_INPUT, ROW_TOP+120))
+
+# Input connections
+lines.append(line("adc", 0, "dry_gain", 0, 0))
+lines.append(line("adc", 0, "tapin", 0, 1))
+
+# ---- REVERSE DELAY INFRASTRUCTURE ----
+# 3-second looping buffer: record~ writes from ADC, groove~ plays at -1.0 (backward).
+# By t=6min the buffer has been refreshing for 6+ minutes; groove~ is a live reverse window.
+# Startup triggered from start_btn (via 200ms delay to ensure metro/dac are already running).
+boxes.append(newobj("rev_buf_def", "buffer~ rev_buf 3000",  1, 0, [],               COL_INPUT+270, ROW_TOP+40))
+boxes.append(newobj("rev_rec",     "record~ rev_buf",       2, 1, [""],             COL_INPUT+270, ROW_TOP+75))
+boxes.append(newobj("rev_groove",  "groove~ rev_buf",       2, 2, ["signal", "signal"], COL_INPUT+270, ROW_TOP+115))
+boxes.append(newobj("rev_init_delay", "delay 200",          2, 1, ["bang"],         COL_INPUT+380, ROW_TOP+40))
+boxes.append(msg("rev_rec_loop",  "loop 1",   COL_INPUT+380, ROW_TOP+75))
+boxes.append(msg("rev_rec_on",    "1",        COL_INPUT+450, ROW_TOP+75))
+boxes.append(msg("rev_grv_loop",  "loop 1",   COL_INPUT+380, ROW_TOP+110))
+boxes.append(msg("rev_grv_rate",  "rate -1.", COL_INPUT+450, ROW_TOP+110))
+boxes.append(msg("rev_grv_on",    "1",        COL_INPUT+520, ROW_TOP+110))
+
+lines.append(line("adc",           0, "rev_rec",       0, 2))  # ADC feeds record buffer
+lines.append(line("start_btn",     0, "rev_init_delay", 0))  # triggered on performer START
+lines.append(line("rev_init_delay", 0, "rev_rec_loop",  0))   # loop 1 → rec (before start)
+lines.append(line("rev_init_delay", 0, "rev_rec_on",    0))   # 1 → rec start
+lines.append(line("rev_init_delay", 0, "rev_grv_loop",  0))   # loop 1 → groove
+lines.append(line("rev_init_delay", 0, "rev_grv_rate",  0))   # rate -1. → groove
+lines.append(line("rev_init_delay", 0, "rev_grv_on",    0))   # 1 → groove start
+lines.append(line("rev_rec_loop",  0, "rev_rec",     0))
+lines.append(line("rev_rec_on",    0, "rev_rec",     0))
+lines.append(line("rev_grv_loop",  0, "rev_groove",  0))
+lines.append(line("rev_grv_rate",  0, "rev_groove",  0))
+lines.append(line("rev_grv_on",    0, "rev_groove",  0))
+# ============================================================
+
+boxes.append(comment("lbl_timer", "=== TIMER (8min = 480s) ===", COL_TIMER, ROW_TOP-20, 200))
+
+boxes.append(button("start_btn", COL_TIMER, ROW_TOP))
+boxes.append(comment("lbl_start", "START", COL_TIMER+30, ROW_TOP+4, 50))
+
+boxes.append(button("reset_btn", COL_TIMER+80, ROW_TOP))
+boxes.append(comment("lbl_reset", "RESET/STOP", COL_TIMER+110, ROW_TOP+4, 80))
+
+boxes.append(msg("msg_start", "1", COL_TIMER, ROW_TOP+35))
+boxes.append(msg("msg_stop", "0", COL_TIMER+80, ROW_TOP+35))
+
+boxes.append(newobj("metro", "metro 50", 2, 1, ["bang"],
+                     COL_TIMER, ROW_TOP+65))
+
+boxes.append(newobj("counter", "counter", 5, 4,
+                     ["int", "", "", "int"],
+                     COL_TIMER, ROW_TOP+95))
+
+# counter ticks -> ms -> seconds
+boxes.append(newobj("ticks_to_ms", "* 50", 2, 1, ["int"],
+                     COL_TIMER, ROW_TOP+130))
+boxes.append(newobj("ms_to_sec", "/ 1000.", 2, 1, ["float"],
+                     COL_TIMER, ROW_TOP+160))
+
+# Time display
+boxes.append(flonum("time_display", COL_TIMER, ROW_TOP+195, 70))
+boxes.append(comment("lbl_seconds", "seconds", COL_TIMER+75, ROW_TOP+195, 60))
+
+# Minutes display
+boxes.append(newobj("sec_to_min", "/ 60.", 2, 1, ["float"],
+                     COL_TIMER+140, ROW_TOP+195))
+boxes.append(flonum("min_display", COL_TIMER+140, ROW_TOP+225, 60))
+boxes.append(comment("lbl_minutes", "minutes", COL_TIMER+205, ROW_TOP+225, 60))
+
+# ---- EVOLUTION AMOUNT ----
+# (time - 10) / 170  ->  clip 0 1  ->  evolution
+# Starts at t=10s, completes at t=180s (3 min). Full Risset effect holds for remaining 5 min.
+boxes.append(newobj("evo_sub", "- 10.", 2, 1, ["float"],
+                     COL_TIMER, ROW_TOP+260))
+boxes.append(newobj("evo_div", "/ 170.", 2, 1, ["float"],
+                     COL_TIMER, ROW_TOP+290))
+boxes.append(newobj("evo_clip", "clip 0. 1.", 3, 1, ["float"],
+                     COL_TIMER, ROW_TOP+320))
+boxes.append(comment("lbl_evo", "evolution (0..1)", COL_TIMER+80, ROW_TOP+320, 110))
+
+# ---- ONSET RAMP ----
+# time / 3  ->  clip 0 1  ->  onset (gentle fade-in first 3 seconds)
+boxes.append(newobj("onset_div", "/ 3.", 2, 1, ["float"],
+                     COL_TIMER+160, ROW_TOP+260))
+boxes.append(newobj("onset_clip", "clip 0. 1.", 3, 1, ["float"],
+                     COL_TIMER+160, ROW_TOP+290))
+boxes.append(comment("lbl_onset", "onset (0..1)", COL_TIMER+240, ROW_TOP+290, 90))
+
+# ---- CHAOS ARC ----
+# Peaks at t~4:45 (285s). Active t=2min (120s) → t=7min (420s).
+# max()/min() are valid in Max expr; clip() is NOT.
+boxes.append(newobj("chaos_expr",
+                    "expr max(0., min(1., ($f1-120.)/165.)) * (1.-max(0., min(1., ($f1-285.)/135.)))",
+                    1, 1, [""], COL_TIMER+160, ROW_TOP+330, 430))
+boxes.append(newobj("chaos_sig", "sig~ 0.", 1, 1, ["signal"],
+                    COL_TIMER+160, ROW_TOP+365, 55))
+boxes.append(comment("lbl_chaos", "chaos arc (peaks ~4:45)", COL_TIMER+224, ROW_TOP+330, 160))
+
+# Timer connections
+lines.append(line("start_btn", 0, "msg_start", 0))
+lines.append(line("reset_btn", 0, "msg_stop", 0))
+lines.append(line("msg_start", 0, "metro", 0))
+lines.append(line("msg_stop", 0, "metro", 0))
+lines.append(line("msg_stop", 0, "counter", 3))  # reset counter
+lines.append(line("metro", 0, "counter", 0))
+lines.append(line("counter", 0, "ticks_to_ms", 0))
+lines.append(line("ticks_to_ms", 0, "ms_to_sec", 0))
+
+# ms_to_sec fan-out
+lines.append(line("ms_to_sec", 0, "time_display", 0, 0))
+lines.append(line("ms_to_sec", 0, "sec_to_min", 0, 1))
+lines.append(line("ms_to_sec", 0, "evo_sub", 0, 2))
+lines.append(line("ms_to_sec", 0, "onset_div",  0, 3))
+lines.append(line("ms_to_sec", 0, "chaos_expr", 0, 4))
+lines.append(line("ms_to_sec", 0, "rev_sub",    0, 5))
+lines.append(line("sec_to_min", 0, "min_display", 0))
+
+# Evolution chain
+lines.append(line("evo_sub", 0, "evo_div", 0))
+lines.append(line("evo_div", 0, "evo_clip", 0))
+
+# Onset chain
+lines.append(line("onset_div", 0, "onset_clip", 0))
+
+# Chaos signal
+lines.append(line("chaos_expr", 0, "chaos_sig", 0))
+
+# ---- REVERSE ARC (last 2 minutes: t=360s rise, full by t=390s) ----
+# clip() not available in expr — use two cascaded max/min via separate clip object paths
+boxes.append(newobj("rev_sub",  "- 360.",     2, 1, ["float"],  COL_TIMER+320, ROW_TOP+330))
+boxes.append(newobj("rev_div",  "/ 30.",      2, 1, ["float"],  COL_TIMER+320, ROW_TOP+360))
+boxes.append(newobj("rev_clip", "clip 0. 1.", 3, 1, ["float"],  COL_TIMER+320, ROW_TOP+390))
+boxes.append(newobj("rev_sig",  "sig~ 0.",    1, 1, ["signal"], COL_TIMER+320, ROW_TOP+420))
+boxes.append(comment("lbl_rev", "reverse arc (last 2min)", COL_TIMER+384, ROW_TOP+330, 160))
+
+lines.append(line("rev_sub",  0, "rev_div",  0))
+lines.append(line("rev_div",  0, "rev_clip", 0))
+lines.append(line("rev_clip", 0, "rev_sig",  0))
+
+
+# ============================================================
+# SECTION 3: PER-VOICE CONTROL PARAMETERS
+# ============================================================
+#
+# Two-tap crossfade approach — avoids dynamic tapout~ delay changes which
+# are unreliable in Max 9 when the inlet also carries a tap-wire from tapin~.
+#
+# Per voice:
+#   - tapout_a (short P1 delay) and tapout_b (long P2 delay) are FIXED
+#   - evo_clip crossfades between them at signal rate: out = a*(1-evo) + b*evo
+#   - freqshift evolves from fs_base to fs_max as evo_clip rises (Risset effect)
+#   - volume = onset * base_vol (simple fade-in at start)
+#   - pan is static per voice
+#
+
+voices = [
+    # p1_delay: Phase 1 chorus (short, <50ms)
+    # p2_delay: Phase 2 target (long, clearly audible separate echo)
+    # fs_base: immediately audible beating (1-2.5 Hz)
+    # fs_max: strong Risset detuning at peak (4-7 Hz)
+    # vol: 3.0/2.8 — product swell avg ≈0.25, so peak per voice ≈3.0*1.0*0.30 = 0.9
+    # swell_rate (swell_a): NOW fast (8-12s) — clearly audible rise/fall gestures
+    # swell_b_rate (swell_gate): very slow (60-90s) — occasional long silences between swell bursts
+    # product: random occurrence of swells (only loud when BOTH independently near peak)
+    # chaos_mult: REDUCED to 0.6-0.9 — subtle extra detuning only, no big pitch jumps
+    # wobble_rate: 0.4-0.7 Hz per voice — rapid microtonal flutter that scales up with chaos
+    # rev_gate_rate: sparse gate oscillator for reverse (30-50s period, active only last 2min)
+    # rev_depth: blend level of reverse signal (outer voices more dramatic)
+    {"name": "G1", "idx": 1, "p1_delay": 12.,  "p2_delay": 1500., "vol": 3.0, "swell_rate": 0.10,  "swell_b_rate": 0.013, "breath_rate": 0.11, "chaos_mult": 0.6, "wobble_rate": 0.37, "wobble_depth": 0.5, "rev_gate_rate": 0.019, "rev_depth": 0.35, "fs_base": 1.0,  "fs_max": 4.0,  "pan": 32.},
+    {"name": "G2", "idx": 2, "p1_delay": 23.,  "p2_delay": 2800., "vol": 3.0, "swell_rate": 0.13,  "swell_b_rate": 0.017, "breath_rate": 0.17, "chaos_mult": 0.7, "wobble_rate": 0.53, "wobble_depth": 0.6, "rev_gate_rate": 0.023, "rev_depth": 0.40, "fs_base": -1.5, "fs_max": -5.0, "pan": -28.},
+    {"name": "G3", "idx": 3, "p1_delay": 37.,  "p2_delay": 4200., "vol": 2.8, "swell_rate": 0.083, "swell_b_rate": 0.011, "breath_rate": 0.07, "chaos_mult": 0.8, "wobble_rate": 0.67, "wobble_depth": 0.4, "rev_gate_rate": 0.031, "rev_depth": 0.55, "fs_base": 2.0,  "fs_max": 6.0,  "pan": 78.},
+    {"name": "G4", "idx": 4, "p1_delay": 48.,  "p2_delay": 5500., "vol": 2.8, "swell_rate": 0.11,  "swell_b_rate": 0.015, "breath_rate": 0.13, "chaos_mult": 0.9, "wobble_rate": 0.43, "wobble_depth": 0.7, "rev_gate_rate": 0.027, "rev_depth": 0.50, "fs_base": -2.5, "fs_max": -7.0, "pan": -75.},
+]
+
+boxes.append(comment("lbl_voices", "=== VOICE PARAMETERS ===", COL_PHASE, ROW_TOP-20, 200))
+
+for i, v in enumerate(voices):
+    vx = COL_PHASE
+    vy = ROW_TOP + i * 200
+    idx = v["idx"]
+    fs_b = v["fs_base"]
+    fs_delta = v["fs_max"] - fs_b
+    base_vol = v["vol"]
+    pan_b = v["pan"]
+    chaos_mult_v = v["chaos_mult"]
+
+    boxes.append(comment(f"lbl_v{idx}", f"--- {v['name']}: pan={pan_b}, vol={base_vol} ---",
+                         vx, vy, 250))
+
+    # Freqshift: base + evo*delta grows detuning; chaos multiplies the delta further at peak
+    boxes.append(newobj(f"fs_expr_{idx}", f"expr {fs_b} + $f1 * {fs_delta} * (1. + $f2 * {chaos_mult_v})",
+                        2, 1, [""], vx, vy+25, 310))
+    boxes.append(newobj(f"fs_pack_{idx}", "pack 0. 100", 2, 1, [""], vx, vy+55, 85))
+    boxes.append(newobj(f"fs_line_{idx}", "line~ 0.", 2, 2, ["signal", "bang"], vx, vy+85, 70))
+
+    # Volume: onset * base_vol  (fade-in only, voices stay present throughout)
+    boxes.append(newobj(f"vol_expr_{idx}", f"expr $f1 * {base_vol}",
+                        1, 1, [""], vx+220, vy+25, 160))
+    boxes.append(newobj(f"vol_pack_{idx}", "pack 0. 50", 2, 1, [""], vx+220, vy+55, 80))
+    boxes.append(newobj(f"vol_line_{idx}", "line~ 0.", 2, 2, ["signal", "bang"], vx+220, vy+85, 70))
+
+    # Static pan — sent every tick via evo_clip trigger (pan2 inlet 1 is control-rate)
+    boxes.append(newobj(f"pan_val_{idx}", f"expr {pan_b}", 1, 1, [""], vx+400, vy+25, 80))
+
+    # Crossfade helpers — signal-rate versions of evo and (1-evo) for the audio section
+    boxes.append(newobj(f"evo_sig_{idx}", "sig~ 0.", 1, 1, ["signal"], vx+220, vy+120, 55))
+    boxes.append(newobj(f"inv_evo_{idx}", "expr 1. - $f1", 1, 1, [""], vx+290, vy+120, 100))
+    boxes.append(newobj(f"inv_sig_{idx}", "sig~ 0.", 1, 1, ["signal"], vx+290, vy+150, 55))
+
+    # ==== WIRING ====
+    lines.append(line("evo_clip",   0, f"fs_expr_{idx}", 0))  # hot inlet — triggers output
+    lines.append(line("chaos_expr", 0, f"fs_expr_{idx}", 1))  # cold inlet — chaos scale
+    lines.append(line(f"fs_expr_{idx}", 0, f"fs_pack_{idx}", 0))
+    lines.append(line(f"fs_pack_{idx}", 0, f"fs_line_{idx}", 0))
+
+    lines.append(line("onset_clip", 0, f"vol_expr_{idx}", 0))
+    lines.append(line(f"vol_expr_{idx}", 0, f"vol_pack_{idx}", 0))
+    lines.append(line(f"vol_pack_{idx}", 0, f"vol_line_{idx}", 0))
+
+    lines.append(line("evo_clip", 0, f"pan_val_{idx}", 0))
+
+    lines.append(line("evo_clip", 0, f"evo_sig_{idx}", 0))
+    lines.append(line("evo_clip", 0, f"inv_evo_{idx}", 0))
+    lines.append(line(f"inv_evo_{idx}", 0, f"inv_sig_{idx}", 0))
+
+    # Per-voice swell (product of two oscillators) + breath: fully decoupled from input dynamics.
+    # swell_a × swell_b = voice audible only when BOTH independently near their peaks →
+    # irregular quiet gaps and swells, never locked to input rhythm.
+    swell_a_r = v["swell_rate"]
+    swell_b_r = v["swell_b_rate"]
+    breath_r  = v["breath_rate"]
+
+    boxes.append(newobj(f"swell_a_{idx}",       f"cycle~ {swell_a_r}", 2, 1, ["signal"], vx+490, vy+20, 85))
+    boxes.append(newobj(f"swell_a_scale_{idx}", "*~ 0.5",              2, 1, ["signal"], vx+490, vy+50, 60))
+    boxes.append(newobj(f"swell_a_bias_{idx}",  "+~ 0.5",              2, 1, ["signal"], vx+490, vy+80, 55))
+
+    boxes.append(newobj(f"swell_b_{idx}",       f"cycle~ {swell_b_r}", 2, 1, ["signal"], vx+590, vy+20, 85))
+    boxes.append(newobj(f"swell_b_scale_{idx}", "*~ 0.5",              2, 1, ["signal"], vx+590, vy+50, 60))
+    boxes.append(newobj(f"swell_b_bias_{idx}",  "+~ 0.5",              2, 1, ["signal"], vx+590, vy+80, 55))
+
+    boxes.append(newobj(f"swell_prod_{idx}", "*~", 2, 1, ["signal"], vx+540, vy+110, 40))
+
+    boxes.append(newobj(f"breath_{idx}",       f"cycle~ {breath_r}", 2, 1, ["signal"], vx+690, vy+20, 85))
+    boxes.append(newobj(f"breath_scale_{idx}", "*~ 0.15",             2, 1, ["signal"], vx+690, vy+50, 65))
+    boxes.append(newobj(f"breath_bias_{idx}",  "+~ 1.0",              2, 1, ["signal"], vx+690, vy+80, 55))
+
+    boxes.append(newobj(f"dyn_env_{idx}", "*~", 2, 1, ["signal"], vx+640, vy+110, 40))
+
+    lines.append(line(f"swell_a_{idx}",       0, f"swell_a_scale_{idx}", 0))
+    lines.append(line(f"swell_a_scale_{idx}", 0, f"swell_a_bias_{idx}",  0))
+    lines.append(line(f"swell_b_{idx}",       0, f"swell_b_scale_{idx}", 0))
+    lines.append(line(f"swell_b_scale_{idx}", 0, f"swell_b_bias_{idx}",  0))
+    lines.append(line(f"swell_a_bias_{idx}",  0, f"swell_prod_{idx}", 0))
+    lines.append(line(f"swell_b_bias_{idx}",  0, f"swell_prod_{idx}", 1))
+    lines.append(line(f"breath_{idx}",        0, f"breath_scale_{idx}", 0))
+    lines.append(line(f"breath_scale_{idx}",  0, f"breath_bias_{idx}",  0))
+    lines.append(line(f"swell_prod_{idx}",    0, f"dyn_env_{idx}", 0))
+    lines.append(line(f"breath_bias_{idx}",   0, f"dyn_env_{idx}", 1))
+
+    # Per-voice microtonal wobble LFO — activates with chaos_sig
+    # At chaos=0: no wobble; at chaos=1: rapid ±{wobble_depth}Hz flutter added to freqshift
+    wobble_r = v["wobble_rate"]
+    wobble_d = v["wobble_depth"]
+    boxes.append(newobj(f"wobble_osc_{idx}", f"cycle~ {wobble_r}",  2, 1, ["signal"], vx+800, vy+20, 90))
+    boxes.append(newobj(f"wobble_cm_{idx}",  "*~",                   2, 1, ["signal"], vx+800, vy+55, 40))
+    boxes.append(newobj(f"wobble_d_{idx}",   f"*~ {wobble_d}",       2, 1, ["signal"], vx+800, vy+85, 60))
+    boxes.append(newobj(f"wobble_sum_{idx}", "+~",                   2, 1, ["signal"], vx+800, vy+115, 40))
+
+    lines.append(line(f"wobble_osc_{idx}", 0, f"wobble_cm_{idx}", 0))
+    lines.append(line("chaos_sig",          0, f"wobble_cm_{idx}", 1))
+    lines.append(line(f"wobble_cm_{idx}",   0, f"wobble_d_{idx}",  0))
+    lines.append(line(f"wobble_d_{idx}",    0, f"wobble_sum_{idx}", 1))
+
+    # Reverse gate: sparse random occurrences, gated by the last-2-min arc (rev_sig = 0 before t=6min)
+    rev_gate_r = v["rev_gate_rate"]
+    boxes.append(newobj(f"rev_gate_osc_{idx}",   f"cycle~ {rev_gate_r}", 2, 1, ["signal"], vx+920, vy+20, 90))
+    boxes.append(newobj(f"rev_gate_scale_{idx}",  "*~ 0.5",               2, 1, ["signal"], vx+920, vy+52, 60))
+    boxes.append(newobj(f"rev_gate_bias_{idx}",   "+~ 0.5",               2, 1, ["signal"], vx+920, vy+82, 55))
+    boxes.append(newobj(f"rev_gate_sig_{idx}",    "*~",                   2, 1, ["signal"], vx+920, vy+112, 40))
+
+    lines.append(line(f"rev_gate_osc_{idx}",   0, f"rev_gate_scale_{idx}", 0))
+    lines.append(line(f"rev_gate_scale_{idx}",  0, f"rev_gate_bias_{idx}",  0))
+    lines.append(line(f"rev_gate_bias_{idx}",   0, f"rev_gate_sig_{idx}",   0))
+    lines.append(line("rev_sig",                 0, f"rev_gate_sig_{idx}",   1))
+
+
+# ============================================================
+# SECTION 4: VOICE AUDIO PROCESSING
+# ============================================================
+#
+# Per voice: two fixed tapout~ (P1 short + P2 long), crossfaded at signal rate.
+# At evo=0: only P1 short delay (chorus feel)
+# At evo=1: only P2 long delay (clear separate echo, up to 5.5s)
+# freqshift~ evolves in parallel (Risset detuning)
+#
+
+boxes.append(comment("lbl_audio", "=== AUDIO PROCESSING ===", COL_VOICE, ROW_TOP-20, 200))
+
+for i, v in enumerate(voices):
+    ax = COL_VOICE + i * 180
+    ay = ROW_TOP
+    idx = v["idx"]
+    p1d = v["p1_delay"]
+    p2d = v["p2_delay"]
+
+    boxes.append(comment(f"lbl_a{idx}", f"{v['name']}", ax+20, ay, 40))
+
+    # Two fixed tapouts — P1 (short) and P2 (long)
+    boxes.append(newobj(f"tapout_a_{idx}", f"tapout~ {p1d}", 1, 1, ["signal"],
+                        ax, ay+30, 100))
+    boxes.append(newobj(f"tapout_b_{idx}", f"tapout~ {p2d}", 1, 1, ["signal"],
+                        ax, ay+65, 100))
+
+    # Signal-rate crossfade: out = tapout_a * (1-evo) + tapout_b * evo
+    boxes.append(newobj(f"xf_a_{idx}", "*~", 2, 1, ["signal"], ax,    ay+105, 40))
+    boxes.append(newobj(f"xf_b_{idx}", "*~", 2, 1, ["signal"], ax+50, ay+105, 40))
+    boxes.append(newobj(f"xf_sum_{idx}", "+~", 2, 1, ["signal"], ax+20, ay+140, 40))
+
+    # freqshift~ — Risset additive detuning
+    boxes.append(newobj(f"freqshift_{idx}", "freqshift~", 2, 2, ["signal", "signal"],
+                        ax, ay+180, 80))
+
+    # Volume
+    boxes.append(newobj(f"vol_mult_{idx}", "*~ 0.", 2, 1, ["signal"], ax, ay+220, 55))
+
+    # Chaos saturation: gentle overdrive — *~ 1.5 → at chaos=1: ×2.5 → soft clip~ distortion
+    # Uses only *~ and +~ (expr~ unavailable)
+    boxes.append(newobj(f"sat_scale_{idx}", "*~ 1.5", 2, 1, ["signal"], ax+65, ay+220, 55))
+    boxes.append(newobj(f"sat_add_{idx}",   "+~ 1.", 2, 1, ["signal"], ax+65, ay+248, 55))
+    boxes.append(newobj(f"sat_mult_{idx}",  "*~",    2, 1, ["signal"], ax+65, ay+276, 40))
+
+    # Dynamic envelope: swell_prod (0..1) × breath (0.85..1.15) — fully autonomous
+    boxes.append(newobj(f"dyn_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+290, 40))
+
+    # ---- Audio wiring ----
+    lines.append(line("tapin", 0, f"tapout_a_{idx}", 0))
+    lines.append(line("tapin", 0, f"tapout_b_{idx}", 0))
+
+    # crossfade: P1 * (1-evo)
+    lines.append(line(f"tapout_a_{idx}", 0, f"xf_a_{idx}", 0))
+    lines.append(line(f"inv_sig_{idx}",  0, f"xf_a_{idx}", 1))
+    # crossfade: P2 * evo
+    lines.append(line(f"tapout_b_{idx}", 0, f"xf_b_{idx}", 0))
+    lines.append(line(f"evo_sig_{idx}",  0, f"xf_b_{idx}", 1))
+    # sum
+    lines.append(line(f"xf_a_{idx}", 0, f"xf_sum_{idx}", 0))
+    lines.append(line(f"xf_b_{idx}", 0, f"xf_sum_{idx}", 1))
+
+    # freqshift: base signal through wobble_sum (+wobble at chaos peak)
+    lines.append(line(f"xf_sum_{idx}",     0, f"freqshift_{idx}", 0))
+    lines.append(line(f"fs_line_{idx}",    0, f"wobble_sum_{idx}", 0))
+    lines.append(line(f"wobble_sum_{idx}", 0, f"freqshift_{idx}", 1))
+
+    # vol → sat → dyn → pan
+    lines.append(line(f"freqshift_{idx}", 0, f"vol_mult_{idx}", 0))
+    lines.append(line(f"vol_line_{idx}",  0, f"vol_mult_{idx}", 1))
+    lines.append(line(f"vol_mult_{idx}",  0, f"sat_mult_{idx}", 0))
+    lines.append(line("chaos_sig",         0, f"sat_scale_{idx}", 0))
+    lines.append(line(f"sat_scale_{idx}", 0, f"sat_add_{idx}",  0))
+    lines.append(line(f"sat_add_{idx}",   0, f"sat_mult_{idx}",  1))
+    lines.append(line(f"sat_mult_{idx}",  0, f"dyn_mult_{idx}", 0))
+    lines.append(line(f"dyn_env_{idx}",   0, f"dyn_mult_{idx}", 1))
+
+    # Reverse blend: backward audio gated by per-voice sparse arc, added to forward signal
+    rev_d = v["rev_depth"]
+    boxes.append(newobj(f"rev_gated_{idx}",   "*~",          2, 1, ["signal"], ax+120, ay+330, 40))
+    boxes.append(newobj(f"rev_scaled_{idx}",  f"*~ {rev_d}", 2, 1, ["signal"], ax+120, ay+362, 55))
+    boxes.append(newobj(f"rev_mix_{idx}",     "+~",          2, 1, ["signal"], ax,     ay+400, 40))
+
+    # Panner
+    boxes.append(newobj(f"pan_{idx}", "pan2", 4, 2, ["signal", "signal"], ax, ay+445, 50))
+
+    lines.append(line("rev_groove",            0, f"rev_gated_{idx}",  0))
+    lines.append(line(f"rev_gate_sig_{idx}",   0, f"rev_gated_{idx}",  1))
+    lines.append(line(f"rev_gated_{idx}",      0, f"rev_scaled_{idx}", 0))
+    lines.append(line(f"rev_scaled_{idx}",     0, f"rev_mix_{idx}",    1))
+    lines.append(line(f"dyn_mult_{idx}",       0, f"rev_mix_{idx}",    0))
+
+    # pan
+    lines.append(line(f"rev_mix_{idx}", 0, f"pan_{idx}", 0))
+    lines.append(line(f"pan_val_{idx}",  0, f"pan_{idx}", 1))
+
+
+# ============================================================
+# SECTION 5: MIXING & OUTPUT
+# ============================================================
+
+boxes.append(comment("lbl_mix", "=== MIX & OUTPUT ===", COL_MIX, ROW_TOP-20, 160))
+
+# Sum L channels
+boxes.append(newobj("sum_L_12", "+~", 2, 1, ["signal"], COL_MIX, ROW_TOP+30))
+boxes.append(newobj("sum_L_34", "+~", 2, 1, ["signal"], COL_MIX, ROW_TOP+60))
+boxes.append(newobj("sum_L_all", "+~", 2, 1, ["signal"], COL_MIX, ROW_TOP+90))
+
+# Sum R channels
+boxes.append(newobj("sum_R_12", "+~", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+30))
+boxes.append(newobj("sum_R_34", "+~", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+60))
+boxes.append(newobj("sum_R_all", "+~", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+90))
+
+# Add dry signal (center = equal L+R)
+boxes.append(newobj("mix_L", "+~", 2, 1, ["signal"], COL_MIX, ROW_TOP+130))
+boxes.append(newobj("mix_R", "+~", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+130))
+
+# Master gain — 0.30: slightly higher than before to push clip~ more gently for soft saturation
+boxes.append(newobj("master_gain_L", "*~ 0.30", 2, 1, ["signal"], COL_MIX, ROW_TOP+165))
+boxes.append(newobj("master_gain_R", "*~ 0.30", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+165))
+
+# Safety limiter
+boxes.append(newobj("clip_L", "clip~ -1. 1.", 3, 1, ["signal"], COL_MIX, ROW_TOP+200))
+boxes.append(newobj("clip_R", "clip~ -1. 1.", 3, 1, ["signal"], COL_MIX+80, ROW_TOP+200))
+
+# DAC
+boxes.append(newobj("dac", "dac~", 2, 0, [], COL_MIX+30, ROW_TOP+240, 40))
+
+# Meters
+boxes.append(newobj("meter_L", "meter~", 1, 1, ["float"], COL_MIX, ROW_TOP+280, 60))
+boxes.append(newobj("meter_R", "meter~", 1, 1, ["float"], COL_MIX+80, ROW_TOP+280, 60))
+
+# Pan -> sum wiring
+lines.append(line("pan_1", 0, "sum_L_12", 0))
+lines.append(line("pan_1", 1, "sum_R_12", 0))
+lines.append(line("pan_2", 0, "sum_L_12", 1))
+lines.append(line("pan_2", 1, "sum_R_12", 1))
+lines.append(line("pan_3", 0, "sum_L_34", 0))
+lines.append(line("pan_3", 1, "sum_R_34", 0))
+lines.append(line("pan_4", 0, "sum_L_34", 1))
+lines.append(line("pan_4", 1, "sum_R_34", 1))
+
+lines.append(line("sum_L_12", 0, "sum_L_all", 0))
+lines.append(line("sum_L_34", 0, "sum_L_all", 1))
+lines.append(line("sum_R_12", 0, "sum_R_all", 0))
+lines.append(line("sum_R_34", 0, "sum_R_all", 1))
+
+# Wet + dry
+lines.append(line("sum_L_all", 0, "mix_L", 0))
+lines.append(line("sum_R_all", 0, "mix_R", 0))
+lines.append(line("dry_gain", 0, "mix_L", 1, 0))
+lines.append(line("dry_gain", 0, "mix_R", 1, 1))
+
+# Master gain -> limiter -> dac
+lines.append(line("mix_L", 0, "master_gain_L", 0))
+lines.append(line("mix_R", 0, "master_gain_R", 0))
+lines.append(line("master_gain_L", 0, "clip_L", 0))
+lines.append(line("master_gain_R", 0, "clip_R", 0))
+lines.append(line("clip_L", 0, "dac", 0))
+lines.append(line("clip_R", 0, "dac", 1))
+lines.append(line("clip_L", 0, "meter_L", 0, 0))
+lines.append(line("clip_R", 0, "meter_R", 0, 0))
+
+
+# ============================================================
+# SECTION 6: LOADBANG INIT
+# ============================================================
+
+boxes.append(comment("lbl_init", "=== INIT ===", COL_INPUT, 520, 100))
+boxes.append(newobj("loadbang", "loadbang", 1, 1, ["bang"],
+                     COL_INPUT, 550))
+
+# loadbang -> short delay -> startwindow to enable DSP
+boxes.append(newobj("lb_delay", "delay 500", 2, 1, ["bang"],
+                     COL_INPUT, 580))
+boxes.append(msg("msg_startwindow", "startwindow", COL_INPUT, 610, 85))
+
+# startwindow message goes to dac~ to start audio processing
+lines.append(line("loadbang", 0, "lb_delay", 0))
+lines.append(line("lb_delay", 0, "msg_startwindow", 0))
+lines.append(line("msg_startwindow", 0, "dac", 0))
+
+
+# ============================================================
+# VALIDATE
+# ============================================================
+
+box_ids = set()
+for b in boxes:
+    box_ids.add(b["box"]["id"])
+
+valid_lines = []
+dropped = 0
+for l in lines:
+    src = l["patchline"]["source"][0]
+    dst = l["patchline"]["destination"][0]
+    if src in box_ids and dst in box_ids:
+        valid_lines.append(l)
+    else:
+        missing = src if src not in box_ids else dst
+        print(f"WARNING: Dropping line {src} -> {dst} (missing: {missing})")
+        dropped += 1
+
+lines = valid_lines
+
+# ============================================================
+# ASSEMBLE
+# ============================================================
+
+patch = {
+    "patcher": {
+        "fileversion": 1,
+        "appversion": {
+            "major": 9,
+            "minor": 0,
+            "revision": 8,
+            "architecture": "x64",
+            "modernui": 1
+        },
+        "classnamespace": "dsp.toplevel",
+        "rect": [50.0, 80.0, 1600.0, 950.0],
+        "gridsize": [15.0, 15.0],
+        "boxes": boxes,
+        "lines": lines,
+        "dependency_cache": [
+            {
+                "name": "pan2.maxpat",
+                "bootpath": "~/Library/Application Support/Cycling '74/Max 9/Examples/spatialization/panning/lib",
+                "patcherrelativepath": "../../../Library/Application Support/Cycling '74/Max 9/Examples/spatialization/panning/lib",
+                "type": "JSON",
+                "implicit": 1
+            }
+        ],
+        "autosave": 0
+    }
+}
+
+output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "anaerobes.maxpat")
+with open(output_path, "w") as f:
+    json.dump(patch, f, indent="\t")
+
+print(f"Patch written to {output_path}")
+print(f"  Boxes: {len(boxes)}")
+print(f"  Lines: {len(lines)}")
+if dropped:
+    print(f"  DROPPED: {dropped} invalid connections")
+else:
+    print(f"  All connections valid")
