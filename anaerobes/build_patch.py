@@ -239,11 +239,9 @@ boxes.append(newobj("sec_to_min", "/ 60.", 2, 1, ["float"], COL_TIMER+140, ROW_T
 boxes.append(flonum("min_display", COL_TIMER+140,   ROW_TOP+225, 60))
 boxes.append(comment("lbl_min", "minutes",           COL_TIMER+205, ROW_TOP+227, 60))
 
-# Onset: clip(t/3, 0, 1)
-boxes.append(newobj("onset_div",  "/ 3.",       2, 1, ["float"], COL_TIMER, ROW_TOP+260))
-boxes.append(newobj("onset_clip", "clip 0. 1.", 3, 1, ["float"], COL_TIMER, ROW_TOP+290))
-boxes.append(newobj("onset_sig",  "sig~ 0.",    1, 1, ["signal"],COL_TIMER, ROW_TOP+320, 55))
-boxes.append(comment("lbl_onset", "onset 0..1", COL_TIMER+60, ROW_TOP+322, 90))
+# Onset boxes removed — voices are no longer gated by a timed ramp.
+# Audio starts as soon as groove~ fills its buffer (~5-14s after START).
+# (onset_div/clip/sig removed to prevent vol_mult zeroing all voices)
 
 # Chaos arc: bell, peak at 285s (4:45), active 120s..420s
 # max()/min() valid in Max expr; clip() is NOT
@@ -272,13 +270,10 @@ lines.append(line("ticks_ms",   0, "ms_to_sec",  0))
 
 lines.append(line("ms_to_sec",  0, "time_display", 0, 0))
 lines.append(line("ms_to_sec",  0, "sec_to_min",   0, 1))
-lines.append(line("ms_to_sec",  0, "onset_div",    0, 2))
-lines.append(line("ms_to_sec",  0, "chaos_expr",   0, 3))
-lines.append(line("ms_to_sec",  0, "rev_sub",      0, 4))
+lines.append(line("ms_to_sec",  0, "chaos_expr",   0, 2))
+lines.append(line("ms_to_sec",  0, "rev_sub",      0, 3))
 
 lines.append(line("sec_to_min", 0, "min_display",  0))
-lines.append(line("onset_div",  0, "onset_clip",   0))
-lines.append(line("onset_clip", 0, "onset_sig",    0))
 lines.append(line("chaos_expr", 0, "chaos_sig",    0))
 lines.append(line("rev_sub",    0, "rev_div",      0))
 lines.append(line("rev_div",    0, "rev_clip",     0))
@@ -371,11 +366,11 @@ for v in voices:
     # ---- SWELL ENVELOPE ----
     boxes.append(comment(f"lbl_sw{idx}", "swell", vx, vy+355, 40))
     boxes.append(newobj(f"swell_a_{idx}",       f"cycle~ {v['swell_a_rate']}", 2, 1, ["signal"], vx,    vy+375, 90))
-    boxes.append(newobj(f"swell_a_scale_{idx}", "*~ 0.5",                      2, 1, ["signal"], vx,    vy+405, 55))
-    boxes.append(newobj(f"swell_a_bias_{idx}",  "+~ 0.5",                      2, 1, ["signal"], vx,    vy+435, 55))
+    boxes.append(newobj(f"swell_a_scale_{idx}", "*~ 0.4",                      2, 1, ["signal"], vx,    vy+405, 55))
+    boxes.append(newobj(f"swell_a_bias_{idx}",  "+~ 0.6",                      2, 1, ["signal"], vx,    vy+435, 55))
     boxes.append(newobj(f"swell_b_{idx}",       f"cycle~ {v['swell_b_rate']}", 2, 1, ["signal"], vx+85, vy+375, 90))
-    boxes.append(newobj(f"swell_b_scale_{idx}", "*~ 0.5",                      2, 1, ["signal"], vx+85, vy+405, 55))
-    boxes.append(newobj(f"swell_b_bias_{idx}",  "+~ 0.5",                      2, 1, ["signal"], vx+85, vy+435, 55))
+    boxes.append(newobj(f"swell_b_scale_{idx}", "*~ 0.4",                      2, 1, ["signal"], vx+85, vy+405, 55))
+    boxes.append(newobj(f"swell_b_bias_{idx}",  "+~ 0.6",                      2, 1, ["signal"], vx+85, vy+435, 55))
     boxes.append(newobj(f"swell_prod_{idx}",    "*~",                          2, 1, ["signal"], vx+40, vy+465, 40))
     boxes.append(newobj(f"breath_{idx}",        f"cycle~ {v['breath_rate']}",  2, 1, ["signal"], vx,    vy+495, 90))
     boxes.append(newobj(f"breath_scale_{idx}",  "*~ 0.15",                     2, 1, ["signal"], vx,    vy+525, 65))
@@ -440,9 +435,7 @@ for v in voices:
     # freqshift~ — inlet 0 = audio, inlet 1 = Hz offset (signal)
     boxes.append(newobj(f"fs_{idx}", "freqshift~", 2, 2, ["signal","signal"], ax, ay+145, 80))
 
-    # Onset hold: onset_sig (signal) is the 3s ramp, feeds *~ directly
-    boxes.append(newobj(f"vol_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+185, 40))
-
+    # No onset gating — freqshift output goes directly to saturation chain.
     # Saturation: chaos_sig → *~ sat_boost → +~ 1.0 → multiplies voice signal
     boxes.append(newobj(f"sat_boost_{idx}", f"*~ {v['sat_boost']}", 2, 1, ["signal"], ax+55, ay+185, 80))
     boxes.append(newobj(f"sat_add_{idx}",    "+~ 1.0",              2, 1, ["signal"], ax+55, ay+215, 55))
@@ -472,12 +465,9 @@ for v in voices:
     lines.append(line(f"grv_{idx}",   0, f"fs_{idx}",   0))          # groove~ → freqshift~
     lines.append(line(f"fs_sig_{idx}",0, f"fs_{idx}",   1))          # Hz signal
 
-    lines.append(line(f"fs_{idx}",    0, f"vol_mult_{idx}", 0))      # freqshift~ → vol
-    lines.append(line("onset_sig",    0, f"vol_mult_{idx}", 1))      # onset envelope
-
     lines.append(line("chaos_sig",          0, f"sat_boost_{idx}", 0))  # saturation
     lines.append(line(f"sat_boost_{idx}",   0, f"sat_add_{idx}",   0))
-    lines.append(line(f"vol_mult_{idx}",    0, f"sat_mult_{idx}",  0))
+    lines.append(line(f"fs_{idx}",          0, f"sat_mult_{idx}",  0))  # freqshift~ → sat
     lines.append(line(f"sat_add_{idx}",     0, f"sat_mult_{idx}",  1))
     lines.append(line(f"sat_mult_{idx}",    0, f"vclip_{idx}",     0))  # per-voice clip
 
