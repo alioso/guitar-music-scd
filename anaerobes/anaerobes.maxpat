@@ -5897,6 +5897,18 @@
 			{
 				"patchline": {
 					"destination": [
+						"pan_val_1",
+						0
+					],
+					"source": [
+						"rec_delay",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"rec_1",
 						0
 					],
@@ -6120,6 +6132,18 @@
 					],
 					"source": [
 						"pan_val_1",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pan_val_2",
+						0
+					],
+					"source": [
+						"rec_delay",
 						0
 					]
 				}
@@ -6357,6 +6381,18 @@
 			{
 				"patchline": {
 					"destination": [
+						"pan_val_3",
+						0
+					],
+					"source": [
+						"rec_delay",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
 						"rec_3",
 						0
 					],
@@ -6580,6 +6616,18 @@
 					],
 					"source": [
 						"pan_val_3",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"destination": [
+						"pan_val_4",
+						0
+					],
+					"source": [
+						"rec_delay",
 						0
 					]
 				}

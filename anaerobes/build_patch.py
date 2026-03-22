@@ -458,6 +458,9 @@ for v in voices:
     boxes.append(newobj(f"pan_{idx}",     "pan2",         4, 2, ["signal","signal"], ax,    ay+330, 50))
     boxes.append(newobj(f"pan_val_{idx}", f"expr {v['pan']}", 1, 1, [""],            ax+60, ay+330, 80))
 
+    # pan_val must be triggered — expr only outputs when it receives a message
+    lines.append(line("rec_delay", 0, f"pan_val_{idx}", 0))
+
     # ---- Audio wiring ----
     lines.append(line("adc",          0, f"rec_{idx}",  0))          # ADC → record~
     lines.append(line("rec_loop_msg", 0, f"rec_{idx}",  1))          # loop 1 → rec~
