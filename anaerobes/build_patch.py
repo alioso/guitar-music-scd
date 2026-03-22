@@ -142,7 +142,7 @@ lines = []
 # breath_rate   : subtle quiver Hz
 # rev_rate      : reverse gate oscillator Hz (active only after t=6min)
 # sat_boost     : chaos saturation multiplier (2.0 → up to 3× gain at peak)
-# pan           : stereo position (pan2 convention: -100..+100)
+# pan           : stereo position 0.0 (hard L) .. 1.0 (hard R)
 #
 # All 16 oscillator periods are incommensurate — never align in 8 minutes.
 
@@ -154,7 +154,7 @@ voices = [
      "wobble_rate": 0.37, "wobble_depth": 0.4,
      "swell_a_rate": 0.10,  "swell_b_rate": 0.013, "breath_rate": 0.11,
      "rev_rate": 0.019, "sat_boost": 1.5,
-     "pan": 32.},
+     "pan": 0.66},
 
     {"name": "G2", "idx": 2,
      "buf_ms": 7300,
@@ -163,7 +163,7 @@ voices = [
      "wobble_rate": 0.53, "wobble_depth": 0.5,
      "swell_a_rate": 0.13,  "swell_b_rate": 0.017, "breath_rate": 0.17,
      "rev_rate": 0.023, "sat_boost": 1.5,
-     "pan": -28.},
+     "pan": 0.36},
 
     {"name": "G3", "idx": 3,
      "buf_ms": 11100,
@@ -172,7 +172,7 @@ voices = [
      "wobble_rate": 0.67, "wobble_depth": 0.6,
      "swell_a_rate": 0.083, "swell_b_rate": 0.011, "breath_rate": 0.07,
      "rev_rate": 0.031, "sat_boost": 2.0,
-     "pan": 78.},
+     "pan": 0.89},
 
     {"name": "G4", "idx": 4,
      "buf_ms": 13900,
@@ -181,7 +181,7 @@ voices = [
      "wobble_rate": 0.43, "wobble_depth": 0.7,
      "swell_a_rate": 0.11,  "swell_b_rate": 0.015, "breath_rate": 0.13,
      "rev_rate": 0.027, "sat_boost": 2.0,
-     "pan": -75.},
+     "pan": 0.13},
 ]
 
 # ============================================================
@@ -447,17 +447,16 @@ for v in voices:
     # Dynamic envelope (swell)
     boxes.append(newobj(f"dyn_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+290, 40))
 
-    # Panner
-    boxes.append(newobj(f"pan_{idx}",     "pan2",         4, 2, ["signal","signal"], ax,    ay+330, 50))
-    boxes.append(newobj(f"pan_val_{idx}", f"expr {v['pan']}", 1, 1, [""],            ax+60, ay+330, 80))
-
-    # pan_val must be triggered — expr only outputs when it receives a message
-    lines.append(line("rec_delay", 0, f"pan_val_{idx}", 0))
+    # Panner — manual *~ L/R (no pan2 dependency)
+    pan_r = v['pan']            # 0..1
+    pan_l = round(1.0 - pan_r, 4)
+    boxes.append(newobj(f"pan_L_{idx}", f"*~ {pan_l}", 2, 1, ["signal"], ax,    ay+330, 60))
+    boxes.append(newobj(f"pan_R_{idx}", f"*~ {pan_r}", 2, 1, ["signal"], ax+65, ay+330, 60))
 
     # ---- Audio wiring ----
     lines.append(line("adc",          0, f"rec_{idx}",  0))          # ADC → record~
-    lines.append(line("rec_loop_msg", 0, f"rec_{idx}",  1))          # loop 1 → rec~
-    lines.append(line("rec_on_msg",   0, f"rec_{idx}",  1, 1))       # 1 → rec~ (start)
+    lines.append(line("rec_loop_msg", 0, f"rec_{idx}",  0))          # loop 1 → rec~ (msg to inlet 0)
+    lines.append(line("rec_on_msg",   0, f"rec_{idx}",  1))          # 1 → rec~ gate (start)
     lines.append(line("grv_loop_msg", 0, f"grv_{idx}",  0))          # loop 1 → groove~
     lines.append(line("grv_on_msg",   0, f"grv_{idx}",  0, 1))       # 1 → groove~ (start)
     lines.append(line(f"rate_sig_{idx}", 0, f"grv_{idx}",  1))       # rate signal
@@ -474,8 +473,8 @@ for v in voices:
     lines.append(line(f"vclip_{idx}",       0, f"dyn_mult_{idx}",  0))  # swell envelope
     lines.append(line(f"dyn_env_{idx}",     0, f"dyn_mult_{idx}",  1))
 
-    lines.append(line(f"dyn_mult_{idx}",    0, f"pan_{idx}",       0))  # panner
-    lines.append(line(f"pan_val_{idx}",     0, f"pan_{idx}",       1))
+    lines.append(line(f"dyn_mult_{idx}",    0, f"pan_L_{idx}",    0))  # panner L
+    lines.append(line(f"dyn_mult_{idx}",    0, f"pan_R_{idx}",    0))  # panner R
 
 # ============================================================
 # SECTION 5: MIX & OUTPUT
@@ -512,15 +511,15 @@ boxes.append(newobj("dac", "dac~", 2, 0, [], COL_MIX+30, ROW_TOP+240, 40))
 boxes.append(newobj("meter_L", "meter~", 1, 1, ["float"], COL_MIX,    ROW_TOP+280, 60))
 boxes.append(newobj("meter_R", "meter~", 1, 1, ["float"], COL_MIX+80, ROW_TOP+280, 60))
 
-# Pan → sum
-lines.append(line("pan_1", 0, "sum_L_12",  0))
-lines.append(line("pan_1", 1, "sum_R_12",  0))
-lines.append(line("pan_2", 0, "sum_L_12",  1))
-lines.append(line("pan_2", 1, "sum_R_12",  1))
-lines.append(line("pan_3", 0, "sum_L_34",  0))
-lines.append(line("pan_3", 1, "sum_R_34",  0))
-lines.append(line("pan_4", 0, "sum_L_34",  1))
-lines.append(line("pan_4", 1, "sum_R_34",  1))
+# Pan L/R → sum
+lines.append(line("pan_L_1", 0, "sum_L_12",  0))
+lines.append(line("pan_R_1", 0, "sum_R_12",  0))
+lines.append(line("pan_L_2", 0, "sum_L_12",  1))
+lines.append(line("pan_R_2", 0, "sum_R_12",  1))
+lines.append(line("pan_L_3", 0, "sum_L_34",  0))
+lines.append(line("pan_R_3", 0, "sum_R_34",  0))
+lines.append(line("pan_L_4", 0, "sum_L_34",  1))
+lines.append(line("pan_R_4", 0, "sum_R_34",  1))
 
 lines.append(line("sum_L_12", 0, "sum_L_all", 0))
 lines.append(line("sum_L_34", 0, "sum_L_all", 1))
@@ -572,11 +571,7 @@ patch = {
         "gridsize": [15.0, 15.0],
         "boxes": boxes,
         "lines": lines,
-        "dependency_cache": [
-            {"name": "pan2.maxpat",
-             "bootpath": "~/Library/Application Support/Cycling '74/Max 9/Examples/spatialization/panning/lib",
-             "type": "JSON", "implicit": 1}
-        ],
+        "dependency_cache": [],
         "autosave": 0
     }
 }
