@@ -2876,13 +2876,13 @@
 					"patching_rect": [
 						1360,
 						40,
-						20,
+						65,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "1"
+					"text": "startloop"
 				}
 			},
 			{
@@ -2893,24 +2893,6 @@
 					"numoutlets": 1,
 					"patching_rect": [
 						1330,
-						70,
-						60,
-						22
-					],
-					"outlettype": [
-						""
-					],
-					"text": "loop 1"
-				}
-			},
-			{
-				"box": {
-					"id": "grv_loop_msg",
-					"maxclass": "message",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						1400,
 						70,
 						60,
 						22
@@ -2977,19 +2959,19 @@
 				"box": {
 					"id": "grv_1",
 					"maxclass": "newobj",
-					"numinlets": 2,
+					"numinlets": 1,
 					"numoutlets": 2,
 					"patching_rect": [
 						1250,
 						200,
-						115,
+						150,
 						22
 					],
 					"outlettype": [
 						"signal",
 						"signal"
 					],
-					"text": "groove~ v1_buf 0"
+					"text": "groove~ v1_buf 1 @loop 1"
 				}
 			},
 			{
@@ -3194,19 +3176,19 @@
 				"box": {
 					"id": "grv_2",
 					"maxclass": "newobj",
-					"numinlets": 2,
+					"numinlets": 1,
 					"numoutlets": 2,
 					"patching_rect": [
 						1445,
 						200,
-						115,
+						150,
 						22
 					],
 					"outlettype": [
 						"signal",
 						"signal"
 					],
-					"text": "groove~ v2_buf 0"
+					"text": "groove~ v2_buf 1 @loop 1"
 				}
 			},
 			{
@@ -3411,19 +3393,19 @@
 				"box": {
 					"id": "grv_3",
 					"maxclass": "newobj",
-					"numinlets": 2,
+					"numinlets": 1,
 					"numoutlets": 2,
 					"patching_rect": [
 						1640,
 						200,
-						115,
+						150,
 						22
 					],
 					"outlettype": [
 						"signal",
 						"signal"
 					],
-					"text": "groove~ v3_buf 0"
+					"text": "groove~ v3_buf 1 @loop 1"
 				}
 			},
 			{
@@ -3628,19 +3610,19 @@
 				"box": {
 					"id": "grv_4",
 					"maxclass": "newobj",
-					"numinlets": 2,
+					"numinlets": 1,
 					"numoutlets": 2,
 					"patching_rect": [
 						1835,
 						200,
-						115,
+						150,
 						22
 					],
 					"outlettype": [
 						"signal",
 						"signal"
 					],
-					"text": "groove~ v4_buf 0"
+					"text": "groove~ v4_buf 1 @loop 1"
 				}
 			},
 			{
@@ -5702,18 +5684,6 @@
 			{
 				"patchline": {
 					"destination": [
-						"grv_loop_msg",
-						0
-					],
-					"source": [
-						"loadbang",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
 						"rec_on_msg",
 						0
 					],
@@ -5766,18 +5736,6 @@
 						0
 					],
 					"source": [
-						"grv_loop_msg",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"grv_1",
-						0
-					],
-					"source": [
 						"grv_on_msg",
 						0
 					]
@@ -5787,7 +5745,7 @@
 				"patchline": {
 					"destination": [
 						"grv_1",
-						1
+						0
 					],
 					"source": [
 						"rate_sig_1",
@@ -5982,18 +5940,6 @@
 						0
 					],
 					"source": [
-						"grv_loop_msg",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"grv_2",
-						0
-					],
-					"source": [
 						"grv_on_msg",
 						0
 					]
@@ -6003,7 +5949,7 @@
 				"patchline": {
 					"destination": [
 						"grv_2",
-						1
+						0
 					],
 					"source": [
 						"rate_sig_2",
@@ -6198,18 +6144,6 @@
 						0
 					],
 					"source": [
-						"grv_loop_msg",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"grv_3",
-						0
-					],
-					"source": [
 						"grv_on_msg",
 						0
 					]
@@ -6219,7 +6153,7 @@
 				"patchline": {
 					"destination": [
 						"grv_3",
-						1
+						0
 					],
 					"source": [
 						"rate_sig_3",
@@ -6414,18 +6348,6 @@
 						0
 					],
 					"source": [
-						"grv_loop_msg",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"grv_4",
-						0
-					],
-					"source": [
 						"grv_on_msg",
 						0
 					]
@@ -6435,7 +6357,7 @@
 				"patchline": {
 					"destination": [
 						"grv_4",
-						1
+						0
 					],
 					"source": [
 						"rate_sig_4",

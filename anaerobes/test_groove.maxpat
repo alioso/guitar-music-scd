@@ -78,19 +78,19 @@
 				"box": {
 					"id": "grv",
 					"maxclass": "newobj",
-					"numinlets": 2,
+					"numinlets": 1,
 					"numoutlets": 2,
 					"patching_rect": [
 						40,
 						165,
-						110,
+						130,
 						22
 					],
 					"outlettype": [
 						"signal",
 						"signal"
 					],
-					"text": "groove~ tb 0"
+					"text": "groove~ tb 1 @loop 1"
 				}
 			},
 			{
@@ -100,7 +100,7 @@
 					"numinlets": 1,
 					"numoutlets": 1,
 					"patching_rect": [
-						170,
+						190,
 						165,
 						55,
 						22
@@ -260,31 +260,13 @@
 					"patching_rect": [
 						370,
 						265,
-						45,
+						30,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "start"
-				}
-			},
-			{
-				"box": {
-					"id": "grv_loop",
-					"maxclass": "message",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						300,
-						305,
-						55,
-						22
-					],
-					"outlettype": [
-						""
-					],
-					"text": "loop 1"
+					"text": "1"
 				}
 			},
 			{
@@ -294,15 +276,15 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						370,
+						300,
 						305,
-						45,
+						70,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "start"
+					"text": "startloop"
 				}
 			},
 			{
@@ -438,31 +420,7 @@
 						0
 					],
 					"destination": [
-						"grv_loop",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"lb_grv",
-						0
-					],
-					"destination": [
 						"grv_on",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"grv_loop",
-						0
-					],
-					"destination": [
-						"grv",
 						0
 					]
 				}
@@ -499,7 +457,7 @@
 					],
 					"destination": [
 						"grv",
-						1
+						0
 					]
 				}
 			},

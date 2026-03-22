@@ -410,17 +410,16 @@ boxes.append(comment("lbl_audio", "=== VOICE AUDIO ===", COL_VOICE, ROW_TOP-20, 
 
 # Shared startup trigger — fires 200ms after START
 boxes.append(newobj("rec_delay",    "delay 200", 2, 1, ["bang"], COL_VOICE,     ROW_TOP))
-boxes.append(msg("rec_on_msg",    "1",         COL_VOICE+80,  ROW_TOP,    20))   # record~ gate
-boxes.append(msg("grv_on_msg",    "1",         COL_VOICE+110, ROW_TOP,    20))   # groove~ start
+boxes.append(msg("rec_on_msg",    "1",         COL_VOICE+80,  ROW_TOP,    20))   # record~ start (int 1)
+boxes.append(msg("grv_on_msg",    "startloop", COL_VOICE+110, ROW_TOP,    65))   # groove~ startloop (documented)
 
-# Loop mode messages — sent from loadbang so loop is set before START is pressed
+# Loop mode on record~ — sent from loadbang
 boxes.append(msg("rec_loop_msg",    "loop 1",    COL_VOICE+80,  ROW_TOP+30, 60))
-boxes.append(msg("grv_loop_msg",    "loop 1",    COL_VOICE+150, ROW_TOP+30, 60))
+# Note: groove~ loop mode is baked in via @loop 1 attribute — no runtime message needed
 
 lines.append(line("start_btn",   0, "rec_delay",    0))
-lines.append(line("rec_delay",   0, "grv_on_msg",   0))   # 1 → groove~ start (on START)
-lines.append(line("loadbang",    0, "rec_loop_msg", 0))   # loop mode at patch open
-lines.append(line("loadbang",    0, "grv_loop_msg", 0))   # loop mode at patch open
+lines.append(line("rec_delay",   0, "grv_on_msg",   0))   # startloop → groove~ (on START)
+lines.append(line("loadbang",    0, "rec_loop_msg", 0))   # loop 1 → record~ at patch open
 lines.append(line("loadbang",    0, "rec_on_msg",   0))   # record~ starts on patch open (fills buffer BEFORE START)
 
 for v in voices:
@@ -432,8 +431,8 @@ for v in voices:
 
     # Buffer + looper
     boxes.append(newobj(f"buf_{idx}", f"buffer~ v{idx}_buf {v['buf_ms']}", 1, 1, ["bang"], ax, ay+25, 140))
-    boxes.append(newobj(f"rec_{idx}", f"record~ v{idx}_buf",               2, 1, ["bang"], ax, ay+60, 110))
-    boxes.append(newobj(f"grv_{idx}", f"groove~ v{idx}_buf 0",             2, 2, ["signal","signal"], ax, ay+100, 115))
+    boxes.append(newobj(f"rec_{idx}", f"record~ v{idx}_buf",                   2, 1, ["bang"], ax, ay+60, 110))
+    boxes.append(newobj(f"grv_{idx}", f"groove~ v{idx}_buf 1 @loop 1",         1, 2, ["signal","signal"], ax, ay+100, 150))
 
     # freqshift~ — inlet 0 = audio, inlet 1 = Hz offset (signal)
     boxes.append(newobj(f"fs_{idx}", "freqshift~", 2, 2, ["signal","signal"], ax, ay+145, 80))
@@ -458,9 +457,8 @@ for v in voices:
     lines.append(line("adc",          0, f"rec_{idx}",  0))          # ADC → record~
     lines.append(line("rec_loop_msg", 0, f"rec_{idx}",  0))          # "loop 1" → rec~ inlet 0
     lines.append(line("rec_on_msg",   0, f"rec_{idx}",  0))          # "1" → rec~ inlet 0 (starts recording)
-    lines.append(line("grv_loop_msg", 0, f"grv_{idx}",  0))          # loop 1 → groove~ (loop mode)
-    lines.append(line("grv_on_msg",   0, f"grv_{idx}",  0))          # 1 → groove~ (start playback)
-    lines.append(line(f"rate_sig_{idx}", 0, f"grv_{idx}",  1))       # rate signal
+    lines.append(line("grv_on_msg",   0, f"grv_{idx}",  0))          # startloop → groove~ (starts playback)
+    lines.append(line(f"rate_sig_{idx}", 0, f"grv_{idx}",  0))       # rate signal → left inlet (inlet 0, per docs)
 
     lines.append(line(f"grv_{idx}",   0, f"fs_{idx}",   0))          # groove~ → freqshift~
     lines.append(line(f"fs_sig_{idx}",0, f"fs_{idx}",   1))          # Hz signal
