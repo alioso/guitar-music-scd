@@ -12,8 +12,8 @@
 		"rect": [
 			0,
 			0,
-			800,
-			520
+			700,
+			420
 		],
 		"gridsize": [
 			15.0,
@@ -22,20 +22,20 @@
 		"boxes": [
 			{
 				"box": {
-					"id": "adc",
+					"id": "tone",
 					"maxclass": "newobj",
 					"numinlets": 1,
 					"numoutlets": 1,
 					"patching_rect": [
 						40,
 						40,
-						62,
+						90,
 						22
 					],
 					"outlettype": [
 						"signal"
 					],
-					"text": "adc~ 1"
+					"text": "cycle~ 440"
 				}
 			},
 			{
@@ -47,13 +47,13 @@
 					"patching_rect": [
 						40,
 						80,
-						140,
+						120,
 						22
 					],
 					"outlettype": [
 						"bang"
 					],
-					"text": "buffer~ test_buf 5000"
+					"text": "buffer~ tb 3000"
 				}
 			},
 			{
@@ -65,13 +65,13 @@
 					"patching_rect": [
 						40,
 						120,
-						120,
+						100,
 						22
 					],
 					"outlettype": [
 						"bang"
 					],
-					"text": "record~ test_buf"
+					"text": "record~ tb"
 				}
 			},
 			{
@@ -82,15 +82,15 @@
 					"numoutlets": 2,
 					"patching_rect": [
 						40,
-						170,
-						130,
+						165,
+						110,
 						22
 					],
 					"outlettype": [
 						"signal",
 						"signal"
 					],
-					"text": "groove~ test_buf 0"
+					"text": "groove~ tb 0"
 				}
 			},
 			{
@@ -100,8 +100,8 @@
 					"numinlets": 1,
 					"numoutlets": 1,
 					"patching_rect": [
-						200,
 						170,
+						165,
 						55,
 						22
 					],
@@ -118,7 +118,7 @@
 					"numinlets": 2,
 					"numoutlets": 0,
 					"patching_rect": [
-						320,
+						280,
 						40,
 						50,
 						22
@@ -135,7 +135,7 @@
 					"numoutlets": 0,
 					"patching_rect": [
 						40,
-						240,
+						230,
 						40,
 						22
 					],
@@ -150,7 +150,7 @@
 					"numinlets": 1,
 					"numoutlets": 1,
 					"patching_rect": [
-						320,
+						300,
 						80,
 						76,
 						22
@@ -163,12 +163,12 @@
 			},
 			{
 				"box": {
-					"id": "lb_delay",
+					"id": "lb_sw",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						320,
+						300,
 						110,
 						83,
 						22
@@ -186,7 +186,7 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						320,
+						300,
 						145,
 						91,
 						22
@@ -199,83 +199,13 @@
 			},
 			{
 				"box": {
-					"id": "rec_loop",
-					"maxclass": "message",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						320,
-						185,
-						60,
-						22
-					],
-					"outlettype": [
-						""
-					],
-					"text": "loop 1"
-				}
-			},
-			{
-				"box": {
-					"id": "grv_loop",
-					"maxclass": "message",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						320,
-						215,
-						60,
-						22
-					],
-					"outlettype": [
-						""
-					],
-					"text": "loop 1"
-				}
-			},
-			{
-				"box": {
-					"id": "start_btn",
-					"maxclass": "button",
-					"numinlets": 1,
-					"numoutlets": 1,
-					"patching_rect": [
-						40,
-						300,
-						24,
-						24
-					],
-					"outlettype": [
-						"bang"
-					],
-					"parameter_enable": 0
-				}
-			},
-			{
-				"box": {
-					"id": "lbl_start",
-					"maxclass": "comment",
-					"numinlets": 1,
-					"numoutlets": 0,
-					"patching_rect": [
-						70,
-						304,
-						45,
-						22
-					],
-					"outlettype": [],
-					"text": "START"
-				}
-			},
-			{
-				"box": {
-					"id": "start_delay",
+					"id": "lb_rec",
 					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						40,
-						335,
+						300,
+						185,
 						83,
 						22
 					],
@@ -287,54 +217,108 @@
 			},
 			{
 				"box": {
-					"id": "rec_start",
+					"id": "lb_grv",
+					"maxclass": "newobj",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						300,
+						225,
+						90,
+						22
+					],
+					"outlettype": [
+						"bang"
+					],
+					"text": "delay 3100"
+				}
+			},
+			{
+				"box": {
+					"id": "rec_loop",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						130,
-						370,
-						20,
+						300,
+						265,
+						55,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "1"
+					"text": "loop 1"
 				}
 			},
 			{
 				"box": {
-					"id": "grv_start",
+					"id": "rec_on",
 					"maxclass": "message",
 					"numinlets": 2,
 					"numoutlets": 1,
 					"patching_rect": [
-						165,
 						370,
-						20,
+						265,
+						45,
 						22
 					],
 					"outlettype": [
 						""
 					],
-					"text": "1"
+					"text": "start"
 				}
 			},
 			{
 				"box": {
-					"id": "lbl_info",
+					"id": "grv_loop",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						300,
+						305,
+						55,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "loop 1"
+				}
+			},
+			{
+				"box": {
+					"id": "grv_on",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						370,
+						305,
+						45,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "start"
+				}
+			},
+			{
+				"box": {
+					"id": "lbl",
 					"maxclass": "comment",
 					"numinlets": 1,
 					"numoutlets": 0,
 					"patching_rect": [
 						40,
-						430,
-						560,
+						360,
+						520,
 						22
 					],
 					"outlettype": [],
-					"text": "1) Click ezdac~   2) Press START   3) Play guitar   4) Wait 5s \u2014 loop should begin"
+					"text": "Click ezdac~ then wait 3s -- 440Hz tone should loop automatically"
 				}
 			}
 		],
@@ -346,7 +330,7 @@
 						0
 					],
 					"destination": [
-						"lb_delay",
+						"lb_sw",
 						0
 					]
 				}
@@ -354,7 +338,7 @@
 			{
 				"patchline": {
 					"source": [
-						"lb_delay",
+						"lb_sw",
 						0
 					],
 					"destination": [
@@ -382,7 +366,7 @@
 						0
 					],
 					"destination": [
-						"rec_loop",
+						"lb_rec",
 						0
 					]
 				}
@@ -394,7 +378,31 @@
 						0
 					],
 					"destination": [
-						"grv_loop",
+						"lb_grv",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"lb_rec",
+						0
+					],
+					"destination": [
+						"rec_loop",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"lb_rec",
+						0
+					],
+					"destination": [
+						"rec_on",
 						0
 					]
 				}
@@ -414,6 +422,42 @@
 			{
 				"patchline": {
 					"source": [
+						"rec_on",
+						0
+					],
+					"destination": [
+						"rec",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"lb_grv",
+						0
+					],
+					"destination": [
+						"grv_loop",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"lb_grv",
+						0
+					],
+					"destination": [
+						"grv_on",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
 						"grv_loop",
 						0
 					],
@@ -426,55 +470,7 @@
 			{
 				"patchline": {
 					"source": [
-						"start_btn",
-						0
-					],
-					"destination": [
-						"start_delay",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"start_delay",
-						0
-					],
-					"destination": [
-						"rec_start",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"start_delay",
-						0
-					],
-					"destination": [
-						"grv_start",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"rec_start",
-						0
-					],
-					"destination": [
-						"rec",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"grv_start",
+						"grv_on",
 						0
 					],
 					"destination": [
@@ -486,7 +482,7 @@
 			{
 				"patchline": {
 					"source": [
-						"adc",
+						"tone",
 						0
 					],
 					"destination": [
