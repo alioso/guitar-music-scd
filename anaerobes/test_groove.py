@@ -89,7 +89,7 @@ lines.append(line("grv_loop",    0, "grv",         0))   # "loop 1" → groove~ 
 lines.append(line("start_btn",   0, "start_delay", 0))
 lines.append(line("start_delay", 0, "rec_start",   0))
 lines.append(line("start_delay", 0, "grv_start",   0))
-lines.append(line("rec_start",   0, "rec",         1))   # "1" → record~ gate (inlet 1)
+lines.append(line("rec_start",   0, "rec",         0))   # "1" → record~ inlet 0 (starts recording)
 lines.append(line("grv_start",   0, "grv",         0))   # "1" → groove~ start (inlet 0)
 
 # ADC → record~, rate → groove~, groove~ → dac~

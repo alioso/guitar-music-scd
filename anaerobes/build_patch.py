@@ -456,8 +456,8 @@ for v in voices:
 
     # ---- Audio wiring ----
     lines.append(line("adc",          0, f"rec_{idx}",  0))          # ADC → record~
-    lines.append(line("rec_loop_msg", 0, f"rec_{idx}",  0))          # loop 1 → rec~ (msg inlet)
-    lines.append(line("rec_on_msg",   0, f"rec_{idx}",  1))          # 1 → rec~ gate (start)
+    lines.append(line("rec_loop_msg", 0, f"rec_{idx}",  0))          # "loop 1" → rec~ inlet 0
+    lines.append(line("rec_on_msg",   0, f"rec_{idx}",  0))          # "1" → rec~ inlet 0 (starts recording)
     lines.append(line("grv_loop_msg", 0, f"grv_{idx}",  0))          # loop 1 → groove~ (loop mode)
     lines.append(line("grv_on_msg",   0, f"grv_{idx}",  0))          # 1 → groove~ (start playback)
     lines.append(line(f"rate_sig_{idx}", 0, f"grv_{idx}",  1))       # rate signal
