@@ -394,7 +394,7 @@ def _check_fan_fiction(boxes, inputs_to, outputs_from, errors, warnings):
         if not yin_outs_by_outlet.get(1):
             errors.append("yin~ outlet 1 (confidence) not connected — confidence gate never opens!")
 
-    # I) conf_gate must feed hz_snap (or direct path to midi)
+    # I) conf_gate must feed pitch downstream (hz_snap or direct ftom / Hz compares)
     if "conf_gate" in boxes:
         cg_outs = [dst for (dst, so, di) in outputs_from.get("conf_gate", [])]
         if not cg_outs:
@@ -425,13 +425,14 @@ def _check_fan_fiction(boxes, inputs_to, outputs_from, errors, warnings):
             if not feeds_pshift:
                 errors.append(f"{psig} doesn't wire to {psh} inlet 1 — tonal shift not applied to audio")
 
-    # M) fade_inv must feed all pv_env2_N
-    if "fade_inv" in boxes:
-        fi_dests = [dst for (dst, so, di) in outputs_from.get("fade_inv", [])]
+    # M) fade envelope must feed all pv_env2_N (fade_inv_add = 1 - fade_clip)
+    fade_src = "fade_inv_add" if "fade_inv_add" in boxes else "fade_inv"
+    if fade_src in boxes:
+        fi_dests = [dst for (dst, so, di) in outputs_from.get(fade_src, [])]
         for idx in range(1, 5):
             env2 = f"pv_env2_{idx}"
             if env2 in boxes and env2 not in fi_dests:
-                errors.append(f"fade_inv doesn't feed {env2} — G{idx} won't fade at end of piece")
+                errors.append(f"{fade_src} doesn't feed {env2} — G{idx} won't fade at end of piece")
 
     # N) in_pan both channels must reach final mix
     if "in_pan" in boxes:

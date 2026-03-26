@@ -539,20 +539,38 @@
       },
       {
         "box": {
-          "id": "fade_inv",
+          "id": "fade_inv_mul",
           "maxclass": "newobj",
           "numinlets": 1,
           "numoutlets": 1,
           "patching_rect": [
             280,
             460,
-            111,
+            55,
             22
           ],
           "outlettype": [
-            ""
+            "float"
           ],
-          "text": "expr 1. - $f1"
+          "text": "* -1."
+        }
+      },
+      {
+        "box": {
+          "id": "fade_inv_add",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            335,
+            460,
+            48,
+            22
+          ],
+          "outlettype": [
+            "float"
+          ],
+          "text": "+ 1."
         }
       },
       {
@@ -562,7 +580,7 @@
           "numinlets": 1,
           "numoutlets": 0,
           "patching_rect": [
-            360,
+            395,
             462,
             180,
             22
@@ -858,7 +876,7 @@
             22
           ],
           "outlettype": [
-            "signal",
+            "float",
             "float"
           ],
           "text": "yin~ 2048 0.9"
@@ -930,24 +948,6 @@
           ],
           "outlettype": [],
           "text": "confidence gate"
-        }
-      },
-      {
-        "box": {
-          "id": "hz_snap",
-          "maxclass": "newobj",
-          "numinlets": 1,
-          "numoutlets": 1,
-          "patching_rect": [
-            820,
-            195,
-            104,
-            22
-          ],
-          "outlettype": [
-            "float"
-          ],
-          "text": "snapshot~ 20"
         }
       },
       {
@@ -3625,19 +3625,20 @@
           "id": "ts_trig_1",
           "maxclass": "newobj",
           "numinlets": 1,
-          "numoutlets": 3,
+          "numoutlets": 4,
           "patching_rect": [
             1130,
             990,
-            111,
+            125,
             22
           ],
           "outlettype": [
             "bang",
             "bang",
+            "bang",
             "bang"
           ],
-          "text": "trigger b b b"
+          "text": "trigger b b b b"
         }
       },
       {
@@ -3987,19 +3988,20 @@
           "id": "ts_trig_2",
           "maxclass": "newobj",
           "numinlets": 1,
-          "numoutlets": 3,
+          "numoutlets": 4,
           "patching_rect": [
             1130,
             1110,
-            111,
+            125,
             22
           ],
           "outlettype": [
             "bang",
             "bang",
+            "bang",
             "bang"
           ],
-          "text": "trigger b b b"
+          "text": "trigger b b b b"
         }
       },
       {
@@ -4349,19 +4351,20 @@
           "id": "ts_trig_3",
           "maxclass": "newobj",
           "numinlets": 1,
-          "numoutlets": 3,
+          "numoutlets": 4,
           "patching_rect": [
             1130,
             1230,
-            111,
+            125,
             22
           ],
           "outlettype": [
             "bang",
             "bang",
+            "bang",
             "bang"
           ],
-          "text": "trigger b b b"
+          "text": "trigger b b b b"
         }
       },
       {
@@ -4711,19 +4714,20 @@
           "id": "ts_trig_4",
           "maxclass": "newobj",
           "numinlets": 1,
-          "numoutlets": 3,
+          "numoutlets": 4,
           "patching_rect": [
             1130,
             1350,
-            111,
+            125,
             22
           ],
           "outlettype": [
             "bang",
             "bang",
+            "bang",
             "bang"
           ],
-          "text": "trigger b b b"
+          "text": "trigger b b b b"
         }
       },
       {
@@ -5087,20 +5091,128 @@
       },
       {
         "box": {
-          "id": "gr_lfo_expr_2",
+          "id": "gr_mul2_2",
           "maxclass": "newobj",
           "numinlets": 1,
           "numoutlets": 1,
           "patching_rect": [
             1500,
             150,
-            370,
+            55,
             22
           ],
           "outlettype": [
             "signal"
           ],
-          "text": "expr~ 1. + 0.04 * (1. - abs(2. * $v1 - 1.)) - 0.04"
+          "text": "*~ 2."
+        }
+      },
+      {
+        "box": {
+          "id": "gr_sub1_2",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1558,
+            150,
+            62,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~ -1."
+        }
+      },
+      {
+        "box": {
+          "id": "gr_abs_2",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1616,
+            150,
+            48,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "abs~"
+        }
+      },
+      {
+        "box": {
+          "id": "gr_neg_2",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1654,
+            150,
+            62,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~ -1."
+        }
+      },
+      {
+        "box": {
+          "id": "gr_tri_2",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1712,
+            150,
+            55,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~ 1."
+        }
+      },
+      {
+        "box": {
+          "id": "gr_dep_2",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1770,
+            150,
+            69,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~ 0.04"
+        }
+      },
+      {
+        "box": {
+          "id": "gr_base_2",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1838,
+            150,
+            69,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~ 0.96"
         }
       },
       {
@@ -5395,20 +5507,128 @@
       },
       {
         "box": {
-          "id": "gr_lfo_expr_3",
+          "id": "gr_mul2_3",
           "maxclass": "newobj",
           "numinlets": 1,
           "numoutlets": 1,
           "patching_rect": [
             1620,
             150,
-            370,
+            55,
             22
           ],
           "outlettype": [
             "signal"
           ],
-          "text": "expr~ 1. + 0.06 * (1. - abs(2. * $v1 - 1.)) - 0.06"
+          "text": "*~ 2."
+        }
+      },
+      {
+        "box": {
+          "id": "gr_sub1_3",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1678,
+            150,
+            62,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~ -1."
+        }
+      },
+      {
+        "box": {
+          "id": "gr_abs_3",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1736,
+            150,
+            48,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "abs~"
+        }
+      },
+      {
+        "box": {
+          "id": "gr_neg_3",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1774,
+            150,
+            62,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~ -1."
+        }
+      },
+      {
+        "box": {
+          "id": "gr_tri_3",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1832,
+            150,
+            55,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~ 1."
+        }
+      },
+      {
+        "box": {
+          "id": "gr_dep_3",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1890,
+            150,
+            69,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~ 0.06"
+        }
+      },
+      {
+        "box": {
+          "id": "gr_base_3",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1958,
+            150,
+            69,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~ 0.94"
         }
       },
       {
@@ -5703,20 +5923,128 @@
       },
       {
         "box": {
-          "id": "gr_lfo_expr_4",
+          "id": "gr_mul2_4",
           "maxclass": "newobj",
           "numinlets": 1,
           "numoutlets": 1,
           "patching_rect": [
             1740,
             150,
-            384,
+            55,
             22
           ],
           "outlettype": [
             "signal"
           ],
-          "text": "expr~ 1. + 0.025 * (1. - abs(2. * $v1 - 1.)) - 0.025"
+          "text": "*~ 2."
+        }
+      },
+      {
+        "box": {
+          "id": "gr_sub1_4",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1798,
+            150,
+            62,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~ -1."
+        }
+      },
+      {
+        "box": {
+          "id": "gr_abs_4",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1856,
+            150,
+            48,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "abs~"
+        }
+      },
+      {
+        "box": {
+          "id": "gr_neg_4",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1894,
+            150,
+            62,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~ -1."
+        }
+      },
+      {
+        "box": {
+          "id": "gr_tri_4",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            1952,
+            150,
+            55,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~ 1."
+        }
+      },
+      {
+        "box": {
+          "id": "gr_dep_4",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            2010,
+            150,
+            76,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~ 0.025"
+        }
+      },
+      {
+        "box": {
+          "id": "gr_base_4",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 1,
+          "patching_rect": [
+            2078,
+            150,
+            76,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~ 0.975"
         }
       },
       {
@@ -8157,11 +8485,23 @@
       {
         "patchline": {
           "destination": [
-            "fade_inv",
+            "fade_inv_mul",
             0
           ],
           "source": [
             "fade_clip",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fade_inv_add",
+            0
+          ],
+          "source": [
+            "fade_inv_mul",
             0
           ]
         }
@@ -8339,23 +8679,11 @@
       {
         "patchline": {
           "destination": [
-            "hz_snap",
-            0
-          ],
-          "source": [
-            "conf_gate",
-            0
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
             "hz_to_midi",
             0
           ],
           "source": [
-            "hz_snap",
+            "conf_gate",
             0
           ]
         }
@@ -8403,7 +8731,7 @@
             0
           ],
           "source": [
-            "hz_snap",
+            "conf_gate",
             0
           ]
         }
@@ -8415,7 +8743,7 @@
             0
           ],
           "source": [
-            "hz_snap",
+            "conf_gate",
             0
           ]
         }
@@ -8592,18 +8920,6 @@
         "patchline": {
           "destination": [
             "init_bank_0",
-            0
-          ],
-          "source": [
-            "init_sel",
-            0
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "init_bank_0",
             1
           ],
           "source": [
@@ -8628,18 +8944,6 @@
         "patchline": {
           "destination": [
             "init_bank_1",
-            0
-          ],
-          "source": [
-            "init_sel",
-            1
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "init_bank_1",
             1
           ],
           "source": [
@@ -8657,18 +8961,6 @@
           "source": [
             "init_sel",
             1
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "init_bank_2",
-            0
-          ],
-          "source": [
-            "init_sel",
-            2
           ]
         }
       },
@@ -8700,18 +8992,6 @@
         "patchline": {
           "destination": [
             "init_bank_3",
-            0
-          ],
-          "source": [
-            "init_sel",
-            3
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "init_bank_3",
             1
           ],
           "source": [
@@ -8729,18 +9009,6 @@
           "source": [
             "init_sel",
             3
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "init_bank_4",
-            0
-          ],
-          "source": [
-            "init_sel",
-            4
           ]
         }
       },
@@ -10420,7 +10688,7 @@
           ],
           "source": [
             "ts_trig_1",
-            0
+            3
           ]
         }
       },
@@ -10432,7 +10700,7 @@
           ],
           "source": [
             "ts_trig_1",
-            1
+            2
           ]
         }
       },
@@ -10444,7 +10712,19 @@
           ],
           "source": [
             "ts_trig_1",
-            2
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "ts_pipe_1",
+            0
+          ],
+          "source": [
+            "ts_trig_1",
+            0
           ]
         }
       },
@@ -10480,18 +10760,6 @@
           ],
           "source": [
             "ts_add_1",
-            0
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "ts_pipe_1",
-            0
-          ],
-          "source": [
-            "ts_trig_1",
             0
           ]
         }
@@ -10780,7 +11048,7 @@
           ],
           "source": [
             "ts_trig_2",
-            0
+            3
           ]
         }
       },
@@ -10792,7 +11060,7 @@
           ],
           "source": [
             "ts_trig_2",
-            1
+            2
           ]
         }
       },
@@ -10804,7 +11072,19 @@
           ],
           "source": [
             "ts_trig_2",
-            2
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "ts_pipe_2",
+            0
+          ],
+          "source": [
+            "ts_trig_2",
+            0
           ]
         }
       },
@@ -10840,18 +11120,6 @@
           ],
           "source": [
             "ts_add_2",
-            0
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "ts_pipe_2",
-            0
-          ],
-          "source": [
-            "ts_trig_2",
             0
           ]
         }
@@ -11140,7 +11408,7 @@
           ],
           "source": [
             "ts_trig_3",
-            0
+            3
           ]
         }
       },
@@ -11152,7 +11420,7 @@
           ],
           "source": [
             "ts_trig_3",
-            1
+            2
           ]
         }
       },
@@ -11164,7 +11432,19 @@
           ],
           "source": [
             "ts_trig_3",
-            2
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "ts_pipe_3",
+            0
+          ],
+          "source": [
+            "ts_trig_3",
+            0
           ]
         }
       },
@@ -11200,18 +11480,6 @@
           ],
           "source": [
             "ts_add_3",
-            0
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "ts_pipe_3",
-            0
-          ],
-          "source": [
-            "ts_trig_3",
             0
           ]
         }
@@ -11500,7 +11768,7 @@
           ],
           "source": [
             "ts_trig_4",
-            0
+            3
           ]
         }
       },
@@ -11512,7 +11780,7 @@
           ],
           "source": [
             "ts_trig_4",
-            1
+            2
           ]
         }
       },
@@ -11524,7 +11792,19 @@
           ],
           "source": [
             "ts_trig_4",
-            2
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "ts_pipe_4",
+            0
+          ],
+          "source": [
+            "ts_trig_4",
+            0
           ]
         }
       },
@@ -11560,18 +11840,6 @@
           ],
           "source": [
             "ts_add_4",
-            0
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "ts_pipe_4",
-            0
-          ],
-          "source": [
-            "ts_trig_4",
             0
           ]
         }
@@ -11812,7 +12080,7 @@
             1
           ],
           "source": [
-            "fade_inv",
+            "fade_inv_add",
             0
           ]
         }
@@ -11892,7 +12160,7 @@
       {
         "patchline": {
           "destination": [
-            "gr_lfo_expr_2",
+            "gr_mul2_2",
             0
           ],
           "source": [
@@ -11904,11 +12172,83 @@
       {
         "patchline": {
           "destination": [
+            "gr_sub1_2",
+            0
+          ],
+          "source": [
+            "gr_mul2_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_abs_2",
+            0
+          ],
+          "source": [
+            "gr_sub1_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_neg_2",
+            0
+          ],
+          "source": [
+            "gr_abs_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_tri_2",
+            0
+          ],
+          "source": [
+            "gr_neg_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_dep_2",
+            0
+          ],
+          "source": [
+            "gr_tri_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_base_2",
+            0
+          ],
+          "source": [
+            "gr_dep_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
             "gr_2",
             1
           ],
           "source": [
-            "gr_lfo_expr_2",
+            "gr_base_2",
             0
           ]
         }
@@ -12053,7 +12393,7 @@
             1
           ],
           "source": [
-            "fade_inv",
+            "fade_inv_add",
             0
           ]
         }
@@ -12133,7 +12473,7 @@
       {
         "patchline": {
           "destination": [
-            "gr_lfo_expr_3",
+            "gr_mul2_3",
             0
           ],
           "source": [
@@ -12145,11 +12485,83 @@
       {
         "patchline": {
           "destination": [
+            "gr_sub1_3",
+            0
+          ],
+          "source": [
+            "gr_mul2_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_abs_3",
+            0
+          ],
+          "source": [
+            "gr_sub1_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_neg_3",
+            0
+          ],
+          "source": [
+            "gr_abs_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_tri_3",
+            0
+          ],
+          "source": [
+            "gr_neg_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_dep_3",
+            0
+          ],
+          "source": [
+            "gr_tri_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_base_3",
+            0
+          ],
+          "source": [
+            "gr_dep_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
             "gr_3",
             1
           ],
           "source": [
-            "gr_lfo_expr_3",
+            "gr_base_3",
             0
           ]
         }
@@ -12294,7 +12706,7 @@
             1
           ],
           "source": [
-            "fade_inv",
+            "fade_inv_add",
             0
           ]
         }
@@ -12374,7 +12786,7 @@
       {
         "patchline": {
           "destination": [
-            "gr_lfo_expr_4",
+            "gr_mul2_4",
             0
           ],
           "source": [
@@ -12386,11 +12798,83 @@
       {
         "patchline": {
           "destination": [
+            "gr_sub1_4",
+            0
+          ],
+          "source": [
+            "gr_mul2_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_abs_4",
+            0
+          ],
+          "source": [
+            "gr_sub1_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_neg_4",
+            0
+          ],
+          "source": [
+            "gr_abs_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_tri_4",
+            0
+          ],
+          "source": [
+            "gr_neg_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_dep_4",
+            0
+          ],
+          "source": [
+            "gr_tri_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_base_4",
+            0
+          ],
+          "source": [
+            "gr_dep_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
             "gr_4",
             1
           ],
           "source": [
-            "gr_lfo_expr_4",
+            "gr_base_4",
             0
           ]
         }
@@ -12535,7 +13019,7 @@
             1
           ],
           "source": [
-            "fade_inv",
+            "fade_inv_add",
             0
           ]
         }
@@ -13497,7 +13981,7 @@
           ],
           "source": [
             "samp_trig_t",
-            0
+            1
           ]
         }
       },
@@ -13533,7 +14017,7 @@
           ],
           "source": [
             "samp_trig_t",
-            1
+            0
           ]
         }
       },

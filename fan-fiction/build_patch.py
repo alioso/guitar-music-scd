@@ -259,8 +259,10 @@ boxes.append(comment("lbl_onset", "onset 0..1 (3s ramp)", COL_B+80, ROW_TOP+292,
 boxes.append(newobj("fade_sub",  f"- {FADE_START_S}", 2, 1, ["float"], COL_B, ROW_TOP+330))
 boxes.append(newobj("fade_div",  f"/ {PIECE_END_S - FADE_START_S}", 2, 1, ["float"], COL_B, ROW_TOP+360))
 boxes.append(newobj("fade_clip", "clip 0. 1.", 3, 1, ["float"],        COL_B, ROW_TOP+390))
-boxes.append(newobj("fade_inv",  "expr 1. - $f1", 1, 1, [""],          COL_B, ROW_TOP+420))
-boxes.append(comment("lbl_fade", "fade-out 0..1 (inverted)", COL_B+80, ROW_TOP+422, 180))
+# 1 - x without expr (M4L / some installs)
+boxes.append(newobj("fade_inv_mul", "* -1.", 1, 1, ["float"],           COL_B, ROW_TOP+420))
+boxes.append(newobj("fade_inv_add", "+ 1.", 1, 1, ["float"],           COL_B+55, ROW_TOP+420))
+boxes.append(comment("lbl_fade", "fade-out 0..1 (inverted)", COL_B+115, ROW_TOP+422, 180))
 
 # Timer wiring
 lines.append(line("start_btn", 0, "msg_start", 0))
@@ -279,7 +281,8 @@ lines.append(line("t_min",    0, "min_disp",  0))
 lines.append(line("onset_div",  0, "onset_clip",  0))
 lines.append(line("fade_sub",  0, "fade_div",  0))
 lines.append(line("fade_div",  0, "fade_clip", 0))
-lines.append(line("fade_clip", 0, "fade_inv",  0))
+lines.append(line("fade_clip", 0, "fade_inv_mul", 0))
+lines.append(line("fade_inv_mul", 0, "fade_inv_add", 0))
 
 # ============================================================
 # SECTION 3: PHRASE CAPTURE
@@ -354,7 +357,7 @@ lines.append(line("adc",            0, "rec_phrase",      0))
 
 boxes.append(comment("lbl_s4", "=== PITCH DETECTION ===", COL_D, ROW_TOP-20, 200))
 
-boxes.append(newobj("yin", "yin~ 2048 0.9", 1, 2, ["signal", "float"],
+boxes.append(newobj("yin", "yin~ 2048 0.9", 1, 2, ["float", "float"],
                     COL_D, ROW_TOP+40))
 boxes.append(comment("lbl_yin", "yin~ pitch (Hz) + confidence", COL_D+110, ROW_TOP+42, 200))
 
@@ -365,11 +368,9 @@ boxes.append(newobj("conf_gate",   "gate 1", 2, 1, [""],
                     COL_D, ROW_TOP+115))
 boxes.append(comment("lbl_cg", "confidence gate", COL_D+65, ROW_TOP+117, 120))
 
-# snapshot~ to convert Hz signal to control-rate float
-boxes.append(newobj("hz_snap", "snapshot~ 20", 1, 1, ["float"],
-                    COL_D, ROW_TOP+155))
+# IRCAM yin~ outlet 0 = float Hz → ftom directly (no snapshot~). Path B uses same Hz into bass window.
 
-# Path A: Hz → MIDI (ftom: Hz to MIDI note number, float)
+# Hz → MIDI (ftom)
 boxes.append(newobj("hz_to_midi",  "ftom", 1, 1, ["float"],
                     COL_D, ROW_TOP+190))
 boxes.append(newobj("midi_int",    "int",  2, 1, [""],
@@ -400,17 +401,16 @@ lines.append(line("adc",         0, "yin",          0))
 lines.append(line("yin",         0, "conf_gate",    0))
 lines.append(line("yin",         1, "conf_thresh",  0))
 lines.append(line("conf_thresh", 0, "conf_gate",    1))
-lines.append(line("conf_gate",   0, "hz_snap",      0))
+lines.append(line("conf_gate",   0, "hz_to_midi",   0))
 
 # Path A wiring
-lines.append(line("hz_snap",    0, "hz_to_midi",   0))
 lines.append(line("hz_to_midi", 0, "midi_int",     0))
 lines.append(line("midi_int",   0, "midi_change",  0))
 lines.append(line("midi_change",0, "midi_disp",    0))
 
-# Path B wiring
-lines.append(line("hz_snap",    0, "bass_hi_cmp",  0))
-lines.append(line("hz_snap",    0, "bass_lo_cmp",  0))
+# Path B wiring (Hz float)
+lines.append(line("conf_gate",  0, "bass_hi_cmp",  0))
+lines.append(line("conf_gate",  0, "bass_lo_cmp",  0))
 lines.append(line("bass_hi_cmp",0, "bass_and",     0))
 lines.append(line("bass_lo_cmp",0, "bass_and",     1))
 lines.append(line("bass_and",   0, "bass_change",  0))
@@ -483,7 +483,6 @@ lines.append(line("init_counter", 0, "init_sel",     0))
 lines.append(line("init_done",    0, "init_gate",    1))  # close gate when full
 
 for slot in range(5):
-    lines.append(line("init_sel", slot,      f"init_bank_{slot}", 0))
     # When sel bangs, write current midi note to that slot
     # We need the midi note value to reach the bank f-object inlet 0 when banged
     # Route: midi_change → init_bank_{slot} inlet 0 (data stays latched)
@@ -657,18 +656,19 @@ for g in range(1, 5):
 
     # Wire up the shift response
     # g{n}_new_pass → trigger → ts_rand + ts_latch
-    boxes.append(newobj(f"ts_trig_{g}", "trigger b b b", 1, 3,
-                        ["bang","bang","bang"],
+    # trigger: right outlets fire first — compute delay → latch → bank → pipe bang
+    boxes.append(newobj(f"ts_trig_{g}", "trigger b b b b", 1, 4,
+                        ["bang","bang","bang","bang"],
                         FAN_COL+50, gsy))
     lines.append(line(f"g{g}_new_pass", 0, f"ts_trig_{g}", 0))
-    lines.append(line(f"ts_trig_{g}", 0,  f"ts_rand_{g}",   0))  # bang random
-    lines.append(line(f"ts_trig_{g}", 1,  f"ts_latch_{g}",  0))  # bang latch (gets current midi)
-    lines.append(line(f"ts_trig_{g}", 2,  f"g{g}_bank_0",   0))  # bang bank_0 to read root
+    lines.append(line(f"ts_trig_{g}", 3,  f"ts_rand_{g}",   0))
+    lines.append(line(f"ts_trig_{g}", 2,  f"ts_latch_{g}",  0))
+    lines.append(line(f"ts_trig_{g}", 1,  f"g{g}_bank_0",   0))
+    lines.append(line(f"ts_trig_{g}", 0, f"ts_pipe_{g}", 0))
     lines.append(line("midi_change",   0,  f"ts_latch_{g}",  1))  # store current midi note
 
     lines.append(line(f"ts_rand_{g}", 0, f"ts_add_{g}",  0))
     lines.append(line(f"ts_add_{g}",  0, f"ts_pipe_{g}", 1))  # set delay time
-    lines.append(line(f"ts_trig_{g}", 0, f"ts_pipe_{g}", 0))  # trigger pipe
 
     lines.append(line(f"ts_pipe_{g}", 0, f"ts_rslot_{g}", 0))  # bang random slot select
     lines.append(line(f"ts_rslot_{g}", 0, f"ts_ssel_{g}", 0))
@@ -732,24 +732,33 @@ for v in PHASE_VOICES:
     # Send loop_len_msg to each groove~ (done in Section 3's wiring)
     lines.append(line("loop_len_msg", 0, f"gr_{idx}", 0))
 
-    # Rate: G1 = sig~ 1.0; G2/3/4 = phasor~ + expr
+    # Rate: G1 = sig~ 1.0; G2/3/4 = phasor~ triangle (no expr~)
     if depth == 0.0:
         # Guitar 1: locked rate = 1.0
         boxes.append(newobj(f"gr_rate_{idx}", "sig~ 1.", 1, 1, ["signal"],
                             vx, vy+80))
         lines.append(line(f"gr_rate_{idx}", 0, f"gr_{idx}", 1))
     else:
+        # Triangle rate: (1-depth) + depth * tri, tri = 1 - |2p-1| (no expr~ for M4L)
+        tri_base = 1.0 - depth
         lfo_freq = 1.0 / period_s
         boxes.append(newobj(f"gr_lfo_{idx}", f"phasor~ {lfo_freq:.6f}", 1, 1, ["signal"],
                             vx, vy+80))
-        # Triangle LFO: 1.0 + depth * (1 - |2p - 1|) centered at 1.0
-        # Range: 1.0 ± depth
-        boxes.append(newobj(f"gr_lfo_expr_{idx}",
-                            f"expr~ 1. + {depth} * (1. - abs(2. * $v1 - 1.)) - {depth}",
-                            1, 1, ["signal"],
-                            vx, vy+110))
-        lines.append(line(f"gr_lfo_{idx}",      0, f"gr_lfo_expr_{idx}", 0))
-        lines.append(line(f"gr_lfo_expr_{idx}", 0, f"gr_{idx}",           1))
+        boxes.append(newobj(f"gr_mul2_{idx}", "*~ 2.", 1, 1, ["signal"], vx, vy+110))
+        boxes.append(newobj(f"gr_sub1_{idx}", "+~ -1.", 1, 1, ["signal"], vx + 58, vy+110))
+        boxes.append(newobj(f"gr_abs_{idx}", "abs~", 1, 1, ["signal"], vx +116, vy+110))
+        boxes.append(newobj(f"gr_neg_{idx}", "*~ -1.", 1, 1, ["signal"], vx +154, vy+110))
+        boxes.append(newobj(f"gr_tri_{idx}", "+~ 1.", 1, 1, ["signal"], vx +212, vy+110))
+        boxes.append(newobj(f"gr_dep_{idx}", f"*~ {depth}", 1, 1, ["signal"], vx +270, vy+110))
+        boxes.append(newobj(f"gr_base_{idx}", f"+~ {tri_base}", 1, 1, ["signal"], vx +338, vy+110))
+        lines.append(line(f"gr_lfo_{idx}", 0, f"gr_mul2_{idx}", 0))
+        lines.append(line(f"gr_mul2_{idx}", 0, f"gr_sub1_{idx}", 0))
+        lines.append(line(f"gr_sub1_{idx}", 0, f"gr_abs_{idx}", 0))
+        lines.append(line(f"gr_abs_{idx}", 0, f"gr_neg_{idx}", 0))
+        lines.append(line(f"gr_neg_{idx}", 0, f"gr_tri_{idx}", 0))
+        lines.append(line(f"gr_tri_{idx}", 0, f"gr_dep_{idx}", 0))
+        lines.append(line(f"gr_dep_{idx}", 0, f"gr_base_{idx}", 0))
+        lines.append(line(f"gr_base_{idx}", 0, f"gr_{idx}", 1))
 
     # pitchshift~ (driven by tonal shift sig~)
     boxes.append(newobj(f"pshift_{idx}", "pitchshift~ 4096", 2, 2, ["signal","signal"],
@@ -800,7 +809,7 @@ for v in PHASE_VOICES:
     lines.append(line(f"entry_line_{idx}", 0, f"pv_env1_{idx}", 0))
     lines.append(line("onset_clip",        0, f"pv_env1_{idx}", 1))
     lines.append(line(f"pv_env1_{idx}",    0, f"pv_env2_{idx}", 0))
-    lines.append(line("fade_inv",          0, f"pv_env2_{idx}", 1))
+    lines.append(line("fade_inv_add",     0, f"pv_env2_{idx}", 1))
     lines.append(line(f"pv_env2_{idx}",    0, f"pv_vol_sig_{idx}", 0))
     lines.append(line(f"pv_vol_sig_{idx}", 0, f"pv_vol_mult_{idx}", 1))
     lines.append(line(f"fshift_{idx}",     0, f"pv_vol_mult_{idx}", 0))
@@ -954,10 +963,11 @@ lines.append(line("samp_chainR_cd", 0, "samp_chainR", 1))
 
 # Wire bass trigger → sample trigger chain
 lines.append(line("bass_pass1",     0, "samp_trig_t",    0))
-lines.append(line("samp_trig_t",    0, "samp_delay_rand", 0))
+# Right outlet fires first: compute delay → then pipe bang
+lines.append(line("samp_trig_t",    1, "samp_delay_rand", 0))
 lines.append(line("samp_delay_rand",0, "samp_delay_add",  0))
 lines.append(line("samp_delay_add", 0, "samp_pipe",       1))  # set delay time
-lines.append(line("samp_trig_t",    1, "samp_pipe",       0))  # trigger pipe
+lines.append(line("samp_trig_t",    0, "samp_pipe",       0))  # trigger pipe (after delay set)
 lines.append(line("samp_pipe",      0, "samp_pick",       0))
 lines.append(line("samp_pick",      0, "samp_sel",        0))
 
