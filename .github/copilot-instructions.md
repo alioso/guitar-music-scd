@@ -4,6 +4,8 @@
 
 This repository contains **four Max/MSP patches for live solo guitar performance**, each implementing a distinct compositional concept. The project uses a **Python-first build workflow**: the `.maxpat` files are **generated build artifacts** — the authoritative source of truth is the Python build scripts.
 
+**Primary runtime:** **Ableton Live 11** + **Max for Live 8.x** (Max **8.x** bundled with Live, not Max 9 standalone). Verify object availability and audio I/O behavior in **M4L** where relevant (e.g. `plugout~` vs `ezdac~`).
+
 **Never edit `.maxpat` files directly.** Always modify `build_patch.py`, then regenerate.
 
 ```
@@ -37,7 +39,7 @@ A `.maxpat` is a **JSON file** with this top-level structure:
 {
   "patcher": {
     "fileversion": 1,
-    "appversion": { "major": 9, "minor": 0, "revision": 8, "architecture": "x64", "modernui": 1 },
+    "appversion": { "major": 8, "minor": 6, "revision": 2, "architecture": "x64", "modernui": 1 },
     "classnamespace": "dsp.toplevel",
     "rect": [0, 0, 1800, 1000],
     "gridsize": [15.0, 15.0],
@@ -98,7 +100,7 @@ Lists external Max abstractions. The `pan2` abstraction appears in all patches:
 ```json
 {
   "name": "pan2.maxpat",
-  "bootpath": "~/Library/Application Support/Cycling '74/Max 9/Examples/spatialization/panning/lib",
+  "bootpath": "~/Library/Application Support/Cycling '74/Max 8/Examples/spatialization/panning/lib",
   "type": "JSON",
   "implicit": 1
 }

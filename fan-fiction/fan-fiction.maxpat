@@ -2,9 +2,9 @@
   "patcher": {
     "fileversion": 1,
     "appversion": {
-      "major": 9,
-      "minor": 0,
-      "revision": 8,
+      "major": 8,
+      "minor": 6,
+      "revision": 2,
       "architecture": "x64",
       "modernui": 1
     },

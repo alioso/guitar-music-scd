@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build the Fan Fiction guitar quintet patch for Max/MSP 9.
+Build the Fan Fiction guitar quintet patch for Ableton Live 11 + Max for Live 8.x (MSP).
 ~10-minute live piece: 1 input guitar + 4 phasing guitar voices.
 
 CONCEPT: Steve Reich-style phase piece.
@@ -1100,9 +1100,9 @@ patch = {
     "patcher": {
         "fileversion": 1,
         "appversion": {
-            "major": 9,
-            "minor": 0,
-            "revision": 8,
+            "major": 8,
+            "minor": 6,
+            "revision": 2,
             "architecture": "x64",
             "modernui": 1
         },

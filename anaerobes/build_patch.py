@@ -3,6 +3,8 @@
 anaerobes v2 — 4-voice looper ensemble, 8-minute arc
 build_patch.py  →  generates anaerobes/anaerobes.maxpat
 
+Runtime: Ableton Live 11 + Max for Live 8.x (MSP), not Max 9 standalone.
+
 CONCEPT
 =======
   Four partner guitars reading from their OWN looping buffers (4.7s / 7.3s /
@@ -566,7 +568,7 @@ lines = valid_lines
 patch = {
     "patcher": {
         "fileversion": 1,
-        "appversion": {"major": 9, "minor": 0, "revision": 8,
+        "appversion": {"major": 8, "minor": 6, "revision": 2,
                        "architecture": "x64", "modernui": 1},
         "classnamespace": "dsp.toplevel",
         "rect": [0, 0, 2200, 1300],
@@ -575,7 +577,7 @@ patch = {
         "lines": lines,
         "dependency_cache": [
             {"name": "pan2.maxpat",
-             "bootpath": "~/Library/Application Support/Cycling '74/Max 9/Examples/spatialization/panning/lib",
+             "bootpath": "~/Library/Application Support/Cycling '74/Max 8/Examples/spatialization/panning/lib",
              "type": "JSON", "implicit": 1}
         ],
         "autosave": 0

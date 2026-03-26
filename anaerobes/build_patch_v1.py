@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build the Risset Guitar Quartet patch for Max/MSP 9.
+Build the Risset Guitar Quartet patch for Ableton Live 11 + Max for Live 8.x (legacy v1 script).
 8-minute live piece: 4 partner guitars + dry input.
 
 Phase 1 (0:00-1:00): Quintet echo - short delays, sounds like 5 real guitarists
@@ -247,7 +247,7 @@ lines.append(line("rev_clip", 0, "rev_sig",  0))
 # ============================================================
 #
 # Two-tap crossfade approach — avoids dynamic tapout~ delay changes which
-# are unreliable in Max 9 when the inlet also carries a tap-wire from tapin~.
+# are unreliable in some Max versions when the inlet also carries a tap-wire from tapin~.
 #
 # Per voice:
 #   - tapout_a (short P1 delay) and tapout_b (long P2 delay) are FIXED
@@ -601,9 +601,9 @@ patch = {
     "patcher": {
         "fileversion": 1,
         "appversion": {
-            "major": 9,
-            "minor": 0,
-            "revision": 8,
+            "major": 8,
+            "minor": 6,
+            "revision": 2,
             "architecture": "x64",
             "modernui": 1
         },
@@ -615,8 +615,8 @@ patch = {
         "dependency_cache": [
             {
                 "name": "pan2.maxpat",
-                "bootpath": "~/Library/Application Support/Cycling '74/Max 9/Examples/spatialization/panning/lib",
-                "patcherrelativepath": "../../../Library/Application Support/Cycling '74/Max 9/Examples/spatialization/panning/lib",
+                "bootpath": "~/Library/Application Support/Cycling '74/Max 8/Examples/spatialization/panning/lib",
+                "patcherrelativepath": "../../../Library/Application Support/Cycling '74/Max 8/Examples/spatialization/panning/lib",
                 "type": "JSON",
                 "implicit": 1
             }

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build the Chimera ambient patch for Max/MSP 9.
+Build the Chimera ambient patch for Ableton Live 11 + Max for Live 8.x (MSP).
 12-minute live piece: 1 input guitar + 4 ocean voices.
 
 CONCEPT
@@ -19,8 +19,8 @@ Two layers in permanent dialogue:
 
 SWELL DETECTION
 ===============
-  fast_env  = rms~ 50ms
-  slow_env  = average~ 2000ms       (approximated with lores~)
+  fast_env  = average~ … rms (~2205 smp ≈ 50ms @44.1k) — stock MSP (rms~ not always present)
+  slow_env  = average~ … rms (44100 smp) + lores~
   texture   = clip(slow_env / (fast_env + epsilon) - threshold, 0, 1)
   → texture near 1 = sustained/swelling;  0 = angular/percussive
   texture feeds a vline~/crossfade into the ocean capture gate.
@@ -52,8 +52,7 @@ NOTES ON MAX OBJECTS USED
   pitchshift~ – pitch correction on top of slow-rate playback
   freqshift~  – gentle shimmer on ocean output
   lores~      – low-pass for motive taps (warmth without muddiness)
-  rms~        – fast envelope follower for swell detection
-  average~    – slow envelope follower for swell detection  (approximated by lores~)
+  average~ rms – sliding RMS (replaces rms~ where that external is missing)
   line~ / vline~ – smooth parameter interpolation
 
 IMPORTANT: Max's expr does NOT support clip(). Use separate clip objects.
@@ -238,8 +237,8 @@ lines.append(line("onset_div", 0, "onset_clip", 0))
 # SECTION 3: SWELL DETECTION (texture score)
 # ============================================================
 #
-# fast_env = rms~ 50ms window       → fast response
-# slow_env = rms~; smoothed by lores~ at 0.5 Hz → represents sustained level
+# fast_env = average~ … rms @ ~50ms  → fast response (stock MSP)
+# slow_env = long-window RMS; smoothed by lores~ → sustained level
 # ratio    = slow_env / (fast_env + 0.001)
 # texture  = clip( ratio - 0.4, 0., 0.6) / 0.6   → 0=angular, 1=full swell
 # A sustained swell has slow_env ≈ fast_env → ratio ≈ 1.
@@ -247,11 +246,11 @@ lines.append(line("onset_div", 0, "onset_clip", 0))
 
 boxes.append(comment("lbl_s3", "=== SWELL DETECTION ===", COL_B, ROW_TOP+410, 200))
 
-boxes.append(newobj("rms_fast", "rms~ 2205", 1, 1, ["signal"],
+boxes.append(newobj("rms_fast", "average~ 2205 rms", 1, 1, ["signal"],
                     COL_B, ROW_TOP+440))
-boxes.append(comment("lbl_rmsf", "fast rms (50ms)", COL_B+70, ROW_TOP+442, 110))
+boxes.append(comment("lbl_rmsf", "fast RMS (~50ms)", COL_B+70, ROW_TOP+442, 120))
 
-boxes.append(newobj("rms_slow_raw", "rms~ 44100", 1, 1, ["signal"],
+boxes.append(newobj("rms_slow_raw", "average~ 44100 rms", 1, 1, ["signal"],
                     COL_B, ROW_TOP+475))
 boxes.append(newobj("rms_slow_lp", "lores~ 0.3", 2, 1, ["signal"],
                     COL_B, ROW_TOP+505))
@@ -579,7 +578,8 @@ boxes.append(comment("lbl_s8", "=== OCEAN PLAYBACK ===", COL_F, ROW_TOP-20, 180)
 # At t>0: depth starts ramping to 0.7 over 300s → use a "when t>0 start ramp" approach
 # We use the ms_sec feed → select → line objects for clean routing.
 
-# t=0 trigger: ramp 0→0.7 in 300000ms
+# t=0 trigger: ramp 0→0.7 in 300000ms (bang line inlet 1 errors; use message → inlet 0)
+boxes.append(msg("msg_od_ramp_start", "0.7 300000", COL_F-200, ROW_TOP+40, 95))
 boxes.append(newobj("od_ramp_up", "line 0. 300000", 2, 1, ["float"],
                     COL_F-80, ROW_TOP+40))
 boxes.append(comment("lbl_odramp", "ocean depth", COL_F-5, ROW_TOP+42, 80))
@@ -598,8 +598,9 @@ lines.append(line("od_fade_cmp",  0, "od_fade_once",  0))
 lines.append(line("od_fade_once", 0, "od_fade_msg",   0))
 lines.append(line("od_fade_msg",  0, "od_ramp_down",  0))
 
-# Start ramp up when start_btn pressed
-lines.append(line("start_btn", 0, "od_ramp_up", 0))
+# Start ramp up when START pressed (message into line left inlet)
+lines.append(line("start_btn", 0, "msg_od_ramp_start", 0))
+lines.append(line("msg_od_ramp_start", 0, "od_ramp_up", 0))
 
 # Ocean depth = max of up-ramp and inverse of down-ramp
 # Simplification: od_ramp_down starts at 0.7 and goes to 0; when it fires it takes over.
@@ -628,20 +629,26 @@ for v in OCEAN_VOICES:
     boxes.append(comment(f"lbl_oc_{idx}", f"--- Ocean {name} ---", vx, vy, 120))
 
     # ---- Rate LFO ----
-    # Triangle LFO: phasor~ → |2*phase - 1| = 1 - |2p-1| (but we want -1..1 first)
-    # Use: lfo = rate_base + rate_depth * (2 * phasor - 1)*(-1 alternating)
-    # Simplify: phasor~ → expr: rate_base + rate_depth * (2*$f1 - 1.)
-    # This gives a sawtooth-shaped rate; close enough for ultra-slow LFO.
-    # For true triangle: (2*$f1 - 1) → abs → invert: 1 - abs(2*$f1-1)
+    # Triangle: 1 - abs(2p-1) without expr~ (M4L / some runtimes lack expr~)
     lfo_freq = 1.0 / (period_ms / 1000.0)
     boxes.append(newobj(f"lfo_phasor_{idx}",
                         f"phasor~ {lfo_freq:.6f}",
                         1, 1, ["signal"],
                         vx, vy+40))
-    boxes.append(newobj(f"lfo_expr_{idx}",
-                        f"expr~ {rate_base} + {rate_depth} * (1. - abs(2. * $v1 - 1.))",
-                        1, 1, ["signal"],
+    boxes.append(newobj(f"lfo_mul2_{idx}", "*~ 2.", 1, 1, ["signal"],
                         vx, vy+70))
+    boxes.append(newobj(f"lfo_sub1_{idx}", "+~ -1.", 1, 1, ["signal"],
+                        vx + 58, vy+70))
+    boxes.append(newobj(f"lfo_abs_{idx}", "abs~", 1, 1, ["signal"],
+                        vx + 116, vy+70))
+    boxes.append(newobj(f"lfo_neg_{idx}", "*~ -1.", 1, 1, ["signal"],
+                        vx + 154, vy+70))
+    boxes.append(newobj(f"lfo_tri_{idx}", "+~ 1.", 1, 1, ["signal"],
+                        vx + 212, vy+70))
+    boxes.append(newobj(f"lfo_depth_{idx}", f"*~ {rate_depth}", 1, 1, ["signal"],
+                        vx + 270, vy+70))
+    boxes.append(newobj(f"lfo_base_{idx}", f"+~ {rate_base}", 1, 1, ["signal"],
+                        vx + 338, vy+70))
 
     # ---- groove~ ----
     boxes.append(newobj(f"groove_{idx}",
@@ -716,12 +723,18 @@ for v in OCEAN_VOICES:
 
     # ---- Wiring ----
 
-    # LFO → groove rate
-    lines.append(line(f"lfo_expr_{idx}", 0, f"groove_{idx}", 1))
-    lines.append(line(f"lfo_phasor_{idx}", 0, f"lfo_expr_{idx}", 0))
+    # LFO → groove rate (triangle)
+    lines.append(line(f"lfo_phasor_{idx}", 0, f"lfo_mul2_{idx}", 0))
+    lines.append(line(f"lfo_mul2_{idx}", 0, f"lfo_sub1_{idx}", 0))
+    lines.append(line(f"lfo_sub1_{idx}", 0, f"lfo_abs_{idx}", 0))
+    lines.append(line(f"lfo_abs_{idx}", 0, f"lfo_neg_{idx}", 0))
+    lines.append(line(f"lfo_neg_{idx}", 0, f"lfo_tri_{idx}", 0))
+    lines.append(line(f"lfo_tri_{idx}", 0, f"lfo_depth_{idx}", 0))
+    lines.append(line(f"lfo_depth_{idx}", 0, f"lfo_base_{idx}", 0))
+    lines.append(line(f"lfo_base_{idx}", 0, f"groove_{idx}", 1))
 
     # Rate compensation
-    lines.append(line(f"lfo_expr_{idx}",  0, f"rate_snap_{idx}", 0))
+    lines.append(line(f"lfo_base_{idx}",  0, f"rate_snap_{idx}", 0))
     lines.append(line(f"rate_snap_{idx}", 0, f"rate_comp_{idx}", 0))
 
     # Pitch chain: smoothed auto-tracked root → ptch_add1 inlet 0; poff_store → ptch_add1 inlet 1
@@ -905,9 +918,9 @@ patch = {
     "patcher": {
         "fileversion": 1,
         "appversion": {
-            "major": 9,
-            "minor": 0,
-            "revision": 8,
+            "major": 8,
+            "minor": 6,
+            "revision": 2,
             "architecture": "x64",
             "modernui": 1
         },

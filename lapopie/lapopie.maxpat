@@ -2,9 +2,9 @@
 	"patcher": {
 		"fileversion": 1,
 		"appversion": {
-			"major": 9,
-			"minor": 0,
-			"revision": 8,
+			"major": 8,
+			"minor": 6,
+			"revision": 2,
 			"architecture": "x64",
 			"modernui": 1
 		},
@@ -13986,8 +13986,8 @@
 		"dependency_cache": [
 			{
 				"name": "pan2.maxpat",
-				"bootpath": "~/Library/Application Support/Cycling '74/Max 9/Examples/spatialization/panning/lib",
-				"patcherrelativepath": "../../../Library/Application Support/Cycling '74/Max 9/Examples/spatialization/panning/lib",
+				"bootpath": "~/Library/Application Support/Cycling '74/Max 8/Examples/spatialization/panning/lib",
+				"patcherrelativepath": "../../../Library/Application Support/Cycling '74/Max 8/Examples/spatialization/panning/lib",
 				"type": "JSON",
 				"implicit": 1
 			}

@@ -42,6 +42,8 @@ KNOWN_INLETS = {
     "pan2": 4,
     "meter~": 1,
     "rms~": 1,
+    "average~": 1,
+    "abs~": 1,
     "snapshot~": 1,
     "groove~": 2,
     "record~": 2,
@@ -108,6 +110,8 @@ KNOWN_OUTLETS = {
     "meter~": 1,
     "snapshot~": 1,
     "rms~": 1,
+    "average~": 1,
+    "abs~": 1,
     "buffer~": 1,
     "record~": 1,
 }
@@ -540,10 +544,15 @@ def _check_chimera(boxes, inputs_to, outputs_from, errors, warnings):
         if not dac_ins[ch]:
             errors.append(f"dac~ inlet {ch} empty — {'L' if ch==0 else 'R'} channel silent")
 
-    # J) od_ramp_up started by start_btn
+    # J) od_ramp_up started by start_btn (direct or via msg_od_ramp_start message)
     if "od_ramp_up" in boxes:
         ru_ins = [src for (src, so, di) in inputs_to.get("od_ramp_up", [])]
-        if "start_btn" not in ru_ins:
+        ok = "start_btn" in ru_ins
+        if not ok and "msg_od_ramp_start" in ru_ins:
+            ok = "start_btn" in [
+                s for (s, _so, _di) in inputs_to.get("msg_od_ramp_start", [])
+            ]
+        if not ok:
             warnings.append("od_ramp_up not triggered by start_btn — ocean depth may never ramp")
 
     # K) ms_sec feeds preset comparators
