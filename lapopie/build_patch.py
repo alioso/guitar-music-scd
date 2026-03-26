@@ -311,25 +311,21 @@ boxes.append(newobj("detect_lt", "< 30.", 2, 1, ["int"],
 boxes.append(newobj("detect_gate", "*~", 2, 1, ["signal"],
                      COL_DETECT, ROW_TOP+50, 40))
 
-# yin~ for monophonic pitch detection
-# outputs: pitch in Hz (outlet 0), confidence (outlet 1)
-boxes.append(newobj("yin", "yin~", 1, 2, ["signal", "signal"],
-                     COL_DETECT, ROW_TOP+80, 50))
+# yin~ for monophonic pitch detection (IRCAM / Max Sound Box):
+# outlet 0 = Hz (control-rate float), outlet 1 = confidence (float).
+# Do not use ftom~/snapshot~ on pitch — those expect MSP signal; yin~ Hz is not signal-rate here.
+boxes.append(newobj("yin", "yin~ 2048 0.9", 1, 2, ["float", "float"],
+                     COL_DETECT, ROW_TOP+80, 110))
 
-# Convert Hz to MIDI note number for quantization
-# MIDI = 69 + 12 * log2(hz/440)
-# We use ftom~ (frequency to MIDI, signal-rate) then snapshot~
-boxes.append(newobj("ftom_detect", "ftom~", 1, 1, ["signal"],
-                     COL_DETECT, ROW_TOP+110, 65))
-boxes.append(newobj("snap_pitch", "snapshot~ 100", 1, 1, ["float"],
-                     COL_DETECT, ROW_TOP+140, 100))
-boxes.append(newobj("snap_conf", "snapshot~ 100", 1, 1, ["float"],
-                     COL_DETECT+110, ROW_TOP+110, 100))
+# Hz → MIDI note (control-rate)
+boxes.append(newobj("ftom_detect", "ftom", 1, 1, ["float"],
+                     COL_DETECT, ROW_TOP+110, 50))
 
-# Only store if confidence > 0.85
+# Only pass MIDI keys into histogram when confidence > 0.85
 boxes.append(newobj("conf_gt", "> 0.85", 2, 1, ["int"],
                      COL_DETECT+110, ROW_TOP+140, 65))
-boxes.append(msg("msg_store_pitch", "store", COL_DETECT+110, ROW_TOP+170, 50))
+boxes.append(newobj("gate_hist", "gate", 2, 1, [""],
+                     COL_DETECT+60, ROW_TOP+200, 45))
 
 # Round to nearest semitone (int) and store freq
 boxes.append(newobj("round_midi", "round", 2, 1, ["float"],
@@ -337,14 +333,27 @@ boxes.append(newobj("round_midi", "round", 2, 1, ["float"],
 boxes.append(newobj("int_midi", "int", 1, 2, ["int", "bang"],
                      COL_DETECT, ROW_TOP+200, 35))
 
-# coll to accumulate note histogram: note_number -> count
-boxes.append(newobj("note_hist", "coll note_hist", 2, 3, ["", "", ""],
+# Two colls share storage name "note_hist": read without write feedback; write list key count.
+# Histogram: lookup count (0 if missing), +1, send "list key newcount" to single coll inlet.
+boxes.append(newobj("note_hist_r", "coll note_hist", 1, 3, ["", "", ""],
                      COL_DETECT, ROW_TOP+230, 120))
-# When storing: fetch current count, increment, re-store
-boxes.append(newobj("hist_fetch", "route", 1, 2, ["", ""],
-                     COL_DETECT+130, ROW_TOP+230, 60))
+boxes.append(newobj("note_hist_w", "coll note_hist", 1, 3, ["", "", ""],
+                     COL_DETECT+135, ROW_TOP+230, 120))
+boxes.append(newobj("hist_t_a", "trigger i i", 1, 2, ["", ""],
+                     COL_DETECT+265, ROW_TOP+200, 70))
+boxes.append(newobj("hist_t_b", "trigger i b", 1, 2, ["", "bang"],
+                     COL_DETECT+350, ROW_TOP+200, 75))
+boxes.append(newobj("hist_t_c", "trigger b i", 1, 2, ["bang", ""],
+                     COL_DETECT+435, ROW_TOP+200, 75))
+boxes.append(msg("hist_f_zero", "0.", COL_DETECT+435, ROW_TOP+228, 32))
+boxes.append(newobj("hist_delay", "delay 0", 2, 1, ["bang"],
+                     COL_DETECT+525, ROW_TOP+228, 65))
+boxes.append(newobj("hist_f", "f", 2, 1, ["float"],
+                     COL_DETECT+435, ROW_TOP+255, 45))
 boxes.append(newobj("hist_inc", "+ 1", 2, 1, ["int"],
-                     COL_DETECT+130, ROW_TOP+260, 40))
+                     COL_DETECT+600, ROW_TOP+255, 35))
+boxes.append(newobj("hist_join", "join @triggers 2", 2, 1, [""],
+                     COL_DETECT+535, ROW_TOP+285, 120))
 
 # Status display
 boxes.append(comment("lbl_detect_st", "pitch→MIDI→histogram",
@@ -355,7 +364,7 @@ boxes.append(button("lock_pool_btn", COL_DETECT+170, ROW_TOP+20))
 boxes.append(comment("lbl_lock", "LOCK POOL (auto@30s)", COL_DETECT+200, ROW_TOP+24, 150))
 
 # The 5-note pool: top 5 detected notes stored in pool_coll
-boxes.append(newobj("pool_coll", "coll pool_notes", 2, 3, ["", "", ""],
+boxes.append(newobj("pool_coll", "coll pool_notes", 1, 3, ["", "", ""],
                      COL_DETECT+170, ROW_TOP+80, 120))
 
 # FIX 1b: wire pool_coll and ref_hz.
@@ -372,10 +381,10 @@ boxes.append(msg("msg_fetch_ref", "0", COL_DETECT+170, ROW_TOP+115, 27))
 boxes.append(newobj("mtof_ref", "mtof", 1, 1, ["float"],
                      COL_DETECT+210, ROW_TOP+115, 45))
 lines.append(line("lock_pool_btn",   0, "msg_hist_dump",   0))
-lines.append(line("msg_hist_dump",   0, "note_hist",       0))
-lines.append(line("note_hist",       0, "pool_count",      0))
+lines.append(line("msg_hist_dump",   0, "note_hist_r",     0))
+lines.append(line("note_hist_r",     0, "pool_count",      0))
 lines.append(line("pool_count",      0, "pool_store_pack", 0))
-lines.append(line("note_hist",       0, "pool_store_pack", 1))
+lines.append(line("note_hist_r",     0, "pool_store_pack", 1))
 lines.append(line("pool_store_pack", 0, "pool_store_msg",  0))
 lines.append(line("pool_store_msg",  0, "pool_coll",       0))
 lines.append(line("lock_pool_btn",   0, "msg_fetch_ref",   0))
@@ -389,18 +398,25 @@ lines.append(line("detect_lt",   0, "detect_gate", 1))
 lines.append(line("adc",         0, "detect_gate", 0))
 lines.append(line("detect_gate", 0, "yin",         0))
 lines.append(line("yin",         0, "ftom_detect", 0))
-lines.append(line("yin",         1, "snap_conf",   0))
-lines.append(line("ftom_detect", 0, "snap_pitch",  0))
-lines.append(line("snap_pitch",  0, "round_midi",  0))
+lines.append(line("yin",         1, "conf_gt",     0))
+lines.append(line("ftom_detect", 0, "round_midi",  0))
 lines.append(line("round_midi",  0, "int_midi",    0))
-lines.append(line("snap_conf",   0, "conf_gt",     0))
-lines.append(line("conf_gt",     0, "msg_store_pitch", 0))
-# FIX 1a: note_hist was never wired. int_midi sends key to recall; hist_inc adds 1;
-# msg_store_pitch triggers the re-store back under the same key.
-lines.append(line("int_midi",        0, "note_hist",   0))  # key -> recall count
-lines.append(line("note_hist",       0, "hist_inc",    0))  # recalled count -> +1
-lines.append(line("hist_inc",        0, "note_hist",   1))  # incremented -> value inlet
-lines.append(line("msg_store_pitch", 0, "note_hist",   0))  # "store" re-saves
+# Histogram only when confidence gate opens (same tick as int_midi updates).
+lines.append(line("int_midi",    0, "gate_hist",   0))
+lines.append(line("conf_gt",     0, "gate_hist",   1))
+lines.append(line("gate_hist",   0, "hist_t_a",    0))
+lines.append(line("hist_t_a",    1, "hist_join",   0))   # K -> join inlet 0 (fires first)
+lines.append(line("hist_t_a",    0, "hist_t_b",    0))
+lines.append(line("hist_t_b",    1, "hist_f_zero", 0))   # reset tally: f := 0 before lookup
+lines.append(line("hist_f_zero", 0, "hist_f",      1))
+lines.append(line("hist_t_b",    0, "hist_t_c",    0))
+lines.append(line("hist_t_c",    1, "note_hist_r", 0))   # recall count (missing key -> no write to f)
+lines.append(line("hist_t_c",    0, "hist_delay",  0))   # then bang f after stack clears
+lines.append(line("note_hist_r", 0, "hist_f",      1))   # hit -> f := C
+lines.append(line("hist_delay",  0, "hist_f",      0))   # output tally (0 if miss)
+lines.append(line("hist_f",      0, "hist_inc",    0))
+lines.append(line("hist_inc",    0, "hist_join",   1))
+lines.append(line("hist_join",   0, "note_hist_w", 0))
 
 # ============================================================
 # SECTION 4: RECORD BUFFER (0–30s)
@@ -544,7 +560,7 @@ boxes.append(comment("lbl_engine", "=== EUCLIDEAN ENGINE ===",
 # e.g. pattern 0 step 3 -> key 3, pattern 2 step 1 -> key 201
 # This allows direct lookup: step_key expr = cur_pat*100 + step_idx -> coll -> 0 or 1
 boxes.append(newobj("pat_bank", "coll pat_bank",
-                     2, 3, ["", "", ""],
+                     1, 3, ["", "", ""],
                      COL_ENGINE, ROW_TOP+20, 100))
 
 # Also store pattern lengths separately: key = pat_id + 900, value = length (n)
@@ -589,7 +605,7 @@ for i, mid_id in enumerate(all_pat_msgs):
 # Voice-specific note-order colls
 for vidx in range(1, 5):
     boxes.append(newobj(f"note_order_{vidx}", f"coll note_order_{vidx}",
-                         2, 3, ["", "", ""],
+                         1, 3, ["", "", ""],
                          COL_ENGINE, ROW_TOP + 250 + (vidx-1) * VOICE_H, 140))
 
 # ============================================================
@@ -655,7 +671,7 @@ for vidx in range(1, 5):
                          2, 1, ["int"],
                          vx + 405, vy + 30, 55))
     boxes.append(newobj(f"patlen_fetch_{vidx}", "coll pat_bank",
-                         2, 3, ["", "", ""],
+                         1, 3, ["", "", ""],
                          vx + 465, vy + 30, 100))
     # step counter "setmax N" message: prepend "setmax"
     boxes.append(newobj(f"patlen_sub1_{vidx}", "- 1",
@@ -672,7 +688,7 @@ for vidx in range(1, 5):
     # Pattern step lookup: fetch current step from note_order coll
     # step_ctr -> fetch pattern step from stored pattern list
     boxes.append(newobj(f"step_fetch_{vidx}", "coll pat_bank",
-                         2, 3, ["", "", ""],
+                         1, 3, ["", "", ""],
                          vx + 505, vy + 30, 100))
 
     # Parse the retrieved step bits — the coll returns the full symbol string
@@ -691,7 +707,7 @@ for vidx in range(1, 5):
 
     # Fetch the 0/1 value from pat_bank using computed key
     boxes.append(newobj(f"step_lookup_{vidx}", "coll pat_bank",
-                         2, 3, ["", "", ""],
+                         1, 3, ["", "", ""],
                          vx + 650, vy + 30, 100))
     boxes.append(newobj(f"step_sel_{vidx}", "sel 1",
                          2, 2, ["bang", ""],
@@ -707,7 +723,7 @@ for vidx in range(1, 5):
 
     # Fetch MIDI note from note_order coll
     boxes.append(newobj(f"note_fetch_{vidx}", f"coll note_order_{vidx}",
-                         2, 3, ["", "", ""],
+                         1, 3, ["", "", ""],
                          vx + 950, vy + 30, 130))
 
     # MIDI → Hz (mtof)
