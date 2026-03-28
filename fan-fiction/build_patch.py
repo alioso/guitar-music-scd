@@ -98,6 +98,7 @@ IMPORTANT: groove~ rate inlet is inlet 1. Audio comes from inlet 0 (loop command
 """
 
 import json
+import math
 import os
 import struct
 
@@ -140,10 +141,14 @@ def msg(id, text, x=0, y=0, w=None):
     return box(id, "message", text, numinlets=2, numoutlets=1,
                outlettype=[""], x=x, y=y, w=w or (len(text)*7+14))
 
-def button(id, x=0, y=0):
+def button(id, x=0, y=0, presentation=False, px=0, py=0, pw=24, ph=24):
+    extra = {"parameter_enable": 0}
+    if presentation:
+        extra["presentation"] = 1
+        extra["presentation_rect"] = [px, py, pw, ph]
     return box(id, "button", numinlets=1, numoutlets=1,
                outlettype=["bang"], x=x, y=y, w=24, h=24,
-               extra={"parameter_enable": 0})
+               extra=extra)
 
 def comment(id, text, x=0, y=0, w=None):
     return box(id, "comment", text, numinlets=1, numoutlets=0,
@@ -227,9 +232,9 @@ lines.append(line("adc", 0, "in_gain", 0))
 boxes.append(comment("lbl_s2", "=== TIMER + ARCS (600s = 10min) ===",
                      COL_B, ROW_TOP-20, 260))
 
-boxes.append(button("start_btn", COL_B, ROW_TOP))
+boxes.append(button("start_btn", COL_B, ROW_TOP, presentation=True, px=10, py=10))
 boxes.append(comment("lbl_start", "START", COL_B+30, ROW_TOP+4, 50))
-boxes.append(button("reset_btn", COL_B+80, ROW_TOP))
+boxes.append(button("reset_btn", COL_B+80, ROW_TOP, presentation=True, px=50, py=10))
 boxes.append(comment("lbl_reset", "RESET", COL_B+110, ROW_TOP+4, 60))
 
 boxes.append(msg("msg_start", "1", COL_B, ROW_TOP+35))
@@ -441,7 +446,7 @@ lines.append(line("bass_change",0, "bass_pass1",   0))
 # routing), we track each guitar's "current root note" in an f object and
 # compute the semitone offset when a new note arrives.
 # The pitch offset for each guitar = new_midi - guitar_root_note.
-# groove~ is direct rate playback; pitch shift via pitchshift~ 4096 on each voice.
+# groove~ is direct rate playback; pitch shift via pitchshift~ 512 on each voice.
 
 FAN_COL = COL_E
 boxes.append(comment("lbl_s5", "=== NOTE BANKS + TONAL SHIFT ===",
@@ -557,7 +562,7 @@ for g in range(1, 5):
     # Only fire on rising edge (0→1)
     boxes.append(newobj(f"g{g}_new_chg",  "change", 1, 1, ["int"],
                         FAN_COL+130, gy+80+25))
-    boxes.append(newobj(f"g{g}_new_pass", "== 1", 2, 1, ["int"],
+    boxes.append(newobj(f"g{g}_new_pass", "sel 1", 1, 2, ["bang", ""],
                         FAN_COL+130, gy+80+50))
     boxes.append(comment(f"lbl_new{g}", f"→ new note for G{g}",
                          FAN_COL+185, gy+80+52, 140))
@@ -686,7 +691,7 @@ for g in range(1, 5):
 # Guitars 2,3,4: rate = 1.0 + LFO (triangle, different depth/period per voice).
 # Each voice has:
 #   - Entry fade-in at its start time
-#   - pitchshift~ 4096 driven by ts_psig_{n} (tonal shift, starts at 0 semitones)
+#   - pitchshift~ 512 driven by ts_psig_{n} (tonal shift, starts at 0 semitones)
 #   - freqshift~ for light shimmer (much lighter than anaerobes — just 0.05 Hz)
 #   - onset_clip × fade_inv envelope
 #   - pan2 placement
@@ -757,19 +762,29 @@ for v in PHASE_VOICES:
         lines.append(line(f"gr_dep_{idx}", 0, f"gr_base_{idx}", 0))
         lines.append(line(f"gr_base_{idx}", 0, f"gr_{idx}", 1))
 
-    # pitchshift~ (driven by tonal shift sig~)
-    boxes.append(newobj(f"pshift_{idx}", "pitchshift~ 4096", 2, 2, ["signal","signal"],
-                        vx, vy+150))
-    lines.append(line(f"gr_{idx}",     0, f"pshift_{idx}",  0))
-    lines.append(line(f"ts_psig_{idx}", 0, f"pshift_{idx}", 1))
-
-    # Light freqshift shimmer (0.05 Hz — very subtle, just prevents static feel)
-    boxes.append(newobj(f"fshift_{idx}", "freqshift~", 2, 2, ["signal","signal"],
-                        vx, vy+195))
-    boxes.append(newobj(f"fshift_hz_{idx}", "sig~ 0.05", 1, 1, ["signal"],
-                        vx+90, vy+175))
-    lines.append(line(f"pshift_{idx}",    0, f"fshift_{idx}", 0))
-    lines.append(line(f"fshift_hz_{idx}", 0, f"fshift_{idx}", 1))
+    # Hilbert~ SSB frequency shifter (replaces freqshift~ — 0.05 Hz shimmer)
+    # pitchshift~ removed — near-1.0 rates give negligible transposition
+    boxes.append(newobj(f"fs_h_{idx}",    "hilbert~",  1, 2, ["signal","signal"], vx,     vy+195, 60))
+    boxes.append(newobj(f"fs_ccos_{idx}", "cycle~",    2, 1, ["signal"],          vx+80,  vy+195, 50))
+    boxes.append(newobj(f"fs_csin_{idx}", "cycle~",    2, 1, ["signal"],          vx+80,  vy+225, 50))
+    boxes.append(msg(   f"fs_cphase_{idx}", "0.25",                               vx+80,  vy+165, 35))
+    boxes.append(newobj(f"fs_sig_{idx}",  "sig~ 0.05", 1, 1, ["signal"],          vx+145, vy+195, 60))
+    boxes.append(newobj(f"fs_mr_{idx}",   "*~",        2, 1, ["signal"],          vx,     vy+260, 35))
+    boxes.append(newobj(f"fs_mi_{idx}",   "*~",        2, 1, ["signal"],          vx+50,  vy+260, 35))
+    boxes.append(newobj(f"fs_ni_{idx}",   "*~ -1.",    2, 1, ["signal"],          vx+50,  vy+290, 55))
+    boxes.append(newobj(f"fs_{idx}",      "+~",        2, 1, ["signal"],          vx+25,  vy+320, 35))
+    lines.append(line(f"gr_{idx}",          0, f"fs_h_{idx}",    0))
+    lines.append(line(f"fs_sig_{idx}",     0, f"fs_ccos_{idx}", 0))
+    lines.append(line(f"fs_sig_{idx}",     0, f"fs_csin_{idx}", 0))
+    lines.append(line(f"fs_cphase_{idx}",  0, f"fs_ccos_{idx}", 1))
+    lines.append(line("thisdevice",        0, f"fs_cphase_{idx}", 0))
+    lines.append(line(f"fs_h_{idx}",       0, f"fs_mr_{idx}",   0))
+    lines.append(line(f"fs_ccos_{idx}",    0, f"fs_mr_{idx}",   1))
+    lines.append(line(f"fs_h_{idx}",       1, f"fs_mi_{idx}",   0))
+    lines.append(line(f"fs_csin_{idx}",    0, f"fs_mi_{idx}",   1))
+    lines.append(line(f"fs_mr_{idx}",      0, f"fs_{idx}",      0))
+    lines.append(line(f"fs_mi_{idx}",      0, f"fs_ni_{idx}",   0))
+    lines.append(line(f"fs_ni_{idx}",      0, f"fs_{idx}",      1))
 
     # Volume envelope: onset_clip × fade_inv × entry_gate
     # Entry gate: time > entry_s → change → fire → ramp 0→1 over 5s
@@ -791,11 +806,12 @@ for v in PHASE_VOICES:
     boxes.append(newobj(f"pv_vol_mult_{idx}", "*~ 0.7", 2, 1, ["signal"],
                         vx, vy+460))
 
-    # pan2
-    boxes.append(newobj(f"pv_pan_{idx}", "pan2", 4, 2, ["signal","signal"],
-                        vx, vy+495))
-    boxes.append(msg(f"pv_pan_msg_{idx}", str(pan_deg),
-                     vx+70, vy+495, 40))
+    # Inline equal-power panning (replaces pan2)
+    _pan_norm = max(0.0, min(1.0, (pan_deg + 45.0) / 90.0))
+    _pan_l = math.cos(_pan_norm * math.pi / 2)
+    _pan_r = math.sin(_pan_norm * math.pi / 2)
+    boxes.append(newobj(f"pv_pan_L_{idx}", f"*~ {_pan_l:.4f}", 2, 1, ["signal"], vx,     vy+495, 75))
+    boxes.append(newobj(f"pv_pan_R_{idx}", f"*~ {_pan_r:.4f}", 2, 1, ["signal"], vx+85,  vy+495, 75))
 
     # Wiring: timer → entry gate
     lines.append(line("ms_sec",         0, f"entry_cmp_{idx}",  0, idx+6))
@@ -809,17 +825,20 @@ for v in PHASE_VOICES:
     lines.append(line("fade_inv_add",     0, f"pv_env2_{idx}", 1))
     lines.append(line(f"pv_env2_{idx}",    0, f"pv_vol_sig_{idx}", 0))
     lines.append(line(f"pv_vol_sig_{idx}", 0, f"pv_vol_mult_{idx}", 1))
-    lines.append(line(f"fshift_{idx}",     0, f"pv_vol_mult_{idx}", 0))
-    lines.append(line(f"pv_vol_mult_{idx}", 0, f"pv_pan_{idx}", 0))
-    lines.append(line(f"pv_pan_msg_{idx}",  0, f"pv_pan_{idx}", 1))
+    lines.append(line(f"fs_{idx}",           0, f"pv_vol_mult_{idx}", 0))
+    lines.append(line(f"pv_vol_mult_{idx}",  0, f"pv_pan_L_{idx}", 0))
+    lines.append(line(f"pv_vol_mult_{idx}",  0, f"pv_pan_R_{idx}", 0))
 
-# Input voice pan (no groove, just in_gain through pan2 for positioning)
-boxes.append(newobj("in_pan", "pan2", 4, 2, ["signal","signal"],
-                    COL_F + 4*120, vy+495))
-boxes.append(msg("in_pan_msg", str(INPUT_PAN),
-                 COL_F + 4*120 + 70, vy+495, 40))
-lines.append(line("in_gain",    0, "in_pan", 0))
-lines.append(line("in_pan_msg", 0, "in_pan", 1))
+# Input voice pan — inline equal-power (replaces pan2)
+_in_pan_norm = max(0.0, min(1.0, (INPUT_PAN + 45.0) / 90.0))
+_in_pan_l = math.cos(_in_pan_norm * math.pi / 2)
+_in_pan_r = math.sin(_in_pan_norm * math.pi / 2)
+boxes.append(newobj("in_pan_L", f"*~ {_in_pan_l:.4f}", 2, 1, ["signal"],
+                    COL_F + 4*120,     vy+495, 75))
+boxes.append(newobj("in_pan_R", f"*~ {_in_pan_r:.4f}", 2, 1, ["signal"],
+                    COL_F + 4*120+85,  vy+495, 75))
+lines.append(line("in_gain", 0, "in_pan_L", 0))
+lines.append(line("in_gain", 0, "in_pan_R", 0))
 
 # ============================================================
 # SECTION 7: SAMPLE TRIGGER SYSTEM
@@ -999,14 +1018,14 @@ boxes.append(newobj("meter_L", "meter~", 1, 1, ["float"], COL_MIX,    ROW_TOP+32
 boxes.append(newobj("meter_R", "meter~", 1, 1, ["float"], COL_MIX+90, ROW_TOP+325, 60))
 
 # Phase voices → sum
-lines.append(line("pv_pan_1", 0, "pv_sumL_12",  0))
-lines.append(line("pv_pan_1", 1, "pv_sumR_12",  0))
-lines.append(line("pv_pan_2", 0, "pv_sumL_12",  1))
-lines.append(line("pv_pan_2", 1, "pv_sumR_12",  1))
-lines.append(line("pv_pan_3", 0, "pv_sumL_34",  0))
-lines.append(line("pv_pan_3", 1, "pv_sumR_34",  0))
-lines.append(line("pv_pan_4", 0, "pv_sumL_34",  1))
-lines.append(line("pv_pan_4", 1, "pv_sumR_34",  1))
+lines.append(line("pv_pan_L_1", 0, "pv_sumL_12",  0))
+lines.append(line("pv_pan_R_1", 0, "pv_sumR_12",  0))
+lines.append(line("pv_pan_L_2", 0, "pv_sumL_12",  1))
+lines.append(line("pv_pan_R_2", 0, "pv_sumR_12",  1))
+lines.append(line("pv_pan_L_3", 0, "pv_sumL_34",  0))
+lines.append(line("pv_pan_R_3", 0, "pv_sumR_34",  0))
+lines.append(line("pv_pan_L_4", 0, "pv_sumL_34",  1))
+lines.append(line("pv_pan_R_4", 0, "pv_sumR_34",  1))
 
 lines.append(line("pv_sumL_12",  0, "pv_sumL_all", 0))
 lines.append(line("pv_sumL_34",  0, "pv_sumL_all", 1))
@@ -1020,9 +1039,9 @@ lines.append(line("pv_sumR_all",   0, "final_R_1", 0))
 lines.append(line("samp_chainR",   0, "final_R_1", 1))
 
 lines.append(line("final_L_1",  0, "final_L_2", 0))
-lines.append(line("in_pan",     0, "final_L_2", 1))
+lines.append(line("in_pan_L",   0, "final_L_2", 1))
 lines.append(line("final_R_1",  0, "final_R_2", 0))
-lines.append(line("in_pan",     1, "final_R_2", 1))
+lines.append(line("in_pan_R",   0, "final_R_2", 1))
 
 lines.append(line("final_L_2", 0, "master_L", 0))
 lines.append(line("final_R_2", 0, "master_R", 0))

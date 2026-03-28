@@ -146,7 +146,14 @@
           "outlettype": [
             "bang"
           ],
-          "parameter_enable": 0
+          "parameter_enable": 0,
+          "presentation": 1,
+          "presentation_rect": [
+            10,
+            10,
+            24,
+            24
+          ]
         }
       },
       {
@@ -180,7 +187,14 @@
           "outlettype": [
             "bang"
           ],
-          "parameter_enable": 0
+          "parameter_enable": 0,
+          "presentation": 1,
+          "presentation_rect": [
+            50,
+            10,
+            24,
+            24
+          ]
         }
       },
       {
@@ -2457,18 +2471,19 @@
         "box": {
           "id": "g1_new_pass",
           "maxclass": "newobj",
-          "numinlets": 2,
-          "numoutlets": 1,
+          "numinlets": 1,
+          "numoutlets": 2,
           "patching_rect": [
             1210,
             690,
-            48,
+            55,
             22
           ],
           "outlettype": [
-            "int"
+            "bang",
+            ""
           ],
-          "text": "== 1"
+          "text": "sel 1"
         }
       },
       {
@@ -2705,18 +2720,19 @@
         "box": {
           "id": "g2_new_pass",
           "maxclass": "newobj",
-          "numinlets": 2,
-          "numoutlets": 1,
+          "numinlets": 1,
+          "numoutlets": 2,
           "patching_rect": [
             1210,
             785,
-            48,
+            55,
             22
           ],
           "outlettype": [
-            "int"
+            "bang",
+            ""
           ],
-          "text": "== 1"
+          "text": "sel 1"
         }
       },
       {
@@ -2953,18 +2969,19 @@
         "box": {
           "id": "g3_new_pass",
           "maxclass": "newobj",
-          "numinlets": 2,
-          "numoutlets": 1,
+          "numinlets": 1,
+          "numoutlets": 2,
           "patching_rect": [
             1210,
             880,
-            48,
+            55,
             22
           ],
           "outlettype": [
-            "int"
+            "bang",
+            ""
           ],
-          "text": "== 1"
+          "text": "sel 1"
         }
       },
       {
@@ -3201,18 +3218,19 @@
         "box": {
           "id": "g4_new_pass",
           "maxclass": "newobj",
-          "numinlets": 2,
-          "numoutlets": 1,
+          "numinlets": 1,
+          "numoutlets": 2,
           "patching_rect": [
             1210,
             975,
-            48,
+            55,
             22
           ],
           "outlettype": [
-            "int"
+            "bang",
+            ""
           ],
-          "text": "== 1"
+          "text": "sel 1"
         }
       },
       {
@@ -4770,58 +4788,165 @@
       },
       {
         "box": {
-          "id": "pshift_1",
+          "id": "fs_h_1",
           "maxclass": "newobj",
-          "numinlets": 2,
-          "numoutlets": 2,
-          "patching_rect": [
-            1380,
-            190,
-            132,
-            22
-          ],
-          "outlettype": [
-            "signal",
-            "signal"
-          ],
-          "text": "pitchshift~ 4096"
-        }
-      },
-      {
-        "box": {
-          "id": "fshift_1",
-          "maxclass": "newobj",
-          "numinlets": 2,
+          "numinlets": 1,
           "numoutlets": 2,
           "patching_rect": [
             1380,
             235,
-            90,
+            60,
             22
           ],
           "outlettype": [
             "signal",
             "signal"
           ],
-          "text": "freqshift~"
+          "text": "hilbert~"
         }
       },
       {
         "box": {
-          "id": "fshift_hz_1",
+          "id": "fs_ccos_1",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1460,
+            235,
+            50,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "cycle~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_csin_1",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1460,
+            265,
+            50,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "cycle~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_cphase_1",
+          "maxclass": "message",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1460,
+            205,
+            35,
+            22
+          ],
+          "outlettype": [
+            ""
+          ],
+          "text": "0.25"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_sig_1",
           "maxclass": "newobj",
           "numinlets": 1,
           "numoutlets": 1,
           "patching_rect": [
-            1470,
-            215,
-            83,
+            1525,
+            235,
+            60,
             22
           ],
           "outlettype": [
             "signal"
           ],
           "text": "sig~ 0.05"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_mr_1",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1380,
+            300,
+            35,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_mi_1",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1430,
+            300,
+            35,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_ni_1",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1430,
+            330,
+            55,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~ -1."
+        }
+      },
+      {
+        "box": {
+          "id": "fs_1",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1405,
+            360,
+            35,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~"
         }
       },
       {
@@ -4970,39 +5095,38 @@
       },
       {
         "box": {
-          "id": "pv_pan_1",
+          "id": "pv_pan_L_1",
           "maxclass": "newobj",
-          "numinlets": 4,
-          "numoutlets": 2,
+          "numinlets": 2,
+          "numoutlets": 1,
           "patching_rect": [
             1380,
             535,
-            48,
+            75,
             22
           ],
           "outlettype": [
-            "signal",
             "signal"
           ],
-          "text": "pan2"
+          "text": "*~ 0.7071"
         }
       },
       {
         "box": {
-          "id": "pv_pan_msg_1",
-          "maxclass": "message",
+          "id": "pv_pan_R_1",
+          "maxclass": "newobj",
           "numinlets": 2,
           "numoutlets": 1,
           "patching_rect": [
-            1450,
+            1465,
             535,
-            40,
+            75,
             22
           ],
           "outlettype": [
-            ""
+            "signal"
           ],
-          "text": "0.0"
+          "text": "*~ 0.7071"
         }
       },
       {
@@ -5186,58 +5310,165 @@
       },
       {
         "box": {
-          "id": "pshift_2",
+          "id": "fs_h_2",
           "maxclass": "newobj",
-          "numinlets": 2,
-          "numoutlets": 2,
-          "patching_rect": [
-            1500,
-            190,
-            132,
-            22
-          ],
-          "outlettype": [
-            "signal",
-            "signal"
-          ],
-          "text": "pitchshift~ 4096"
-        }
-      },
-      {
-        "box": {
-          "id": "fshift_2",
-          "maxclass": "newobj",
-          "numinlets": 2,
+          "numinlets": 1,
           "numoutlets": 2,
           "patching_rect": [
             1500,
             235,
-            90,
+            60,
             22
           ],
           "outlettype": [
             "signal",
             "signal"
           ],
-          "text": "freqshift~"
+          "text": "hilbert~"
         }
       },
       {
         "box": {
-          "id": "fshift_hz_2",
+          "id": "fs_ccos_2",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1580,
+            235,
+            50,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "cycle~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_csin_2",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1580,
+            265,
+            50,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "cycle~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_cphase_2",
+          "maxclass": "message",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1580,
+            205,
+            35,
+            22
+          ],
+          "outlettype": [
+            ""
+          ],
+          "text": "0.25"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_sig_2",
           "maxclass": "newobj",
           "numinlets": 1,
           "numoutlets": 1,
           "patching_rect": [
-            1590,
-            215,
-            83,
+            1645,
+            235,
+            60,
             22
           ],
           "outlettype": [
             "signal"
           ],
           "text": "sig~ 0.05"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_mr_2",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1500,
+            300,
+            35,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_mi_2",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1550,
+            300,
+            35,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_ni_2",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1550,
+            330,
+            55,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~ -1."
+        }
+      },
+      {
+        "box": {
+          "id": "fs_2",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1525,
+            360,
+            35,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~"
         }
       },
       {
@@ -5386,39 +5617,38 @@
       },
       {
         "box": {
-          "id": "pv_pan_2",
+          "id": "pv_pan_L_2",
           "maxclass": "newobj",
-          "numinlets": 4,
-          "numoutlets": 2,
+          "numinlets": 2,
+          "numoutlets": 1,
           "patching_rect": [
             1500,
             535,
-            48,
+            75,
             22
           ],
           "outlettype": [
-            "signal",
             "signal"
           ],
-          "text": "pan2"
+          "text": "*~ 0.9063"
         }
       },
       {
         "box": {
-          "id": "pv_pan_msg_2",
-          "maxclass": "message",
+          "id": "pv_pan_R_2",
+          "maxclass": "newobj",
           "numinlets": 2,
           "numoutlets": 1,
           "patching_rect": [
-            1570,
+            1585,
             535,
-            40,
+            75,
             22
           ],
           "outlettype": [
-            ""
+            "signal"
           ],
-          "text": "-20.0"
+          "text": "*~ 0.4226"
         }
       },
       {
@@ -5602,58 +5832,165 @@
       },
       {
         "box": {
-          "id": "pshift_3",
+          "id": "fs_h_3",
           "maxclass": "newobj",
-          "numinlets": 2,
-          "numoutlets": 2,
-          "patching_rect": [
-            1620,
-            190,
-            132,
-            22
-          ],
-          "outlettype": [
-            "signal",
-            "signal"
-          ],
-          "text": "pitchshift~ 4096"
-        }
-      },
-      {
-        "box": {
-          "id": "fshift_3",
-          "maxclass": "newobj",
-          "numinlets": 2,
+          "numinlets": 1,
           "numoutlets": 2,
           "patching_rect": [
             1620,
             235,
-            90,
+            60,
             22
           ],
           "outlettype": [
             "signal",
             "signal"
           ],
-          "text": "freqshift~"
+          "text": "hilbert~"
         }
       },
       {
         "box": {
-          "id": "fshift_hz_3",
+          "id": "fs_ccos_3",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1700,
+            235,
+            50,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "cycle~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_csin_3",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1700,
+            265,
+            50,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "cycle~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_cphase_3",
+          "maxclass": "message",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1700,
+            205,
+            35,
+            22
+          ],
+          "outlettype": [
+            ""
+          ],
+          "text": "0.25"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_sig_3",
           "maxclass": "newobj",
           "numinlets": 1,
           "numoutlets": 1,
           "patching_rect": [
-            1710,
-            215,
-            83,
+            1765,
+            235,
+            60,
             22
           ],
           "outlettype": [
             "signal"
           ],
           "text": "sig~ 0.05"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_mr_3",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1620,
+            300,
+            35,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_mi_3",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1670,
+            300,
+            35,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_ni_3",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1670,
+            330,
+            55,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~ -1."
+        }
+      },
+      {
+        "box": {
+          "id": "fs_3",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1645,
+            360,
+            35,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~"
         }
       },
       {
@@ -5802,39 +6139,38 @@
       },
       {
         "box": {
-          "id": "pv_pan_3",
+          "id": "pv_pan_L_3",
           "maxclass": "newobj",
-          "numinlets": 4,
-          "numoutlets": 2,
+          "numinlets": 2,
+          "numoutlets": 1,
           "patching_rect": [
             1620,
             535,
-            48,
+            75,
             22
           ],
           "outlettype": [
-            "signal",
             "signal"
           ],
-          "text": "pan2"
+          "text": "*~ 0.4226"
         }
       },
       {
         "box": {
-          "id": "pv_pan_msg_3",
-          "maxclass": "message",
+          "id": "pv_pan_R_3",
+          "maxclass": "newobj",
           "numinlets": 2,
           "numoutlets": 1,
           "patching_rect": [
-            1690,
+            1705,
             535,
-            40,
+            75,
             22
           ],
           "outlettype": [
-            ""
+            "signal"
           ],
-          "text": "20.0"
+          "text": "*~ 0.9063"
         }
       },
       {
@@ -6018,58 +6354,165 @@
       },
       {
         "box": {
-          "id": "pshift_4",
+          "id": "fs_h_4",
           "maxclass": "newobj",
-          "numinlets": 2,
-          "numoutlets": 2,
-          "patching_rect": [
-            1740,
-            190,
-            132,
-            22
-          ],
-          "outlettype": [
-            "signal",
-            "signal"
-          ],
-          "text": "pitchshift~ 4096"
-        }
-      },
-      {
-        "box": {
-          "id": "fshift_4",
-          "maxclass": "newobj",
-          "numinlets": 2,
+          "numinlets": 1,
           "numoutlets": 2,
           "patching_rect": [
             1740,
             235,
-            90,
+            60,
             22
           ],
           "outlettype": [
             "signal",
             "signal"
           ],
-          "text": "freqshift~"
+          "text": "hilbert~"
         }
       },
       {
         "box": {
-          "id": "fshift_hz_4",
+          "id": "fs_ccos_4",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1820,
+            235,
+            50,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "cycle~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_csin_4",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1820,
+            265,
+            50,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "cycle~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_cphase_4",
+          "maxclass": "message",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1820,
+            205,
+            35,
+            22
+          ],
+          "outlettype": [
+            ""
+          ],
+          "text": "0.25"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_sig_4",
           "maxclass": "newobj",
           "numinlets": 1,
           "numoutlets": 1,
           "patching_rect": [
-            1830,
-            215,
-            83,
+            1885,
+            235,
+            60,
             22
           ],
           "outlettype": [
             "signal"
           ],
           "text": "sig~ 0.05"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_mr_4",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1740,
+            300,
+            35,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_mi_4",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1790,
+            300,
+            35,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~"
+        }
+      },
+      {
+        "box": {
+          "id": "fs_ni_4",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1790,
+            330,
+            55,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~ -1."
+        }
+      },
+      {
+        "box": {
+          "id": "fs_4",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1765,
+            360,
+            35,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~"
         }
       },
       {
@@ -6218,76 +6661,74 @@
       },
       {
         "box": {
-          "id": "pv_pan_4",
+          "id": "pv_pan_L_4",
           "maxclass": "newobj",
-          "numinlets": 4,
-          "numoutlets": 2,
+          "numinlets": 2,
+          "numoutlets": 1,
           "patching_rect": [
             1740,
             535,
-            48,
+            75,
             22
           ],
           "outlettype": [
-            "signal",
             "signal"
           ],
-          "text": "pan2"
+          "text": "*~ 0.9848"
         }
       },
       {
         "box": {
-          "id": "pv_pan_msg_4",
-          "maxclass": "message",
+          "id": "pv_pan_R_4",
+          "maxclass": "newobj",
           "numinlets": 2,
           "numoutlets": 1,
           "patching_rect": [
-            1810,
+            1825,
             535,
-            40,
+            75,
             22
           ],
           "outlettype": [
-            ""
+            "signal"
           ],
-          "text": "-35.0"
+          "text": "*~ 0.1736"
         }
       },
       {
         "box": {
-          "id": "in_pan",
+          "id": "in_pan_L",
           "maxclass": "newobj",
-          "numinlets": 4,
-          "numoutlets": 2,
+          "numinlets": 2,
+          "numoutlets": 1,
           "patching_rect": [
             1860,
             535,
-            48,
+            75,
             22
           ],
           "outlettype": [
-            "signal",
             "signal"
           ],
-          "text": "pan2"
+          "text": "*~ 0.1736"
         }
       },
       {
         "box": {
-          "id": "in_pan_msg",
-          "maxclass": "message",
+          "id": "in_pan_R",
+          "maxclass": "newobj",
           "numinlets": 2,
           "numoutlets": 1,
           "patching_rect": [
-            1930,
+            1945,
             535,
-            40,
+            75,
             22
           ],
           "outlettype": [
-            ""
+            "signal"
           ],
-          "text": "35.0"
+          "text": "*~ 0.9848"
         }
       },
       {
@@ -11880,7 +12321,7 @@
       {
         "patchline": {
           "destination": [
-            "pshift_1",
+            "fs_h_1",
             0
           ],
           "source": [
@@ -11892,11 +12333,11 @@
       {
         "patchline": {
           "destination": [
-            "pshift_1",
-            1
+            "fs_ccos_1",
+            0
           ],
           "source": [
-            "ts_psig_1",
+            "fs_sig_1",
             0
           ]
         }
@@ -11904,11 +12345,11 @@
       {
         "patchline": {
           "destination": [
-            "fshift_1",
+            "fs_csin_1",
             0
           ],
           "source": [
-            "pshift_1",
+            "fs_sig_1",
             0
           ]
         }
@@ -11916,11 +12357,107 @@
       {
         "patchline": {
           "destination": [
-            "fshift_1",
+            "fs_ccos_1",
             1
           ],
           "source": [
-            "fshift_hz_1",
+            "fs_cphase_1",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_cphase_1",
+            0
+          ],
+          "source": [
+            "thisdevice",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mr_1",
+            0
+          ],
+          "source": [
+            "fs_h_1",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mr_1",
+            1
+          ],
+          "source": [
+            "fs_ccos_1",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mi_1",
+            0
+          ],
+          "source": [
+            "fs_h_1",
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mi_1",
+            1
+          ],
+          "source": [
+            "fs_csin_1",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_1",
+            0
+          ],
+          "source": [
+            "fs_mr_1",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_ni_1",
+            0
+          ],
+          "source": [
+            "fs_mi_1",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_1",
+            1
+          ],
+          "source": [
+            "fs_ni_1",
             0
           ]
         }
@@ -12053,7 +12590,7 @@
             0
           ],
           "source": [
-            "fshift_1",
+            "fs_1",
             0
           ]
         }
@@ -12061,7 +12598,7 @@
       {
         "patchline": {
           "destination": [
-            "pv_pan_1",
+            "pv_pan_L_1",
             0
           ],
           "source": [
@@ -12073,11 +12610,11 @@
       {
         "patchline": {
           "destination": [
-            "pv_pan_1",
-            1
+            "pv_pan_R_1",
+            0
           ],
           "source": [
-            "pv_pan_msg_1",
+            "pv_vol_mult_1",
             0
           ]
         }
@@ -12193,7 +12730,7 @@
       {
         "patchline": {
           "destination": [
-            "pshift_2",
+            "fs_h_2",
             0
           ],
           "source": [
@@ -12205,11 +12742,11 @@
       {
         "patchline": {
           "destination": [
-            "pshift_2",
-            1
+            "fs_ccos_2",
+            0
           ],
           "source": [
-            "ts_psig_2",
+            "fs_sig_2",
             0
           ]
         }
@@ -12217,11 +12754,11 @@
       {
         "patchline": {
           "destination": [
-            "fshift_2",
+            "fs_csin_2",
             0
           ],
           "source": [
-            "pshift_2",
+            "fs_sig_2",
             0
           ]
         }
@@ -12229,11 +12766,107 @@
       {
         "patchline": {
           "destination": [
-            "fshift_2",
+            "fs_ccos_2",
             1
           ],
           "source": [
-            "fshift_hz_2",
+            "fs_cphase_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_cphase_2",
+            0
+          ],
+          "source": [
+            "thisdevice",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mr_2",
+            0
+          ],
+          "source": [
+            "fs_h_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mr_2",
+            1
+          ],
+          "source": [
+            "fs_ccos_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mi_2",
+            0
+          ],
+          "source": [
+            "fs_h_2",
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mi_2",
+            1
+          ],
+          "source": [
+            "fs_csin_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_2",
+            0
+          ],
+          "source": [
+            "fs_mr_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_ni_2",
+            0
+          ],
+          "source": [
+            "fs_mi_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_2",
+            1
+          ],
+          "source": [
+            "fs_ni_2",
             0
           ]
         }
@@ -12366,7 +12999,7 @@
             0
           ],
           "source": [
-            "fshift_2",
+            "fs_2",
             0
           ]
         }
@@ -12374,7 +13007,7 @@
       {
         "patchline": {
           "destination": [
-            "pv_pan_2",
+            "pv_pan_L_2",
             0
           ],
           "source": [
@@ -12386,11 +13019,11 @@
       {
         "patchline": {
           "destination": [
-            "pv_pan_2",
-            1
+            "pv_pan_R_2",
+            0
           ],
           "source": [
-            "pv_pan_msg_2",
+            "pv_vol_mult_2",
             0
           ]
         }
@@ -12506,7 +13139,7 @@
       {
         "patchline": {
           "destination": [
-            "pshift_3",
+            "fs_h_3",
             0
           ],
           "source": [
@@ -12518,11 +13151,11 @@
       {
         "patchline": {
           "destination": [
-            "pshift_3",
-            1
+            "fs_ccos_3",
+            0
           ],
           "source": [
-            "ts_psig_3",
+            "fs_sig_3",
             0
           ]
         }
@@ -12530,11 +13163,11 @@
       {
         "patchline": {
           "destination": [
-            "fshift_3",
+            "fs_csin_3",
             0
           ],
           "source": [
-            "pshift_3",
+            "fs_sig_3",
             0
           ]
         }
@@ -12542,11 +13175,107 @@
       {
         "patchline": {
           "destination": [
-            "fshift_3",
+            "fs_ccos_3",
             1
           ],
           "source": [
-            "fshift_hz_3",
+            "fs_cphase_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_cphase_3",
+            0
+          ],
+          "source": [
+            "thisdevice",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mr_3",
+            0
+          ],
+          "source": [
+            "fs_h_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mr_3",
+            1
+          ],
+          "source": [
+            "fs_ccos_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mi_3",
+            0
+          ],
+          "source": [
+            "fs_h_3",
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mi_3",
+            1
+          ],
+          "source": [
+            "fs_csin_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_3",
+            0
+          ],
+          "source": [
+            "fs_mr_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_ni_3",
+            0
+          ],
+          "source": [
+            "fs_mi_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_3",
+            1
+          ],
+          "source": [
+            "fs_ni_3",
             0
           ]
         }
@@ -12679,7 +13408,7 @@
             0
           ],
           "source": [
-            "fshift_3",
+            "fs_3",
             0
           ]
         }
@@ -12687,7 +13416,7 @@
       {
         "patchline": {
           "destination": [
-            "pv_pan_3",
+            "pv_pan_L_3",
             0
           ],
           "source": [
@@ -12699,11 +13428,11 @@
       {
         "patchline": {
           "destination": [
-            "pv_pan_3",
-            1
+            "pv_pan_R_3",
+            0
           ],
           "source": [
-            "pv_pan_msg_3",
+            "pv_vol_mult_3",
             0
           ]
         }
@@ -12819,7 +13548,7 @@
       {
         "patchline": {
           "destination": [
-            "pshift_4",
+            "fs_h_4",
             0
           ],
           "source": [
@@ -12831,11 +13560,11 @@
       {
         "patchline": {
           "destination": [
-            "pshift_4",
-            1
+            "fs_ccos_4",
+            0
           ],
           "source": [
-            "ts_psig_4",
+            "fs_sig_4",
             0
           ]
         }
@@ -12843,11 +13572,11 @@
       {
         "patchline": {
           "destination": [
-            "fshift_4",
+            "fs_csin_4",
             0
           ],
           "source": [
-            "pshift_4",
+            "fs_sig_4",
             0
           ]
         }
@@ -12855,11 +13584,107 @@
       {
         "patchline": {
           "destination": [
-            "fshift_4",
+            "fs_ccos_4",
             1
           ],
           "source": [
-            "fshift_hz_4",
+            "fs_cphase_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_cphase_4",
+            0
+          ],
+          "source": [
+            "thisdevice",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mr_4",
+            0
+          ],
+          "source": [
+            "fs_h_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mr_4",
+            1
+          ],
+          "source": [
+            "fs_ccos_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mi_4",
+            0
+          ],
+          "source": [
+            "fs_h_4",
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_mi_4",
+            1
+          ],
+          "source": [
+            "fs_csin_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_4",
+            0
+          ],
+          "source": [
+            "fs_mr_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_ni_4",
+            0
+          ],
+          "source": [
+            "fs_mi_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "fs_4",
+            1
+          ],
+          "source": [
+            "fs_ni_4",
             0
           ]
         }
@@ -12992,7 +13817,7 @@
             0
           ],
           "source": [
-            "fshift_4",
+            "fs_4",
             0
           ]
         }
@@ -13000,7 +13825,7 @@
       {
         "patchline": {
           "destination": [
-            "pv_pan_4",
+            "pv_pan_L_4",
             0
           ],
           "source": [
@@ -13012,11 +13837,11 @@
       {
         "patchline": {
           "destination": [
-            "pv_pan_4",
-            1
+            "pv_pan_R_4",
+            0
           ],
           "source": [
-            "pv_pan_msg_4",
+            "pv_vol_mult_4",
             0
           ]
         }
@@ -13024,7 +13849,7 @@
       {
         "patchline": {
           "destination": [
-            "in_pan",
+            "in_pan_L",
             0
           ],
           "source": [
@@ -13036,11 +13861,11 @@
       {
         "patchline": {
           "destination": [
-            "in_pan",
-            1
+            "in_pan_R",
+            0
           ],
           "source": [
-            "in_pan_msg",
+            "in_gain",
             0
           ]
         }
@@ -13989,7 +14814,7 @@
             0
           ],
           "source": [
-            "pv_pan_1",
+            "pv_pan_L_1",
             0
           ]
         }
@@ -14001,8 +14826,8 @@
             0
           ],
           "source": [
-            "pv_pan_1",
-            1
+            "pv_pan_R_1",
+            0
           ]
         }
       },
@@ -14013,7 +14838,7 @@
             1
           ],
           "source": [
-            "pv_pan_2",
+            "pv_pan_L_2",
             0
           ]
         }
@@ -14025,8 +14850,8 @@
             1
           ],
           "source": [
-            "pv_pan_2",
-            1
+            "pv_pan_R_2",
+            0
           ]
         }
       },
@@ -14037,7 +14862,7 @@
             0
           ],
           "source": [
-            "pv_pan_3",
+            "pv_pan_L_3",
             0
           ]
         }
@@ -14049,8 +14874,8 @@
             0
           ],
           "source": [
-            "pv_pan_3",
-            1
+            "pv_pan_R_3",
+            0
           ]
         }
       },
@@ -14061,7 +14886,7 @@
             1
           ],
           "source": [
-            "pv_pan_4",
+            "pv_pan_L_4",
             0
           ]
         }
@@ -14073,8 +14898,8 @@
             1
           ],
           "source": [
-            "pv_pan_4",
-            1
+            "pv_pan_R_4",
+            0
           ]
         }
       },
@@ -14193,7 +15018,7 @@
             1
           ],
           "source": [
-            "in_pan",
+            "in_pan_L",
             0
           ]
         }
@@ -14217,8 +15042,8 @@
             1
           ],
           "source": [
-            "in_pan",
-            1
+            "in_pan_R",
+            0
           ]
         }
       },

@@ -236,10 +236,12 @@ def check_patch(path):
     else:
         warnings.append("No timer node found (ms_sec / ms_to_sec)")
 
-    # ---- 8. loadbang → delay → startwindow → dac ----
-    if "loadbang" not in boxes:
-        errors.append("No 'loadbang' object — patch won't auto-start audio")
-    else:
+    # ---- 8. init chain: loadbang OR live.thisdevice (M4L) ----
+    has_thisdevice = any(bx.get("text","").startswith("live.thisdevice")
+                         for bx in boxes.values())
+    if "loadbang" not in boxes and not has_thisdevice:
+        errors.append("No 'loadbang' or 'live.thisdevice' object — patch won't init")
+    elif "loadbang" in boxes and not has_thisdevice:
         lb_outs = [dst for (dst, so, di) in outputs_from.get("loadbang", [])]
         if not any("delay" in d or "lb_delay" in d for d in lb_outs):
             warnings.append("loadbang doesn't feed a delay — may be fine if direct")

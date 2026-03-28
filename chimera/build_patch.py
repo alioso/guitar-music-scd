@@ -59,6 +59,7 @@ IMPORTANT: Max's expr does NOT support clip(). Use separate clip objects.
 """
 
 import json
+import math
 import os
 import struct
 
@@ -101,10 +102,14 @@ def msg(id, text, x=0, y=0, w=None):
     return box(id, "message", text, numinlets=2, numoutlets=1,
                outlettype=[""], x=x, y=y, w=w or (len(text)*7+14))
 
-def button(id, x=0, y=0):
+def button(id, x=0, y=0, presentation=False, px=0, py=0, pw=24, ph=24):
+    extra = {"parameter_enable": 0}
+    if presentation:
+        extra["presentation"] = 1
+        extra["presentation_rect"] = [px, py, pw, ph]
     return box(id, "button", numinlets=1, numoutlets=1,
                outlettype=["bang"], x=x, y=y, w=24, h=24,
-               extra={"parameter_enable": 0})
+               extra=extra)
 
 def comment(id, text, x=0, y=0, w=None):
     return box(id, "comment", text, numinlets=1, numoutlets=0,
@@ -170,10 +175,10 @@ lines.append(line("adc", 0, "dry_gain", 0))
 boxes.append(comment("lbl_s2", "=== TIMER + ARC (720s = 12min) ===",
                      COL_B, ROW_TOP-20, 240))
 
-boxes.append(button("start_btn", COL_B, ROW_TOP))
+boxes.append(button("start_btn", COL_B, ROW_TOP, presentation=True, px=10, py=10))
 boxes.append(comment("lbl_start", "START", COL_B+30, ROW_TOP+4, 50))
 
-boxes.append(button("reset_btn", COL_B+80, ROW_TOP))
+boxes.append(button("reset_btn", COL_B+80, ROW_TOP, presentation=True, px=50, py=10))
 boxes.append(comment("lbl_reset", "RESET/STOP", COL_B+110, ROW_TOP+4, 80))
 
 boxes.append(msg("msg_start", "1", COL_B, ROW_TOP+35))
@@ -675,15 +680,16 @@ for v in OCEAN_VOICES:
     boxes.append(newobj(f"ptch_sig_{idx}", "sig~ 0.", 1, 1, ["signal"],
                         vx, vy+270))
 
-    # pitchshift~
-    boxes.append(newobj(f"pshift_{idx}", "pitchshift~ 4096", 2, 2, ["signal", "signal"],
-                        vx, vy+305))
-
-    # freqshift~ shimmer (0.15 Hz)
-    boxes.append(newobj(f"fshift_{idx}", "freqshift~", 2, 2, ["signal", "signal"],
-                        vx, vy+345))
-    boxes.append(newobj(f"fshift_hz_{idx}", "sig~ 0.15", 1, 1, ["signal"],
-                        vx+90, vy+320))
+    # Hilbert~ SSB frequency shifter (replaces freqshift~ — 0.15 Hz shimmer)
+    boxes.append(newobj(f"fs_h_{idx}",    "hilbert~",  1, 2, ["signal","signal"], vx,     vy+345, 60))
+    boxes.append(newobj(f"fs_ccos_{idx}", "cycle~",    2, 1, ["signal"],          vx+80,  vy+345, 50))
+    boxes.append(newobj(f"fs_csin_{idx}", "cycle~",    2, 1, ["signal"],          vx+80,  vy+375, 50))
+    boxes.append(msg(   f"fs_cphase_{idx}", "0.25",                               vx+80,  vy+315, 35))
+    boxes.append(newobj(f"fs_sig_{idx}",  "sig~ 0.15", 1, 1, ["signal"],          vx+145, vy+345, 60))
+    boxes.append(newobj(f"fs_mr_{idx}",   "*~",        2, 1, ["signal"],          vx,     vy+410, 35))
+    boxes.append(newobj(f"fs_mi_{idx}",   "*~",        2, 1, ["signal"],          vx+50,  vy+410, 35))
+    boxes.append(newobj(f"fs_ni_{idx}",   "*~ -1.",    2, 1, ["signal"],          vx+50,  vy+440, 55))
+    boxes.append(newobj(f"fs_{idx}",      "+~",        2, 1, ["signal"],          vx+25,  vy+470, 35))
 
     # ---- Volume envelope ----
     # Entry fade-in: when t >= entry_s → ramp 0→1 over 10s
@@ -711,12 +717,13 @@ for v in OCEAN_VOICES:
     boxes.append(newobj(f"oc_vol_mult2_{idx}", "*~", 2, 1, ["signal"],
                         vx, vy+385))
 
-    # pan2
-    pan_val = [-30., 30., -50., 50.][idx-1]
-    boxes.append(newobj(f"oc_pan_{idx}", "pan2", 4, 2, ["signal", "signal"],
-                        vx, vy+420))
-    boxes.append(msg(f"oc_pan_msg_{idx}", str(pan_val),
-                     vx+90, vy+420, 40))
+    # Inline equal-power panning (replaces pan2)
+    _pan_degrees = [-30., 30., -50., 50.][idx-1]
+    _pan_norm = max(0.0, min(1.0, (_pan_degrees + 45.0) / 90.0))
+    _pan_l = math.cos(_pan_norm * math.pi / 2)
+    _pan_r = math.sin(_pan_norm * math.pi / 2)
+    boxes.append(newobj(f"oc_pan_L_{idx}", f"*~ {_pan_l:.4f}", 2, 1, ["signal"], vx,     vy+510, 75))
+    boxes.append(newobj(f"oc_pan_R_{idx}", f"*~ {_pan_r:.4f}", 2, 1, ["signal"], vx+85,  vy+510, 75))
 
     # ---- Wiring ----
 
@@ -740,14 +747,19 @@ for v in OCEAN_VOICES:
     lines.append(line(f"ptch_add1_{idx}", 0, f"ptch_add2_{idx}", 0))
     lines.append(line(f"rate_comp_{idx}", 0, f"ptch_add2_{idx}", 1))
     lines.append(line(f"ptch_add2_{idx}", 0, f"ptch_sig_{idx}", 0))
-    lines.append(line(f"ptch_sig_{idx}",  0, f"pshift_{idx}",   1))
-
-    # groove → pitchshift
-    lines.append(line(f"groove_{idx}", 0, f"pshift_{idx}", 0))
-
-    # pitchshift → freqshift
-    lines.append(line(f"pshift_{idx}",    0, f"fshift_{idx}", 0))
-    lines.append(line(f"fshift_hz_{idx}", 0, f"fshift_{idx}", 1))
+    # groove → hilbert~ SSB (pitchshift~ removed — slow rates give natural transposition)
+    lines.append(line(f"groove_{idx}", 0, f"fs_h_{idx}", 0))
+    lines.append(line(f"fs_sig_{idx}",     0, f"fs_ccos_{idx}", 0))
+    lines.append(line(f"fs_sig_{idx}",     0, f"fs_csin_{idx}", 0))
+    lines.append(line(f"fs_cphase_{idx}",  0, f"fs_ccos_{idx}", 1))
+    lines.append(line("thisdevice",        0, f"fs_cphase_{idx}", 0))
+    lines.append(line(f"fs_h_{idx}",       0, f"fs_mr_{idx}",   0))
+    lines.append(line(f"fs_ccos_{idx}",    0, f"fs_mr_{idx}",   1))
+    lines.append(line(f"fs_h_{idx}",       1, f"fs_mi_{idx}",   0))
+    lines.append(line(f"fs_csin_{idx}",    0, f"fs_mi_{idx}",   1))
+    lines.append(line(f"fs_mr_{idx}",      0, f"fs_{idx}",      0))
+    lines.append(line(f"fs_mi_{idx}",      0, f"fs_ni_{idx}",   0))
+    lines.append(line(f"fs_ni_{idx}",      0, f"fs_{idx}",      1))
 
     # Volume envelope wiring
     lines.append(line("ms_sec", 0, f"oc_env_cmp_{idx}",  0, idx+5))
@@ -764,11 +776,11 @@ for v in OCEAN_VOICES:
     lines.append(line("ocean_depth_val",     0, f"oc_vol_mult_{idx}", 1))
     lines.append(line(f"oc_vol_mult_{idx}",  0, f"oc_vol_sig_{idx}",  0))
     lines.append(line(f"oc_vol_sig_{idx}",   0, f"oc_vol_mult2_{idx}", 1))
-    lines.append(line(f"fshift_{idx}",       0, f"oc_vol_mult2_{idx}", 0))
+    lines.append(line(f"fs_{idx}",            0, f"oc_vol_mult2_{idx}", 0))
 
-    # pan
-    lines.append(line(f"oc_vol_mult2_{idx}", 0, f"oc_pan_{idx}", 0))
-    lines.append(line(f"oc_pan_msg_{idx}",   0, f"oc_pan_{idx}", 1))
+    # pan (inline equal-power)
+    lines.append(line(f"oc_vol_mult2_{idx}", 0, f"oc_pan_L_{idx}", 0))
+    lines.append(line(f"oc_vol_mult2_{idx}", 0, f"oc_pan_R_{idx}", 0))
 
     # (onset_clip is used for the motive taps, not the ocean entry comparators)
 
@@ -802,14 +814,14 @@ boxes.append(newobj("oc_sumR_12", "+~", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+11
 boxes.append(newobj("oc_sumR_34", "+~", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+140))
 boxes.append(newobj("oc_sumR_all", "+~", 2, 1, ["signal"], COL_MIX+80, ROW_TOP+170))
 
-lines.append(line("oc_pan_1", 0, "oc_sumL_12",  0))
-lines.append(line("oc_pan_1", 1, "oc_sumR_12",  0))
-lines.append(line("oc_pan_2", 0, "oc_sumL_12",  1))
-lines.append(line("oc_pan_2", 1, "oc_sumR_12",  1))
-lines.append(line("oc_pan_3", 0, "oc_sumL_34",  0))
-lines.append(line("oc_pan_3", 1, "oc_sumR_34",  0))
-lines.append(line("oc_pan_4", 0, "oc_sumL_34",  1))
-lines.append(line("oc_pan_4", 1, "oc_sumR_34",  1))
+lines.append(line("oc_pan_L_1", 0, "oc_sumL_12",  0))
+lines.append(line("oc_pan_R_1", 0, "oc_sumR_12",  0))
+lines.append(line("oc_pan_L_2", 0, "oc_sumL_12",  1))
+lines.append(line("oc_pan_R_2", 0, "oc_sumR_12",  1))
+lines.append(line("oc_pan_L_3", 0, "oc_sumL_34",  0))
+lines.append(line("oc_pan_R_3", 0, "oc_sumR_34",  0))
+lines.append(line("oc_pan_L_4", 0, "oc_sumL_34",  1))
+lines.append(line("oc_pan_R_4", 0, "oc_sumR_34",  1))
 lines.append(line("oc_sumL_12",  0, "oc_sumL_all", 0))
 lines.append(line("oc_sumL_34",  0, "oc_sumL_all", 1))
 lines.append(line("oc_sumR_12",  0, "oc_sumR_all", 0))
