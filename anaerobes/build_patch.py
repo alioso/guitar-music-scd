@@ -61,6 +61,7 @@ IMPORTANT: expr~ NOT available — use *~ / +~ chains.
 """
 
 import json
+import math
 import os
 
 # ============================================================
@@ -97,10 +98,13 @@ def msg(id, text, x=0, y=0, w=None):
     return box(id, "message", text, numinlets=2, numoutlets=1,
                outlettype=[""], x=x, y=y, w=w or (len(text)*7+14))
 
-def button(id, x=0, y=0):
+def button(id, x=0, y=0, presentation=False, px=0, py=0, pw=24, ph=24):
+    extra = {"parameter_enable": 0}
+    if presentation:
+        extra["presentation"] = 1
+        extra["presentation_rect"] = [px, py, pw, ph]
     return box(id, "button", numinlets=1, numoutlets=1,
-               outlettype=["bang"], x=x, y=y, w=24, h=24,
-               extra={"parameter_enable": 0})
+               outlettype=["bang"], x=x, y=y, w=24, h=24, extra=extra)
 
 def comment(id, text, x=0, y=0, w=None):
     return box(id, "comment", text, numinlets=1, numoutlets=0,
@@ -192,23 +196,17 @@ voices = [
 
 boxes.append(comment("lbl_input", "=== INPUT ===", COL_INPUT, ROW_TOP-20, 120))
 
-boxes.append(newobj("ezdac", "ezdac~", 2, 0, [], COL_INPUT+180, ROW_TOP, 50))
-boxes.append(comment("lbl_ezdac", "<-- click to enable audio", COL_INPUT+240, ROW_TOP+4, 180))
-
-boxes.append(newobj("adc", "adc~ 1", 1, 1, ["signal"], COL_INPUT, ROW_TOP+40))
+# M4L audio input — outlet 0 = L, outlet 1 = R
+boxes.append(newobj("adc", "plugin~", 2, 2, ["signal","signal"], COL_INPUT, ROW_TOP+40))
 
 # Dry guitar — slightly under the looper voices
 boxes.append(newobj("dry_gain", "*~ 0.4", 2, 1, ["signal"], COL_INPUT, ROW_TOP+80))
 boxes.append(comment("lbl_dry", "dry guitar (center)", COL_INPUT+70, ROW_TOP+82, 150))
 
-# Startup: loadbang → delay 300 → startwindow → dac~ (dac~ defined in Section 5)
-boxes.append(newobj("loadbang",          "loadbang", 1, 1, ["bang"],   COL_INPUT+220, ROW_TOP+40))
-boxes.append(newobj("lb_delay",          "delay 300", 2, 1, ["bang"],  COL_INPUT+220, ROW_TOP+70))
-boxes.append(msg(   "msg_startwindow",   "startwindow",                COL_INPUT+220, ROW_TOP+100))
+# live.thisdevice: outlet 0 fires when device is fully ready in Live's audio graph
+boxes.append(newobj("thisdevice", "live.thisdevice", 1, 2, ["bang","bang"], COL_INPUT+180, ROW_TOP+40))
 
-lines.append(line("adc",             0, "dry_gain",        0))
-lines.append(line("loadbang",        0, "lb_delay",         0))
-lines.append(line("lb_delay",        0, "msg_startwindow",  0))
+lines.append(line("adc", 0, "dry_gain", 0))
 
 # ============================================================
 # SECTION 2: TIMER + ARCS
@@ -222,9 +220,9 @@ lines.append(line("lb_delay",        0, "msg_startwindow",  0))
 
 boxes.append(comment("lbl_timer", "=== TIMER (480s = 8min) ===", COL_TIMER, ROW_TOP-20, 220))
 
-boxes.append(button("start_btn", COL_TIMER,    ROW_TOP))
+boxes.append(button("start_btn", COL_TIMER,    ROW_TOP, presentation=True, px=10, py=10))
 boxes.append(comment("lbl_start", "START",      COL_TIMER+30,  ROW_TOP+4, 50))
-boxes.append(button("reset_btn", COL_TIMER+80, ROW_TOP))
+boxes.append(button("reset_btn", COL_TIMER+80, ROW_TOP, presentation=True, px=50, py=10))
 boxes.append(comment("lbl_reset", "RESET/STOP", COL_TIMER+110, ROW_TOP+4, 90))
 
 boxes.append(msg("msg_start", "1", COL_TIMER,    ROW_TOP+35))
@@ -391,94 +389,111 @@ for v in voices:
     lines.append(line(f"breath_bias_{idx}",   0, f"dyn_env_{idx}",       1))
 
 # ============================================================
-# SECTION 4: PER-VOICE AUDIO
+# SECTION 4: PER-VOICE AUDIO  (tapin~/tapout~ — no init required)
 # ============================================================
 #
-# buffer~ v{N}_buf {buf_ms}   — unique loop  (incommensurate lengths)
-# record~ v{N}_buf             — continuous write from ADC
-# groove~ v{N}_buf 0           — looping playback; rate from rate_sig (Section 3)
+# Shared delay line (tapin~ 15000) continuously records plugin~ input.
+# tapout~ reads at each voice's incommensurate delay time (4700/7300/11100/13900 ms).
+# No buffer~/record~/groove~ — tapin~/tapout~ are always running.
 #
-# Signal chain:
-#   groove~ → freqshift~ [fs_sig] → *~ sat_scale → clip~ → *~ dyn_env → pan_L/pan_R
+# grv_gate (sig~ 0.) mutes all voices until START is pressed.
+# START → "1." → grv_gate → voices unmuted.
+# RESET → "0." → grv_gate → voices muted again.
 #
-# Saturation: chaos_sig → *~ sat_boost → +~ 1.0 → sat_mult (gains 1.0..3.0 at chaos=1)
+# SSB frequency shifting (replaces broken freqshift~):
+#   hilbert~ → real (outlet 0) + imag (outlet 1) quadrature
+#   fs_ccos: cycle~ (freq = fs_sig, phase = 0.25 → cosine)
+#   fs_csin: cycle~ (freq = fs_sig)
+#   output = real * cos(2π·fs·t) − imag * sin(2π·fs·t)  (SSB shift)
 #
-# Startup:
-#   loadbang  → "loop 1" to groove~ and record~ (set loop mode at patch open)
-#   START btn → delay 200 → "1" to record~ gate (inlet 1) AND groove~ (inlet 0)
-#   groove~ plays once started; record~ writes continuously until stopped
+# Panning: inline equal-power *~ (no external pan2 needed).
 
 boxes.append(comment("lbl_audio", "=== VOICE AUDIO ===", COL_VOICE, ROW_TOP-20, 150))
 
-# Shared startup trigger — fires 200ms after START
-boxes.append(newobj("rec_delay",    "delay 200", 2, 1, ["bang"], COL_VOICE,     ROW_TOP))
-boxes.append(msg("rec_on_msg",    "1",         COL_VOICE+80,  ROW_TOP,    20))   # record~ start (int 1)
-boxes.append(msg("grv_on_msg",    "startloop", COL_VOICE+110, ROW_TOP,    65))   # groove~ startloop (documented)
+# Shared delay line — always running, no init required
+boxes.append(newobj("tapin_main", "tapin~ 15000", 1, 1, ["signal"], COL_VOICE, ROW_TOP))
 
-# Loop mode on record~ and groove~ — sent from loadbang
-boxes.append(msg("rec_loop_msg",    "loop 1",    COL_VOICE+80,  ROW_TOP+30, 60))
-boxes.append(msg("grv_loop_msg",    "loop 1",    COL_VOICE+150, ROW_TOP+30, 60))  # belt+suspenders: @loop 1 may be silently ignored
+# Multi-tap: one outlet per voice (4700, 7300, 11100, 13900 ms)
+boxes.append(newobj("tapout_all", "tapout~ 4700. 7300. 11100. 13900.",
+                     1, 4, ["signal","signal","signal","signal"], COL_VOICE, ROW_TOP+40, 215))
 
-lines.append(line("start_btn",   0, "rec_delay",    0))
-lines.append(line("rec_delay",   0, "grv_on_msg",   0))   # startloop → groove~ (on START)
-lines.append(line("loadbang",    0, "rec_loop_msg", 0))   # loop 1 → record~ at patch open
-lines.append(line("loadbang",    0, "grv_loop_msg", 0))   # loop 1 → groove~ at patch open (explicit, belt+suspenders)
-lines.append(line("loadbang",    0, "rec_on_msg",   0))   # record~ starts on patch open (fills buffer BEFORE START)
+# Gate signal: 0. → muted, 1. → active (set by START/RESET buttons)
+boxes.append(newobj("grv_gate",    "sig~ 0.", 1, 1, ["signal"], COL_VOICE+230, ROW_TOP))
+boxes.append(msg(   "grv_gate_on",  "1.",     COL_VOICE+230, ROW_TOP+30, 25))
+boxes.append(msg(   "grv_gate_off", "0.",     COL_VOICE+230, ROW_TOP+60, 25))
+
+lines.append(line("adc",           0, "tapin_main",   0))   # plugin~ L → delay line
+lines.append(line("tapin_main",    0, "tapout_all",   0))
+lines.append(line("start_btn",     0, "grv_gate_on",  0))
+lines.append(line("reset_btn",     0, "grv_gate_off", 0))
+lines.append(line("grv_gate_on",   0, "grv_gate",     0))
+lines.append(line("grv_gate_off",  0, "grv_gate",     0))
 
 for v in voices:
-    idx = v["idx"]
+    idx     = v["idx"]
+    tap_out = idx - 1       # tapout_all outlet index (0-based)
     ax  = COL_VOICE + (idx-1) * 195
-    ay  = ROW_TOP + 60
+    ay  = ROW_TOP + 90
 
     boxes.append(comment(f"lbl_a{idx}", v["name"], ax+80, ay, 40))
 
-    # Buffer + looper
-    boxes.append(newobj(f"buf_{idx}", f"buffer~ v{idx}_buf {v['buf_ms']}", 1, 1, ["bang"], ax, ay+25, 140))
-    boxes.append(newobj(f"rec_{idx}", f"record~ v{idx}_buf",                   2, 1, ["bang"], ax, ay+60, 110))
-    boxes.append(newobj(f"grv_{idx}", f"groove~ v{idx}_buf 1 @loop 1",         1, 2, ["signal","signal"], ax, ay+100, 150))
+    # Gate multiplier — mutes voice until START
+    boxes.append(newobj(f"tap_gate_{idx}", "*~", 2, 1, ["signal"], ax, ay+20, 40))
 
-    # freqshift~ — inlet 0 = audio, inlet 1 = Hz offset (signal)
-    boxes.append(newobj(f"fs_{idx}", "freqshift~", 2, 2, ["signal","signal"], ax, ay+145, 80))
+    # Hilbert~ SSB frequency shifting
+    boxes.append(newobj(f"fs_h_{idx}",    "hilbert~", 1, 2, ["signal","signal"], ax,    ay+60,  60))
+    boxes.append(newobj(f"fs_ccos_{idx}", "cycle~",   2, 1, ["signal"],           ax+80, ay+60,  50))
+    boxes.append(newobj(f"fs_csin_{idx}", "cycle~",   2, 1, ["signal"],           ax+80, ay+90,  50))
+    boxes.append(msg(   f"fs_cphase_{idx}", "0.25",                               ax+80, ay+30,  35))
+    boxes.append(newobj(f"fs_mr_{idx}",   "*~",       2, 1, ["signal"],           ax,    ay+100, 35))
+    boxes.append(newobj(f"fs_mi_{idx}",   "*~",       2, 1, ["signal"],           ax+50, ay+100, 35))
+    boxes.append(newobj(f"fs_ni_{idx}",   "*~ -1.",   2, 1, ["signal"],           ax+50, ay+130, 55))
+    boxes.append(newobj(f"fs_{idx}",      "+~",       2, 1, ["signal"],           ax+25, ay+160, 35))
 
-    # No onset gating — freqshift output goes directly to saturation chain.
     # Saturation: chaos_sig → *~ sat_boost → +~ 1.0 → multiplies voice signal
-    boxes.append(newobj(f"sat_boost_{idx}", f"*~ {v['sat_boost']}", 2, 1, ["signal"], ax+55, ay+185, 80))
-    boxes.append(newobj(f"sat_add_{idx}",    "+~ 1.0",              2, 1, ["signal"], ax+55, ay+215, 55))
-    boxes.append(newobj(f"sat_mult_{idx}",   "*~",                  2, 1, ["signal"], ax,    ay+215, 40))
+    boxes.append(newobj(f"sat_boost_{idx}", f"*~ {v['sat_boost']}", 2, 1, ["signal"], ax+55, ay+200, 80))
+    boxes.append(newobj(f"sat_add_{idx}",    "+~ 1.0",              2, 1, ["signal"], ax+55, ay+230, 55))
+    boxes.append(newobj(f"sat_mult_{idx}",   "*~",                  2, 1, ["signal"], ax,    ay+230, 40))
 
-    # Per-voice soft clip — keeps saturation local, not at the master bus
-    boxes.append(newobj(f"vclip_{idx}", "clip~ -1. 1.", 3, 1, ["signal"], ax, ay+250, 85))
+    # Per-voice soft clip
+    boxes.append(newobj(f"vclip_{idx}", "clip~ -1. 1.", 3, 1, ["signal"], ax, ay+265, 85))
 
     # Dynamic envelope (swell)
-    boxes.append(newobj(f"dyn_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+290, 40))
+    boxes.append(newobj(f"dyn_mult_{idx}", "*~", 2, 1, ["signal"], ax, ay+305, 40))
 
-    # Panner (pan2: confirmed working in v1)
-    boxes.append(newobj(f"pan_{idx}",     "pan2",            4, 2, ["signal","signal"], ax,    ay+330, 50))
-    boxes.append(msg(   f"pan_msg_{idx}", str(v['pan']),                                 ax+60, ay+330, 50))
+    # Inline equal-power panning (no external pan2 needed)
+    pan_L = math.cos(v["pan"] * math.pi / 2)
+    pan_R = math.sin(v["pan"] * math.pi / 2)
+    boxes.append(newobj(f"pan_L_{idx}", f"*~ {pan_L:.4f}", 2, 1, ["signal"], ax,    ay+345, 75))
+    boxes.append(newobj(f"pan_R_{idx}", f"*~ {pan_R:.4f}", 2, 1, ["signal"], ax+85, ay+345, 75))
 
     # ---- Audio wiring ----
-    lines.append(line("adc",          0, f"rec_{idx}",  0))          # ADC → record~
-    lines.append(line("rec_loop_msg", 0, f"rec_{idx}",  0))          # "loop 1" → rec~ inlet 0
-    lines.append(line("rec_on_msg",   0, f"rec_{idx}",  0))          # "1" → rec~ inlet 0 (starts recording)
-    lines.append(line("grv_loop_msg", 0, f"grv_{idx}",  0))          # "loop 1" → groove~ (explicit loop enable)
-    lines.append(line("grv_on_msg",   0, f"grv_{idx}",  0))          # startloop → groove~ (starts playback)
-    lines.append(line(f"rate_sig_{idx}", 0, f"grv_{idx}",  0))       # rate signal → left inlet (inlet 0, per docs)
+    lines.append(line("tapout_all",      tap_out, f"tap_gate_{idx}", 0))
+    lines.append(line("grv_gate",        0,       f"tap_gate_{idx}", 1))
 
-    lines.append(line(f"grv_{idx}",   0, f"fs_{idx}",   0))          # groove~ → freqshift~
-    lines.append(line(f"fs_sig_{idx}",0, f"fs_{idx}",   1))          # Hz signal
+    lines.append(line(f"tap_gate_{idx}", 0, f"fs_h_{idx}",    0))
+    lines.append(line(f"fs_sig_{idx}",   0, f"fs_ccos_{idx}", 0))
+    lines.append(line(f"fs_sig_{idx}",   0, f"fs_csin_{idx}", 0))
+    lines.append(line(f"fs_cphase_{idx}", 0, f"fs_ccos_{idx}", 1))    # phase 0.25 → cosine
+    lines.append(line("thisdevice",      0, f"fs_cphase_{idx}", 0))   # trigger on device ready
 
-    lines.append(line("chaos_sig",          0, f"sat_boost_{idx}", 0))  # saturation
+    lines.append(line(f"fs_h_{idx}",    0, f"fs_mr_{idx}", 0))
+    lines.append(line(f"fs_ccos_{idx}", 0, f"fs_mr_{idx}", 1))
+    lines.append(line(f"fs_h_{idx}",    1, f"fs_mi_{idx}", 0))
+    lines.append(line(f"fs_csin_{idx}", 0, f"fs_mi_{idx}", 1))
+    lines.append(line(f"fs_mr_{idx}",   0, f"fs_{idx}",    0))
+    lines.append(line(f"fs_mi_{idx}",   0, f"fs_ni_{idx}", 0))
+    lines.append(line(f"fs_ni_{idx}",   0, f"fs_{idx}",    1))
+
+    lines.append(line("chaos_sig",          0, f"sat_boost_{idx}", 0))
     lines.append(line(f"sat_boost_{idx}",   0, f"sat_add_{idx}",   0))
-    lines.append(line(f"fs_{idx}",          0, f"sat_mult_{idx}",  0))  # freqshift~ → sat
+    lines.append(line(f"fs_{idx}",          0, f"sat_mult_{idx}",  0))
     lines.append(line(f"sat_add_{idx}",     0, f"sat_mult_{idx}",  1))
-    lines.append(line(f"sat_mult_{idx}",    0, f"vclip_{idx}",     0))  # per-voice clip
-
-    lines.append(line(f"vclip_{idx}",       0, f"dyn_mult_{idx}",  0))  # swell envelope
+    lines.append(line(f"sat_mult_{idx}",    0, f"vclip_{idx}",     0))
+    lines.append(line(f"vclip_{idx}",       0, f"dyn_mult_{idx}",  0))
     lines.append(line(f"dyn_env_{idx}",     0, f"dyn_mult_{idx}",  1))
-
-    lines.append(line(f"dyn_mult_{idx}",    0, f"pan_{idx}",       0))  # panner
-    lines.append(line(f"pan_msg_{idx}",     0, f"pan_{idx}",       1))  # pan position
-    lines.append(line("rec_delay",          0, f"pan_msg_{idx}",   0))  # trigger pan msg at start
+    lines.append(line(f"dyn_mult_{idx}",    0, f"pan_L_{idx}",     0))
+    lines.append(line(f"dyn_mult_{idx}",    0, f"pan_R_{idx}",     0))
 
 # ============================================================
 # SECTION 5: MIX & OUTPUT
@@ -510,20 +525,20 @@ boxes.append(newobj("master_gain_R", "*~ 0.20", 2, 1, ["signal"], COL_MIX+80, RO
 boxes.append(newobj("clip_L", "clip~ -1. 1.", 3, 1, ["signal"], COL_MIX,    ROW_TOP+200))
 boxes.append(newobj("clip_R", "clip~ -1. 1.", 3, 1, ["signal"], COL_MIX+80, ROW_TOP+200))
 
-boxes.append(newobj("dac", "dac~", 2, 0, [], COL_MIX+30, ROW_TOP+240, 40))
+boxes.append(newobj("dac", "plugout~", 2, 2, ["signal","signal"], COL_MIX+30, ROW_TOP+240, 60))
 
 boxes.append(newobj("meter_L", "meter~", 1, 1, ["float"], COL_MIX,    ROW_TOP+280, 60))
 boxes.append(newobj("meter_R", "meter~", 1, 1, ["float"], COL_MIX+80, ROW_TOP+280, 60))
 
-# pan_{N} → sum
-lines.append(line("pan_1", 0, "sum_L_12",  0))
-lines.append(line("pan_1", 1, "sum_R_12",  0))
-lines.append(line("pan_2", 0, "sum_L_12",  1))
-lines.append(line("pan_2", 1, "sum_R_12",  1))
-lines.append(line("pan_3", 0, "sum_L_34",  0))
-lines.append(line("pan_3", 1, "sum_R_34",  0))
-lines.append(line("pan_4", 0, "sum_L_34",  1))
-lines.append(line("pan_4", 1, "sum_R_34",  1))
+# pan_L/R_{N} → sum (inline equal-power pan, no pan2 external)
+lines.append(line("pan_L_1", 0, "sum_L_12",  0))
+lines.append(line("pan_R_1", 0, "sum_R_12",  0))
+lines.append(line("pan_L_2", 0, "sum_L_12",  1))
+lines.append(line("pan_R_2", 0, "sum_R_12",  1))
+lines.append(line("pan_L_3", 0, "sum_L_34",  0))
+lines.append(line("pan_R_3", 0, "sum_R_34",  0))
+lines.append(line("pan_L_4", 0, "sum_L_34",  1))
+lines.append(line("pan_R_4", 0, "sum_R_34",  1))
 
 lines.append(line("sum_L_12", 0, "sum_L_all", 0))
 lines.append(line("sum_L_34", 0, "sum_L_all", 1))
@@ -543,8 +558,6 @@ lines.append(line("clip_L", 0, "dac",     0))
 lines.append(line("clip_R", 0, "dac",     1))
 lines.append(line("clip_L", 0, "meter_L", 0))
 lines.append(line("clip_R", 0, "meter_R", 0))
-
-lines.append(line("msg_startwindow", 0, "dac", 0))
 
 # ============================================================
 # VALIDATE & WRITE
@@ -566,22 +579,10 @@ for l in lines:
 lines = valid_lines
 
 patch = {
-    "patcher": {
-        "fileversion": 1,
-        "appversion": {"major": 8, "minor": 6, "revision": 2,
-                       "architecture": "x64", "modernui": 1},
-        "classnamespace": "dsp.toplevel",
-        "rect": [0, 0, 2200, 1300],
-        "gridsize": [15.0, 15.0],
-        "boxes": boxes,
-        "lines": lines,
-        "dependency_cache": [
-            {"name": "pan2.maxpat",
-             "bootpath": "~/Library/Application Support/Cycling '74/Max 8/Examples/spatialization/panning/lib",
-             "type": "JSON", "implicit": 1}
-        ],
-        "autosave": 0
-    }
+    "boxes": boxes,
+    "lines": lines,
+    "appversion": {"major": 8, "minor": 1, "revision": 11, "architecture": "x64", "modernui": 1},
+    "classnamespace": "box"
 }
 
 output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "anaerobes.maxpat")
