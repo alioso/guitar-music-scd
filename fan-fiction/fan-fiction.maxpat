@@ -83,13 +83,83 @@
       },
       {
         "box": {
+          "id": "adc_hl",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            40,
+            108,
+            62,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~ 0.5"
+        }
+      },
+      {
+        "box": {
+          "id": "adc_hr",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            40,
+            133,
+            62,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "*~ 0.5"
+        }
+      },
+      {
+        "box": {
+          "id": "adc_sum",
+          "maxclass": "newobj",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            125,
+            118,
+            34,
+            22
+          ],
+          "outlettype": [
+            "signal"
+          ],
+          "text": "+~"
+        }
+      },
+      {
+        "box": {
+          "id": "lbl_mono",
+          "maxclass": "comment",
+          "numinlets": 1,
+          "numoutlets": 0,
+          "patching_rect": [
+            175,
+            120,
+            80,
+            22
+          ],
+          "outlettype": [],
+          "text": "L+R mono"
+        }
+      },
+      {
+        "box": {
           "id": "in_gain",
           "maxclass": "newobj",
           "numinlets": 2,
           "numoutlets": 1,
           "patching_rect": [
             40,
-            115,
+            165,
             69,
             22
           ],
@@ -107,7 +177,7 @@
           "numoutlets": 0,
           "patching_rect": [
             105,
-            117,
+            167,
             230,
             22
           ],
@@ -3326,13 +3396,13 @@
           "patching_rect": [
             1080,
             1045,
-            62,
+            69,
             22
           ],
           "outlettype": [
             "bang"
           ],
-          "text": "pipe 0"
+          "text": "delay 0"
         }
       },
       {
@@ -3344,11 +3414,11 @@
           "patching_rect": [
             1145,
             1047,
-            130,
+            170,
             22
           ],
           "outlettype": [],
-          "text": "pipe = delayed bang"
+          "text": "delay = bang after N ms"
         }
       },
       {
@@ -3689,13 +3759,13 @@
           "patching_rect": [
             1080,
             1165,
-            62,
+            69,
             22
           ],
           "outlettype": [
             "bang"
           ],
-          "text": "pipe 0"
+          "text": "delay 0"
         }
       },
       {
@@ -3707,11 +3777,11 @@
           "patching_rect": [
             1145,
             1167,
-            130,
+            170,
             22
           ],
           "outlettype": [],
-          "text": "pipe = delayed bang"
+          "text": "delay = bang after N ms"
         }
       },
       {
@@ -4052,13 +4122,13 @@
           "patching_rect": [
             1080,
             1285,
-            62,
+            69,
             22
           ],
           "outlettype": [
             "bang"
           ],
-          "text": "pipe 0"
+          "text": "delay 0"
         }
       },
       {
@@ -4070,11 +4140,11 @@
           "patching_rect": [
             1145,
             1287,
-            130,
+            170,
             22
           ],
           "outlettype": [],
-          "text": "pipe = delayed bang"
+          "text": "delay = bang after N ms"
         }
       },
       {
@@ -4415,13 +4485,13 @@
           "patching_rect": [
             1080,
             1405,
-            62,
+            69,
             22
           ],
           "outlettype": [
             "bang"
           ],
-          "text": "pipe 0"
+          "text": "delay 0"
         }
       },
       {
@@ -4433,11 +4503,11 @@
           "patching_rect": [
             1145,
             1407,
-            130,
+            170,
             22
           ],
           "outlettype": [],
-          "text": "pipe = delayed bang"
+          "text": "delay = bang after N ms"
         }
       },
       {
@@ -4987,6 +5057,43 @@
       },
       {
         "box": {
+          "id": "entry_split_1",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 2,
+          "patching_rect": [
+            1500,
+            315,
+            97,
+            22
+          ],
+          "outlettype": [
+            "bang",
+            "bang"
+          ],
+          "text": "trigger b b"
+        }
+      },
+      {
+        "box": {
+          "id": "gr_start_1",
+          "maxclass": "message",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1595,
+            315,
+            72,
+            22
+          ],
+          "outlettype": [
+            ""
+          ],
+          "text": "startloop"
+        }
+      },
+      {
+        "box": {
           "id": "entry_msg_1",
           "maxclass": "message",
           "numinlets": 2,
@@ -5505,6 +5612,43 @@
             "int"
           ],
           "text": "change"
+        }
+      },
+      {
+        "box": {
+          "id": "entry_split_2",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 2,
+          "patching_rect": [
+            1620,
+            315,
+            97,
+            22
+          ],
+          "outlettype": [
+            "bang",
+            "bang"
+          ],
+          "text": "trigger b b"
+        }
+      },
+      {
+        "box": {
+          "id": "gr_start_2",
+          "maxclass": "message",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1715,
+            315,
+            72,
+            22
+          ],
+          "outlettype": [
+            ""
+          ],
+          "text": "startloop"
         }
       },
       {
@@ -6031,6 +6175,43 @@
       },
       {
         "box": {
+          "id": "entry_split_3",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 2,
+          "patching_rect": [
+            1740,
+            315,
+            97,
+            22
+          ],
+          "outlettype": [
+            "bang",
+            "bang"
+          ],
+          "text": "trigger b b"
+        }
+      },
+      {
+        "box": {
+          "id": "gr_start_3",
+          "maxclass": "message",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1835,
+            315,
+            72,
+            22
+          ],
+          "outlettype": [
+            ""
+          ],
+          "text": "startloop"
+        }
+      },
+      {
+        "box": {
           "id": "entry_msg_3",
           "maxclass": "message",
           "numinlets": 2,
@@ -6553,6 +6734,43 @@
       },
       {
         "box": {
+          "id": "entry_split_4",
+          "maxclass": "newobj",
+          "numinlets": 1,
+          "numoutlets": 2,
+          "patching_rect": [
+            1860,
+            315,
+            97,
+            22
+          ],
+          "outlettype": [
+            "bang",
+            "bang"
+          ],
+          "text": "trigger b b"
+        }
+      },
+      {
+        "box": {
+          "id": "gr_start_4",
+          "maxclass": "message",
+          "numinlets": 2,
+          "numoutlets": 1,
+          "patching_rect": [
+            1955,
+            315,
+            72,
+            22
+          ],
+          "outlettype": [
+            ""
+          ],
+          "text": "startloop"
+        }
+      },
+      {
+        "box": {
           "id": "entry_msg_4",
           "maxclass": "message",
           "numinlets": 2,
@@ -6710,7 +6928,7 @@
           "outlettype": [
             "signal"
           ],
-          "text": "*~ 0.1736"
+          "text": "*~ 0.7071"
         }
       },
       {
@@ -6728,7 +6946,7 @@
           "outlettype": [
             "signal"
           ],
-          "text": "*~ 0.9848"
+          "text": "*~ 0.7071"
         }
       },
       {
@@ -6774,13 +6992,13 @@
           "patching_rect": [
             1900,
             100,
-            130,
+            520,
             22
           ],
           "outlettype": [
             ""
           ],
-          "text": "read samples/samp_0.wav"
+          "text": "read /Users/albanbailly/Documents/guitar-music-msp/fan-fiction/samples/samp_0.wav"
         }
       },
       {
@@ -6810,13 +7028,13 @@
           "patching_rect": [
             2015,
             100,
-            130,
+            520,
             22
           ],
           "outlettype": [
             ""
           ],
-          "text": "read samples/samp_1.wav"
+          "text": "read /Users/albanbailly/Documents/guitar-music-msp/fan-fiction/samples/samp_1.wav"
         }
       },
       {
@@ -6846,13 +7064,13 @@
           "patching_rect": [
             2130,
             100,
-            130,
+            520,
             22
           ],
           "outlettype": [
             ""
           ],
-          "text": "read samples/samp_2.wav"
+          "text": "read /Users/albanbailly/Documents/guitar-music-msp/fan-fiction/samples/samp_2.wav"
         }
       },
       {
@@ -6882,13 +7100,13 @@
           "patching_rect": [
             2245,
             100,
-            130,
+            520,
             22
           ],
           "outlettype": [
             ""
           ],
-          "text": "read samples/samp_3.wav"
+          "text": "read /Users/albanbailly/Documents/guitar-music-msp/fan-fiction/samples/samp_3.wav"
         }
       },
       {
@@ -6918,13 +7136,13 @@
           "patching_rect": [
             2360,
             100,
-            130,
+            520,
             22
           ],
           "outlettype": [
             ""
           ],
-          "text": "read samples/samp_4.wav"
+          "text": "read /Users/albanbailly/Documents/guitar-music-msp/fan-fiction/samples/samp_4.wav"
         }
       },
       {
@@ -6954,13 +7172,13 @@
           "patching_rect": [
             2475,
             100,
-            130,
+            520,
             22
           ],
           "outlettype": [
             ""
           ],
-          "text": "read samples/samp_5.wav"
+          "text": "read /Users/albanbailly/Documents/guitar-music-msp/fan-fiction/samples/samp_5.wav"
         }
       },
       {
@@ -6990,13 +7208,13 @@
           "patching_rect": [
             2590,
             100,
-            130,
+            520,
             22
           ],
           "outlettype": [
             ""
           ],
-          "text": "read samples/samp_6.wav"
+          "text": "read /Users/albanbailly/Documents/guitar-music-msp/fan-fiction/samples/samp_6.wav"
         }
       },
       {
@@ -7026,13 +7244,13 @@
           "patching_rect": [
             2705,
             100,
-            130,
+            520,
             22
           ],
           "outlettype": [
             ""
           ],
-          "text": "read samples/samp_7.wav"
+          "text": "read /Users/albanbailly/Documents/guitar-music-msp/fan-fiction/samples/samp_7.wav"
         }
       },
       {
@@ -7411,13 +7629,13 @@
           "patching_rect": [
             1900,
             285,
-            62,
+            69,
             22
           ],
           "outlettype": [
             "bang"
           ],
-          "text": "pipe 0"
+          "text": "delay 0"
         }
       },
       {
@@ -8655,11 +8873,59 @@
       {
         "patchline": {
           "destination": [
-            "in_gain",
+            "adc_hl",
             0
           ],
           "source": [
             "adc",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "adc_hr",
+            0
+          ],
+          "source": [
+            "adc",
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "adc_sum",
+            0
+          ],
+          "source": [
+            "adc_hl",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "adc_sum",
+            1
+          ],
+          "source": [
+            "adc_hr",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "in_gain",
+            0
+          ],
+          "source": [
+            "adc_sum",
             0
           ]
         }
@@ -9001,7 +9267,7 @@
             0
           ],
           "source": [
-            "adc",
+            "adc_sum",
             0
           ]
         }
@@ -9013,7 +9279,7 @@
             0
           ],
           "source": [
-            "adc",
+            "adc_sum",
             0
           ]
         }
@@ -12490,11 +12756,47 @@
       {
         "patchline": {
           "destination": [
-            "entry_msg_1",
+            "entry_split_1",
             0
           ],
           "source": [
             "entry_once_1",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_start_1",
+            0
+          ],
+          "source": [
+            "entry_split_1",
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_1",
+            0
+          ],
+          "source": [
+            "gr_start_1",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "entry_msg_1",
+            0
+          ],
+          "source": [
+            "entry_split_1",
             0
           ]
         }
@@ -12899,11 +13201,47 @@
       {
         "patchline": {
           "destination": [
-            "entry_msg_2",
+            "entry_split_2",
             0
           ],
           "source": [
             "entry_once_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_start_2",
+            0
+          ],
+          "source": [
+            "entry_split_2",
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_2",
+            0
+          ],
+          "source": [
+            "gr_start_2",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "entry_msg_2",
+            0
+          ],
+          "source": [
+            "entry_split_2",
             0
           ]
         }
@@ -13308,11 +13646,47 @@
       {
         "patchline": {
           "destination": [
-            "entry_msg_3",
+            "entry_split_3",
             0
           ],
           "source": [
             "entry_once_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_start_3",
+            0
+          ],
+          "source": [
+            "entry_split_3",
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_3",
+            0
+          ],
+          "source": [
+            "gr_start_3",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "entry_msg_3",
+            0
+          ],
+          "source": [
+            "entry_split_3",
             0
           ]
         }
@@ -13717,11 +14091,47 @@
       {
         "patchline": {
           "destination": [
-            "entry_msg_4",
+            "entry_split_4",
             0
           ],
           "source": [
             "entry_once_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_start_4",
+            0
+          ],
+          "source": [
+            "entry_split_4",
+            1
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "gr_4",
+            0
+          ],
+          "source": [
+            "gr_start_4",
+            0
+          ]
+        }
+      },
+      {
+        "patchline": {
+          "destination": [
+            "entry_msg_4",
+            0
+          ],
+          "source": [
+            "entry_split_4",
             0
           ]
         }

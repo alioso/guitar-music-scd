@@ -60,6 +60,8 @@ SAMPLE FILES
 -------------
   Place 8 samples as:  fan-fiction/samples/samp_0.wav  …  samp_7.wav
   (Monophonic; the patch scales them to the mix. "Different Trains" style fragments.)
+  Rebuild the patch after adding files so buffer~ read messages get absolute paths (M4L
+  does not resolve read samples/... relative to the device folder).
 
 INPUT GUITAR LEVEL
 -------------------
@@ -87,7 +89,7 @@ NOTES ON MAX OBJECTS
   - yin~     : monophonic pitch detection (Hz + confidence)
   - ftom      : Hz → MIDI note
   - random    : generates random int 0..(n-1)
-  - pipe      : delay a message by N ms
+  - delay     : delay a bang (ms on right inlet); use instead of pipe for bang scheduling
   - sel       : route int values to specific outlets
   - change    : pass value only when it changes
   - trigger   : force evaluation order + type conversion
@@ -101,6 +103,9 @@ import json
 import math
 import os
 import struct
+
+# buffer~ "read" paths must be absolute for M4L (relative paths resolve from Live/CWD).
+_SAMPLES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "samples")
 
 # ============================================================
 # HELPERS  (same conventions as anaerobes + chimera)
@@ -215,12 +220,22 @@ boxes.append(comment("lbl_s1", "=== INPUT ===", COL_A, ROW_TOP-20, 120))
 boxes.append(newobj("adc", "plugin~", 2, 2, ["signal","signal"],
                     COL_A, ROW_TOP+40))
 
+# Mono sum L+R (−6 dB each branch) so a one-sided DI / interface feed still drives the patch
+boxes.append(newobj("adc_hl", "*~ 0.5", 2, 1, ["signal"], COL_A, ROW_TOP+68))
+boxes.append(newobj("adc_hr", "*~ 0.5", 2, 1, ["signal"], COL_A, ROW_TOP+93))
+boxes.append(newobj("adc_sum", "+~", 2, 1, ["signal"], COL_A+85, ROW_TOP+78))
+boxes.append(comment("lbl_mono", "L+R mono", COL_A+135, ROW_TOP+80, 80))
+
 # Input guitar in mix at -6dB relative to partners (~0.45 vs 0.70)
 boxes.append(newobj("in_gain", "*~ 0.45", 2, 1, ["signal"],
-                    COL_A, ROW_TOP+75))
-boxes.append(comment("lbl_ingain", "input -6dB (sits under phase bed)", COL_A+65, ROW_TOP+77, 230))
+                    COL_A, ROW_TOP+125))
+boxes.append(comment("lbl_ingain", "input -6dB (sits under phase bed)", COL_A+65, ROW_TOP+127, 230))
 
-lines.append(line("adc", 0, "in_gain", 0))
+lines.append(line("adc", 0, "adc_hl", 0))
+lines.append(line("adc", 1, "adc_hr", 0))
+lines.append(line("adc_hl", 0, "adc_sum", 0))
+lines.append(line("adc_hr", 0, "adc_sum", 1))
+lines.append(line("adc_sum", 0, "in_gain", 0))
 
 # ============================================================
 # SECTION 2: TIMER + ARCS
@@ -347,7 +362,7 @@ lines.append(line("cap_close_cmp",  0, "cap_close_once", 0))
 lines.append(line("cap_close_once", 0, "cap_close_msg",  0))
 lines.append(line("cap_close_msg",  0, "rec_phrase",      1))
 lines.append(line("cap_close_once", 0, "loop_len_msg",   0))
-lines.append(line("adc",            0, "rec_phrase",      0))
+lines.append(line("adc_sum",        0, "rec_phrase",      0))
 
 # ============================================================
 # SECTION 4: PITCH DETECTION
@@ -399,7 +414,7 @@ boxes.append(newobj("bass_pass1",  "== 1",  2, 1, ["int"],
 boxes.append(comment("lbl_bass", "bass trigger (fret 1-8 low E)", COL_D+165, ROW_TOP+312, 210))
 
 # Wiring: yin → confidence gate
-lines.append(line("adc",         0, "yin",          0))
+lines.append(line("adc_sum",     0, "yin",          0))
 lines.append(line("yin",         0, "conf_gate",    0))
 lines.append(line("yin",         1, "conf_thresh",  0))
 lines.append(line("conf_thresh", 0, "conf_gate",    1))
@@ -605,15 +620,15 @@ for g in range(1, 5):
     boxes.append(comment(f"lbl_ts{g}", f"G{g} shift (delay {lo//1000}-{(lo+rng-1)//1000}s):",
                          FAN_COL-30, gsy, 200))
 
-    # Random delay: random(rng) + lo → pipe (delay N ms) → bang
+    # Random delay: random(rng) + lo → delay (N ms) → bang — use [delay], not [pipe]
+    # (modern [pipe] delays numbers and outputs int; [random] left inlet only accepts bang to generate)
     boxes.append(newobj(f"ts_rand_{g}",   f"random {rng}", 1, 1, ["int"],
                         FAN_COL, gsy+25))
-    # We need to add lo: random result + lo → pipe
     boxes.append(newobj(f"ts_add_{g}",    f"+ {lo}", 2, 1, ["int"],
                         FAN_COL+80, gsy+25))
-    boxes.append(newobj(f"ts_pipe_{g}",   "pipe 0", 2, 1, ["bang"],
+    boxes.append(newobj(f"ts_pipe_{g}",   "delay 0", 2, 1, ["bang"],
                         FAN_COL, gsy+55))
-    boxes.append(comment(f"lbl_tpipe{g}", "pipe = delayed bang", FAN_COL+65, gsy+57, 130))
+    boxes.append(comment(f"lbl_tpipe{g}", "delay = bang after N ms", FAN_COL+65, gsy+57, 170))
 
     # Latch the new midi note at trigger time (before delay fires)
     boxes.append(newobj(f"ts_latch_{g}", "f", 2, 1, ["float"],
@@ -658,7 +673,7 @@ for g in range(1, 5):
 
     # Wire up the shift response
     # g{n}_new_pass → trigger → ts_rand + ts_latch
-    # trigger: right outlets fire first — compute delay → latch → bank → pipe bang
+    # trigger: right outlets fire first — compute delay → latch → bank → delay bang
     boxes.append(newobj(f"ts_trig_{g}", "trigger b b b b", 1, 4,
                         ["bang","bang","bang","bang"],
                         FAN_COL+50, gsy))
@@ -672,10 +687,10 @@ for g in range(1, 5):
     lines.append(line(f"ts_rand_{g}", 0, f"ts_add_{g}",  0))
     lines.append(line(f"ts_add_{g}",  0, f"ts_pipe_{g}", 1))  # set delay time
 
-    lines.append(line(f"ts_pipe_{g}", 0, f"ts_rslot_{g}", 0))  # bang random slot select
+    lines.append(line(f"ts_pipe_{g}", 0, f"ts_rslot_{g}", 0))  # delayed bang → random slot
     lines.append(line(f"ts_rslot_{g}", 0, f"ts_ssel_{g}", 0))
 
-    # Interval computation: after pipe fires, read bank_0 vs latched note
+    # Interval computation: after delay fires, read bank_0 vs latched note
     lines.append(line(f"ts_latch_{g}",    0, f"ts_interval_{g}", 0))
     lines.append(line(f"g{g}_bank_0",     0, f"ts_interval_{g}", 1))
     lines.append(line(f"ts_interval_{g}", 0, f"ts_pline_{g}",    0))
@@ -708,8 +723,8 @@ PHASE_VOICES = [
      "pan": -35., "label": "G4 (fast drift)"},
 ]
 
-# A 5th guitar 'voice' for the input with a fixed pan at +35 degrees
-INPUT_PAN = 35.
+# Dry monitor: center (was +35° — almost all level on R, so L looked "dead" with quiet bed)
+INPUT_PAN = 0.
 
 boxes.append(comment("lbl_s6", "=== PHASE ENGINE (groove~ voices) ===",
                      COL_F, ROW_TOP-20, 260))
@@ -792,6 +807,10 @@ for v in PHASE_VOICES:
                         vx, vy+245))
     boxes.append(newobj(f"entry_once_{idx}", "change", 1, 1, ["int"],
                         vx, vy+275))
+    # groove~ does not auto-play: startloop at schedule (right outlet of trigger fires first)
+    boxes.append(newobj(f"entry_split_{idx}", "trigger b b", 1, 2, ["bang", "bang"],
+                        vx+120, vy+275))
+    boxes.append(msg(f"gr_start_{idx}", "startloop", vx+215, vy+275, 72))
     boxes.append(msg(f"entry_msg_{idx}", "1. 5000",
                      vx, vy+305, 60))
     boxes.append(newobj(f"entry_line_{idx}", "line 0. 5000", 2, 1, ["float"],
@@ -816,7 +835,10 @@ for v in PHASE_VOICES:
     # Wiring: timer → entry gate
     lines.append(line("ms_sec",         0, f"entry_cmp_{idx}",  0, idx+6))
     lines.append(line(f"entry_cmp_{idx}",  0, f"entry_once_{idx}", 0))
-    lines.append(line(f"entry_once_{idx}", 0, f"entry_msg_{idx}",  0))
+    lines.append(line(f"entry_once_{idx}", 0, f"entry_split_{idx}", 0))
+    lines.append(line(f"entry_split_{idx}", 1, f"gr_start_{idx}", 0))
+    lines.append(line(f"gr_start_{idx}",   0, f"gr_{idx}", 0))
+    lines.append(line(f"entry_split_{idx}", 0, f"entry_msg_{idx}",  0))
     lines.append(line(f"entry_msg_{idx}",  0, f"entry_line_{idx}", 0))
     # envelope combo
     lines.append(line(f"entry_line_{idx}", 0, f"pv_env1_{idx}", 0))
@@ -848,7 +870,7 @@ lines.append(line("in_gain", 0, "in_pan_R", 0))
 # Triggered by bass_pass1 (rising edge of bass range flag).
 # Flow:
 #   bass_pass1 → trigger b b
-#     branch A: random(6001) + 2000 → pipe (delay) → bang
+#     branch A: random(6001) + 2000 → delay (bang) → random sample
 #               → random 8 → sel 0..7 → corresponding samp_groove~ play
 #     branch B: set 2s cooldown gate so one sustained bass note only fires once
 #
@@ -857,18 +879,18 @@ lines.append(line("in_gain", 0, "in_pan_R", 0))
 # we let them free-run and the user can retrigger. The 2s cooldown prevents
 # machine-gunning.
 
-SAMP_DIR = "samples/"
 NUM_SAMPLES = 8
 
 boxes.append(comment("lbl_s7", "=== SAMPLE TRIGGER SYSTEM ===",
                      COL_G, ROW_TOP-20, 230))
 
-# Sample buffers (empty at load; user places files at path defined in read msgs)
+# Sample buffers — read uses absolute path (see _SAMPLES_DIR; run build_patch.py after adding .wav)
 for s in range(NUM_SAMPLES):
+    _wav_abs = os.path.join(_SAMPLES_DIR, f"samp_{s}.wav").replace("\\", "/")
     boxes.append(newobj(f"samp_buf_{s}", f"buffer~ samp{s} 10000", 1, 1, ["bang"],
                         COL_G + s*115, ROW_TOP+30))
-    boxes.append(msg(f"samp_read_{s}", f'read {SAMP_DIR}samp_{s}.wav',
-                     COL_G + s*115, ROW_TOP+60, 130))
+    boxes.append(msg(f"samp_read_{s}", f"read {_wav_abs}",
+                     COL_G + s*115, ROW_TOP+60, min(520, len(_wav_abs) * 7 + 20)))
     lines.append(line(f"samp_read_{s}", 0, f"samp_buf_{s}", 0))
 
 # Sample groove~ players (no loop, rate 1.0)
@@ -892,7 +914,7 @@ boxes.append(newobj("samp_delay_rand", "random 6001", 1, 1, ["int"],
                     COL_G, ROW_TOP+215))
 boxes.append(newobj("samp_delay_add",  "+ 2000", 2, 1, ["int"],
                     COL_G+80, ROW_TOP+215))
-boxes.append(newobj("samp_pipe",       "pipe 0", 2, 1, ["bang"],
+boxes.append(newobj("samp_pipe",       "delay 0", 2, 1, ["bang"],
                     COL_G, ROW_TOP+245))
 boxes.append(newobj("samp_pick",       "random 8", 1, 1, ["int"],
                     COL_G, ROW_TOP+275))
@@ -979,11 +1001,11 @@ lines.append(line("samp_chainR_cd", 0, "samp_chainR", 1))
 
 # Wire bass trigger → sample trigger chain
 lines.append(line("bass_pass1",     0, "samp_trig_t",    0))
-# Right outlet fires first: compute delay → then pipe bang
+# Right outlet fires first: compute delay → then delay bang (inlet 0)
 lines.append(line("samp_trig_t",    1, "samp_delay_rand", 0))
 lines.append(line("samp_delay_rand",0, "samp_delay_add",  0))
-lines.append(line("samp_delay_add", 0, "samp_pipe",       1))  # set delay time
-lines.append(line("samp_trig_t",    0, "samp_pipe",       0))  # trigger pipe (after delay set)
+lines.append(line("samp_delay_add", 0, "samp_pipe",       1))  # set delay time (ms)
+lines.append(line("samp_trig_t",    0, "samp_pipe",       0))  # trigger delayed bang
 lines.append(line("samp_pipe",      0, "samp_pick",       0))
 lines.append(line("samp_pick",      0, "samp_sel",        0))
 

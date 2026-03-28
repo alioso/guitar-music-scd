@@ -354,26 +354,25 @@ def _check_fan_fiction(boxes, inputs_to, outputs_from, errors, warnings):
             if not outs:
                 errors.append(f"Bass trigger node '{node}' has no outputs — sample trigger chain broken")
 
-    # E) samp_delay_add must feed pipe (sets the delay time)
+    # E) samp_delay_add must feed samp_pipe ([delay]: right inlet = ms)
     if "samp_delay_add" in boxes:
         add_outs = [(dst, di) for (dst, so, di) in outputs_from.get("samp_delay_add", [])]
         pipe_feeds = [(dst, di) for (dst, di) in add_outs if dst == "samp_pipe"]
         if not pipe_feeds:
             errors.append("samp_delay_add does not feed samp_pipe — random delay time never set")
         else:
-            # Must feed inlet 1 of pipe (time inlet), not inlet 0 (bang)
             for (dst, di) in pipe_feeds:
                 if di != 1:
                     errors.append(f"samp_delay_add feeds samp_pipe inlet {di} (should be inlet 1 for time)")
 
-    # F) samp_trig_t must feed both delay_rand (branch A) AND pipe (branch B = the bang)
+    # F) samp_trig_t must feed delay_rand (branch A) AND samp_pipe delayed bang (branch B)
     if "samp_trig_t" in boxes:
         trig_outs = [(dst, so, di) for (dst, so, di) in outputs_from.get("samp_trig_t", [])]
         dests = [dst for (dst, so, di) in trig_outs]
         if "samp_delay_rand" not in dests:
             errors.append("samp_trig_t doesn't feed samp_delay_rand — delay time never computed")
         if "samp_pipe" not in dests:
-            errors.append("samp_trig_t doesn't feed samp_pipe — pipe never triggered")
+            errors.append("samp_trig_t doesn't feed samp_pipe — delayed bang never triggered")
 
     # G) ms_sec timer fan-out must reach cap_open_cmp, cap_close_cmp, and all entry_cmp_N
     if "ms_sec" in boxes:

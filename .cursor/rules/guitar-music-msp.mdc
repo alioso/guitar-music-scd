@@ -15,12 +15,17 @@ This repository contains **four Max/MSP patches for live solo guitar performance
 
 ```
 guitar-music-msp/
-├── check_patches.py          ← integrity checker (run after every build)
-├── anaerobes/build_patch.py  → anaerobes/anaerobes.maxpat
-├── chimera/build_patch.py    → chimera/chimera.maxpat
-├── fan-fiction/build_patch.py → fan-fiction/fan-fiction.maxpat
-└── lapopie/build_patch.py   → lapopie/lapopie.maxpat
+├── check_patches.py           ← integrity checker (run after every build)
+├── anaerobes/build_patch.py   → anaerobes/anaerobes.maxpat
+├── chimera/build_patch.py     → chimera/chimera.maxpat + chimera.amxd
+├── fan-fiction/build_patch.py → fan-fiction/fan-fiction.maxpat + fan-fiction.amxd
+└── lapopie/build_patch.py     → lapopie/lapopie.maxpat + lapopie.amxd
 ```
+
+## Agent instructions: fresh context & M4L 8 (Live 11)
+
+- **Do not rely on chat memory or prior summaries** of what a patch “usually” does. For each task, **re-read** the relevant `<patch>/build_patch.py`, `check_patches.py` when IDs or invariants change, and this rule file if needed.
+- **Primary target is Max for Live 8.x inside Ableton Live 11**, not Max 9 standalone. **Object availability**, **inlet/outlet behavior**, **`plugin~`/`plugout~` vs `adc~`/`dac~`**, and **`live.thisdevice`** semantics **must** match what the built patch actually uses; if something is uncertain, **verify in M4L** (or state that it needs a runtime check)—do not assume from general Max knowledge alone.
 
 ## Workflow
 
