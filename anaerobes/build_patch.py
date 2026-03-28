@@ -579,10 +579,14 @@ for l in lines:
 lines = valid_lines
 
 patch = {
+    "fileversion": 1,
+    "appversion": {"major": 8, "minor": 1, "revision": 11, "architecture": "x64", "modernui": 1},
+    "classnamespace": "dsp.toplevel",
+    "rect": [100, 100, 2400, 1400],
+    "gridsize": [15.0, 15.0],
     "boxes": boxes,
     "lines": lines,
-    "appversion": {"major": 8, "minor": 1, "revision": 11, "architecture": "x64", "modernui": 1},
-    "classnamespace": "box"
+    "autosave": 0
 }
 
 output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "anaerobes.maxpat")
