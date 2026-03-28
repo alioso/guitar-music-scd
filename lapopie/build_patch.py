@@ -45,6 +45,7 @@ EUCLIDEAN PATTERN BANK (stored in coll, 0/1 strings over 8th-note grid)
 
 import json
 import os
+import struct
 
 # ============================================================
 # HELPERS  (same conventions as anaerobes/build_patch.py)
@@ -174,24 +175,16 @@ VOICE_H     = 160   # vertical space per voice in scheduler section
 # SECTION 0: INIT / LOADBANG
 # ============================================================
 
-boxes.append(newobj("loadbang", "loadbang", 0, 1, ["bang"],
-                     COL_INPUT, ROW_HDR, 70))
-boxes.append(newobj("lb_delay", "delay 100", 2, 1, ["bang"],
-                     COL_INPUT, ROW_HDR+30, 70))
-boxes.append(msg("msg_startwindow", "startwindow", COL_INPUT, ROW_HDR+60, 90))
-lines.append(line("loadbang", 0, "lb_delay", 0))
-lines.append(line("lb_delay", 0, "msg_startwindow", 0))
-lines.append(line("msg_startwindow", 0, "ezdac", 0))
+# live.thisdevice fires when device is fully ready in Live's audio graph
+boxes.append(newobj("thisdevice", "live.thisdevice", 1, 2, ["bang","bang"],
+                     COL_INPUT, ROW_HDR, 110))
 
 # ============================================================
 # SECTION 1: INPUT + AUDIO OUTPUT TOGGLE
 # ============================================================
 
 boxes.append(comment("lbl_input", "=== INPUT ===", COL_INPUT, ROW_TOP-10, 120))
-boxes.append(newobj("ezdac", "ezdac~", 2, 0, [], COL_INPUT+150, ROW_TOP, 50))
-boxes.append(comment("lbl_ezdac", "<-- enable audio", COL_INPUT+210, ROW_TOP+4, 120))
-
-boxes.append(newobj("adc", "adc~ 1", 1, 1, ["signal"], COL_INPUT, ROW_TOP+30, 62))
+boxes.append(newobj("adc", "plugin~", 2, 2, ["signal","signal"], COL_INPUT, ROW_TOP+30, 62))
 boxes.append(comment("lbl_adc", "guitar in", COL_INPUT+70, ROW_TOP+34, 70))
 
 # Dry pass-through (soft, center)
@@ -295,7 +288,7 @@ lines.append(line("click_toggle",0, "click_gain",  1))
 lines.append(line("bpm_num",      0, "bpm_half",     0))
 lines.append(line("bpm_num",      0, "metro_qn",     1))  # right inlet sets interval
 lines.append(line("bpm_half",     0, "metro_8th",    1))
-lines.append(line("loadbang",     0, "msg_bpm_init", 0))
+lines.append(line("thisdevice",   0, "msg_bpm_init", 0))
 lines.append(line("msg_bpm_init", 0, "bpm_num",      0))
 
 # ============================================================
@@ -960,9 +953,9 @@ boxes.append(newobj("clip_R", "clip~ -1. 1.",
                      3, 1, ["signal"],
                      COL_MIX+80, ROW_TOP+185, 90))
 
-boxes.append(newobj("dac", "dac~",
-                     2, 0, [],
-                     COL_MIX, ROW_TOP+215, 44))
+boxes.append(newobj("dac", "plugout~",
+                     2, 2, ["signal","signal"],
+                     COL_MIX, ROW_TOP+215, 60))
 
 # Metering
 boxes.append(newobj("meter_L", "meter~",
@@ -1003,8 +996,6 @@ lines.append(line("clip_R",    0, "dac",      1))
 lines.append(line("clip_L",    0, "meter_L",  0, 0))
 lines.append(line("clip_R",    0, "meter_R",  0, 0))
 
-# ezdac wired to dac (share outlet)
-lines.append(line("msg_startwindow", 0, "dac", 0))
 
 # ============================================================
 # ASSEMBLE & WRITE PATCH
@@ -1020,29 +1011,32 @@ patch = {
             "architecture": "x64",
             "modernui": 1
         },
-        "classnamespace": "dsp.toplevel",
+        "classnamespace": "box",
         "rect": [50.0, 80.0, 2300.0, 1000.0],
         "gridsize": [15.0, 15.0],
         "boxes": boxes,
         "lines": lines,
-        "dependency_cache": [
-            {
-                "name": "pan2.maxpat",
-                "bootpath": "~/Library/Application Support/Cycling '74/Max 8/Examples/spatialization/panning/lib",
-                "patcherrelativepath": "../../../Library/Application Support/Cycling '74/Max 8/Examples/spatialization/panning/lib",
-                "type": "JSON",
-                "implicit": 1
-            }
-        ],
         "autosave": 0
     }
 }
 
-out_path = os.path.join(os.path.dirname(__file__), "lapopie.maxpat")
-with open(out_path, "w") as f:
+base_dir    = os.path.dirname(os.path.abspath(__file__))
+maxpat_path = os.path.join(base_dir, "lapopie.maxpat")
+amxd_path   = os.path.join(base_dir, "lapopie.amxd")
+
+with open(maxpat_path, "w") as f:
     json.dump(patch, f, indent="\t")
 
-print(f"Written {out_path}")
+json_bytes = json.dumps(patch, indent="\t").encode("utf-8")
+buf = bytearray()
+buf += b"ampf" + struct.pack("<I", 4) + b"aaaa"
+buf += b"meta" + struct.pack("<I", 4) + struct.pack("<I", 0)
+buf += b"ptch" + struct.pack("<I", len(json_bytes)) + json_bytes
+with open(amxd_path, "wb") as f:
+    f.write(buf)
+
+print(f"Written {maxpat_path}")
+print(f"Also:   {amxd_path}")
 print(f"  {len(boxes)} boxes, {len(lines)} patch lines")
 
 # ---- Verify: check for duplicate IDs ----

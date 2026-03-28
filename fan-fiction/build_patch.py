@@ -99,6 +99,7 @@ IMPORTANT: groove~ rate inlet is inlet 1. Audio comes from inlet 0 (loop command
 
 import json
 import os
+import struct
 
 # ============================================================
 # HELPERS  (same conventions as anaerobes + chimera)
@@ -206,11 +207,7 @@ lines = []
 
 boxes.append(comment("lbl_s1", "=== INPUT ===", COL_A, ROW_TOP-20, 120))
 
-boxes.append(newobj("ezdac", "ezdac~", 2, 0, [],
-                    COL_A+160, ROW_TOP, 50))
-boxes.append(comment("lbl_ezdac", "<-- enable audio", COL_A+220, ROW_TOP+4, 130))
-
-boxes.append(newobj("adc", "adc~ 1", 1, 1, ["signal"],
+boxes.append(newobj("adc", "plugin~", 2, 2, ["signal","signal"],
                     COL_A, ROW_TOP+40))
 
 # Input guitar in mix at -6dB relative to partners (~0.45 vs 0.70)
@@ -997,7 +994,7 @@ boxes.append(newobj("master_L", "*~ 0.5", 2, 1, ["signal"], COL_MIX,    ROW_TOP+
 boxes.append(newobj("master_R", "*~ 0.5", 2, 1, ["signal"], COL_MIX+90, ROW_TOP+210))
 boxes.append(newobj("clip_L", "clip~ -1. 1.", 3, 1, ["signal"], COL_MIX,    ROW_TOP+245))
 boxes.append(newobj("clip_R", "clip~ -1. 1.", 3, 1, ["signal"], COL_MIX+90, ROW_TOP+245))
-boxes.append(newobj("dac", "dac~", 2, 0, [], COL_MIX+40, ROW_TOP+285, 40))
+boxes.append(newobj("dac", "plugout~", 2, 2, ["signal","signal"], COL_MIX+40, ROW_TOP+285, 60))
 boxes.append(newobj("meter_L", "meter~", 1, 1, ["float"], COL_MIX,    ROW_TOP+325, 60))
 boxes.append(newobj("meter_R", "meter~", 1, 1, ["float"], COL_MIX+90, ROW_TOP+325, 60))
 
@@ -1041,36 +1038,31 @@ lines.append(line("clip_R",    0, "meter_R",  0, 0))
 # ============================================================
 
 boxes.append(comment("lbl_init", "=== INIT ===", COL_A, 900, 100))
-boxes.append(newobj("loadbang", "loadbang", 1, 1, ["bang"], COL_A, 930))
-boxes.append(newobj("lb_delay", "delay 500", 2, 1, ["bang"], COL_A, 960))
-boxes.append(msg("msg_startwindow", "startwindow", COL_A, 990, 85))
+# live.thisdevice fires when device is fully ready in Live's audio graph
+boxes.append(newobj("thisdevice", "live.thisdevice", 1, 2, ["bang","bang"], COL_A, 930))
 
-lines.append(line("loadbang", 0, "lb_delay",        0))
-lines.append(line("lb_delay", 0, "msg_startwindow", 0))
-lines.append(line("msg_startwindow", 0, "dac",       0))
-
-# Set groove~ voices to loop mode at load
+# Set groove~ voices to loop mode when device is ready
 for v in PHASE_VOICES:
     idx = v["idx"]
     boxes.append(msg(f"gr_loop_{idx}", "loop 1", COL_A, 1030 + (idx-1)*30, 55))
-    lines.append(line("loadbang",     0, f"gr_loop_{idx}", 0))
-    lines.append(line(f"gr_loop_{idx}", 0, f"gr_{idx}",   0))
+    lines.append(line("thisdevice", 0, f"gr_loop_{idx}", 0))
+    lines.append(line(f"gr_loop_{idx}", 0, f"gr_{idx}",  0))
 
 # Set sample groove~ to no-loop (plays once on trigger)
 for s in range(NUM_SAMPLES):
     boxes.append(msg(f"samp_no_loop_{s}", "loop 0", COL_A, 1160 + s*30, 55))
-    lines.append(line("loadbang", 0, f"samp_no_loop_{s}", 0))
+    lines.append(line("thisdevice", 0, f"samp_no_loop_{s}", 0))
     lines.append(line(f"samp_no_loop_{s}", 0, f"samp_gr_{s}", 0))
 
-# Fire samp_read messages at load so buffers are pre-loaded if samples exist
+# Fire samp_read messages when device is ready so buffers are pre-loaded
 boxes.append(newobj("lb_delay2", "delay 700", 2, 1, ["bang"], COL_A, 1415))
-lines.append(line("loadbang", 0, "lb_delay2", 0))
+lines.append(line("thisdevice", 0, "lb_delay2", 0))
 for s in range(NUM_SAMPLES):
     lines.append(line("lb_delay2", 0, f"samp_read_{s}", 0))
 
-# Init bank defaults at load
+# Init bank defaults when device is ready
 boxes.append(newobj("lb_delay3", "delay 300", 2, 1, ["bang"], COL_A, 1450))
-lines.append(line("loadbang", 0, "lb_delay3", 0))
+lines.append(line("thisdevice", 0, "lb_delay3", 0))
 for slot in range(5):
     lines.append(line("lb_delay3", 0, f"init_default_{slot}", 0))
 for g in range(1, 5):
@@ -1116,7 +1108,7 @@ patch = {
             "architecture": "x64",
             "modernui": 1
         },
-        "classnamespace": "dsp.toplevel",
+        "classnamespace": "box",
         "rect": [0, 0, 2800, 1400],
         "bglocked": 0,
         "openinpresentation": 0,
@@ -1152,10 +1144,22 @@ patch = {
     }
 }
 
-output_path = os.path.join(os.path.dirname(__file__), "fan-fiction.maxpat")
-with open(output_path, "w") as f:
+base_dir    = os.path.dirname(os.path.abspath(__file__))
+maxpat_path = os.path.join(base_dir, "fan-fiction.maxpat")
+amxd_path   = os.path.join(base_dir, "fan-fiction.amxd")
+
+with open(maxpat_path, "w") as f:
     json.dump(patch, f, indent=2)
 
-print(f"Written: {output_path}")
+json_bytes = json.dumps(patch, indent=2).encode("utf-8")
+buf = bytearray()
+buf += b"ampf" + struct.pack("<I", 4) + b"aaaa"
+buf += b"meta" + struct.pack("<I", 4) + struct.pack("<I", 0)
+buf += b"ptch" + struct.pack("<I", len(json_bytes)) + json_bytes
+with open(amxd_path, "wb") as f:
+    f.write(buf)
+
+print(f"Written: {maxpat_path}")
+print(f"Also:    {amxd_path}")
 print(f"  Boxes: {len(boxes)}")
 print(f"  Lines: {len(lines)}")

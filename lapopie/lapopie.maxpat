@@ -8,7 +8,7 @@
 			"architecture": "x64",
 			"modernui": 1
 		},
-		"classnamespace": "dsp.toplevel",
+		"classnamespace": "box",
 		"rect": [
 			50.0,
 			80.0,
@@ -22,56 +22,21 @@
 		"boxes": [
 			{
 				"box": {
-					"id": "loadbang",
+					"id": "thisdevice",
 					"maxclass": "newobj",
-					"numinlets": 0,
-					"numoutlets": 1,
+					"numinlets": 1,
+					"numoutlets": 2,
 					"patching_rect": [
 						50,
 						20,
-						70,
+						110,
 						22
 					],
 					"outlettype": [
+						"bang",
 						"bang"
 					],
-					"text": "loadbang"
-				}
-			},
-			{
-				"box": {
-					"id": "lb_delay",
-					"maxclass": "newobj",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						50,
-						50,
-						70,
-						22
-					],
-					"outlettype": [
-						"bang"
-					],
-					"text": "delay 100"
-				}
-			},
-			{
-				"box": {
-					"id": "msg_startwindow",
-					"maxclass": "message",
-					"numinlets": 2,
-					"numoutlets": 1,
-					"patching_rect": [
-						50,
-						80,
-						90,
-						22
-					],
-					"outlettype": [
-						""
-					],
-					"text": "startwindow"
+					"text": "live.thisdevice"
 				}
 			},
 			{
@@ -92,42 +57,10 @@
 			},
 			{
 				"box": {
-					"id": "ezdac",
-					"maxclass": "newobj",
-					"numinlets": 2,
-					"numoutlets": 0,
-					"patching_rect": [
-						200,
-						50,
-						50,
-						22
-					],
-					"outlettype": [],
-					"text": "ezdac~"
-				}
-			},
-			{
-				"box": {
-					"id": "lbl_ezdac",
-					"maxclass": "comment",
-					"numinlets": 1,
-					"numoutlets": 0,
-					"patching_rect": [
-						260,
-						54,
-						120,
-						22
-					],
-					"outlettype": [],
-					"text": "<-- enable audio"
-				}
-			},
-			{
-				"box": {
 					"id": "adc",
 					"maxclass": "newobj",
-					"numinlets": 1,
-					"numoutlets": 1,
+					"numinlets": 2,
+					"numoutlets": 2,
 					"patching_rect": [
 						50,
 						80,
@@ -135,9 +68,10 @@
 						22
 					],
 					"outlettype": [
+						"signal",
 						"signal"
 					],
-					"text": "adc~ 1"
+					"text": "plugin~"
 				}
 			},
 			{
@@ -7555,15 +7489,18 @@
 					"id": "dac",
 					"maxclass": "newobj",
 					"numinlets": 2,
-					"numoutlets": 0,
+					"numoutlets": 2,
 					"patching_rect": [
 						2050,
 						265,
-						44,
+						60,
 						22
 					],
-					"outlettype": [],
-					"text": "dac~"
+					"outlettype": [
+						"signal",
+						"signal"
+					],
+					"text": "plugout~"
 				}
 			},
 			{
@@ -7604,42 +7541,6 @@
 			}
 		],
 		"lines": [
-			{
-				"patchline": {
-					"destination": [
-						"lb_delay",
-						0
-					],
-					"source": [
-						"loadbang",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"msg_startwindow",
-						0
-					],
-					"source": [
-						"lb_delay",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"ezdac",
-						0
-					],
-					"source": [
-						"msg_startwindow",
-						0
-					]
-				}
-			},
 			{
 				"patchline": {
 					"destination": [
@@ -7911,7 +7812,7 @@
 						0
 					],
 					"source": [
-						"loadbang",
+						"thisdevice",
 						0
 					]
 				}
@@ -13969,27 +13870,6 @@
 					],
 					"order": 0
 				}
-			},
-			{
-				"patchline": {
-					"destination": [
-						"dac",
-						0
-					],
-					"source": [
-						"msg_startwindow",
-						0
-					]
-				}
-			}
-		],
-		"dependency_cache": [
-			{
-				"name": "pan2.maxpat",
-				"bootpath": "~/Library/Application Support/Cycling '74/Max 8/Examples/spatialization/panning/lib",
-				"patcherrelativepath": "../../../Library/Application Support/Cycling '74/Max 8/Examples/spatialization/panning/lib",
-				"type": "JSON",
-				"implicit": 1
 			}
 		],
 		"autosave": 0

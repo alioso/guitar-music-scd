@@ -60,6 +60,7 @@ IMPORTANT: Max's expr does NOT support clip(). Use separate clip objects.
 
 import json
 import os
+import struct
 
 # ============================================================
 # HELPERS  (same conventions as anaerobes + lapopie)
@@ -145,11 +146,7 @@ lines = []
 
 boxes.append(comment("lbl_s1", "=== INPUT ===", COL_A, ROW_TOP-20, 120))
 
-boxes.append(newobj("ezdac", "ezdac~", 2, 0, [],
-                    COL_A+160, ROW_TOP, 50))
-boxes.append(comment("lbl_ezdac", "<-- enable audio", COL_A+220, ROW_TOP+4, 130))
-
-boxes.append(newobj("adc", "adc~ 1", 1, 1, ["signal"],
+boxes.append(newobj("adc", "plugin~", 2, 2, ["signal","signal"],
                     COL_A, ROW_TOP+40))
 
 # Dry signal (input guitar heard clean at output)
@@ -842,7 +839,7 @@ boxes.append(newobj("clip_L", "clip~ -1. 1.", 3, 1, ["signal"], COL_MIX, ROW_TOP
 boxes.append(newobj("clip_R", "clip~ -1. 1.", 3, 1, ["signal"], COL_MIX+80, ROW_TOP+330))
 
 # DAC
-boxes.append(newobj("dac", "dac~", 2, 0, [], COL_MIX+30, ROW_TOP+370, 40))
+boxes.append(newobj("dac", "plugout~", 2, 2, ["signal","signal"], COL_MIX+30, ROW_TOP+370, 60))
 
 # Meters
 boxes.append(newobj("meter_L", "meter~", 1, 1, ["float"], COL_MIX, ROW_TOP+410, 60))
@@ -862,27 +859,21 @@ lines.append(line("clip_R",    0, "meter_R", 0, 0))
 # ============================================================
 
 boxes.append(comment("lbl_init", "=== INIT ===", COL_A, 900, 100))
-boxes.append(newobj("loadbang", "loadbang", 1, 1, ["bang"],
+# live.thisdevice fires when device is fully ready in Live's audio graph
+boxes.append(newobj("thisdevice", "live.thisdevice", 1, 2, ["bang","bang"],
                     COL_A, 930))
-boxes.append(newobj("lb_delay", "delay 500", 2, 1, ["bang"],
-                    COL_A, 960))
-boxes.append(msg("msg_startwindow", "startwindow", COL_A, 990, 85))
 
-lines.append(line("loadbang", 0, "lb_delay", 0))
-lines.append(line("lb_delay", 0, "msg_startwindow", 0))
-lines.append(line("msg_startwindow", 0, "dac", 0))
-
-# Init groove~ voices to loop mode and fire preset 0 at startup
+# Init groove~ voices to loop mode when device is ready
 for v in OCEAN_VOICES:
     idx = v["idx"]
     boxes.append(msg(f"groove_loop_{idx}", "loop 1", COL_A, 1030 + (idx-1)*30, 55))
-    lines.append(line("loadbang", 0, f"groove_loop_{idx}", 0))
+    lines.append(line("thisdevice", 0, f"groove_loop_{idx}", 0))
     lines.append(line(f"groove_loop_{idx}", 0, f"groove_{idx}", 0))
 
-# Fire preset 0 at loadbang so pitch offsets are initialised before any playing
+# Fire preset 0 when device is ready so pitch offsets are initialised before any playing
 boxes.append(newobj("lb_delay2", "delay 600", 2, 1, ["bang"],
                     COL_A, 1165))
-lines.append(line("loadbang", 0, "lb_delay2", 0))
+lines.append(line("thisdevice", 0, "lb_delay2", 0))
 lines.append(line("lb_delay2", 0, "preset_msg_0", 0))
 
 # ============================================================
@@ -924,7 +915,7 @@ patch = {
             "architecture": "x64",
             "modernui": 1
         },
-        "classnamespace": "dsp.toplevel",
+        "classnamespace": "box",
         "rect": [0, 0, 2400, 1200],
         "bglocked": 0,
         "openinpresentation": 0,
@@ -960,10 +951,22 @@ patch = {
     }
 }
 
-output_path = os.path.join(os.path.dirname(__file__), "chimera.maxpat")
-with open(output_path, "w") as f:
+base_dir    = os.path.dirname(os.path.abspath(__file__))
+maxpat_path = os.path.join(base_dir, "chimera.maxpat")
+amxd_path   = os.path.join(base_dir, "chimera.amxd")
+
+with open(maxpat_path, "w") as f:
     json.dump(patch, f, indent=2)
 
-print(f"Written: {output_path}")
+json_bytes = json.dumps(patch, indent=2).encode("utf-8")
+buf = bytearray()
+buf += b"ampf" + struct.pack("<I", 4) + b"aaaa"
+buf += b"meta" + struct.pack("<I", 4) + struct.pack("<I", 0)
+buf += b"ptch" + struct.pack("<I", len(json_bytes)) + json_bytes
+with open(amxd_path, "wb") as f:
+    f.write(buf)
+
+print(f"Written: {maxpat_path}")
+print(f"Also:    {amxd_path}")
 print(f"  Boxes: {len(boxes)}")
 print(f"  Lines: {len(lines)}")

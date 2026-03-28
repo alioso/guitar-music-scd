@@ -8,7 +8,7 @@
       "architecture": "x64",
       "modernui": 1
     },
-    "classnamespace": "dsp.toplevel",
+    "classnamespace": "box",
     "rect": [
       0,
       0,
@@ -64,52 +64,21 @@
       },
       {
         "box": {
-          "id": "ezdac",
-          "maxclass": "newobj",
-          "numinlets": 2,
-          "numoutlets": 0,
-          "patching_rect": [
-            200,
-            40,
-            50,
-            22
-          ],
-          "outlettype": [],
-          "text": "ezdac~"
-        }
-      },
-      {
-        "box": {
-          "id": "lbl_ezdac",
-          "maxclass": "comment",
-          "numinlets": 1,
-          "numoutlets": 0,
-          "patching_rect": [
-            260,
-            44,
-            130,
-            22
-          ],
-          "outlettype": [],
-          "text": "<-- enable audio"
-        }
-      },
-      {
-        "box": {
           "id": "adc",
           "maxclass": "newobj",
-          "numinlets": 1,
-          "numoutlets": 1,
+          "numinlets": 2,
+          "numoutlets": 2,
           "patching_rect": [
             40,
             80,
-            62,
+            69,
             22
           ],
           "outlettype": [
+            "signal",
             "signal"
           ],
-          "text": "adc~ 1"
+          "text": "plugin~"
         }
       },
       {
@@ -7903,15 +7872,18 @@
           "id": "dac",
           "maxclass": "newobj",
           "numinlets": 2,
-          "numoutlets": 0,
+          "numoutlets": 2,
           "patching_rect": [
             2290,
             325,
-            40,
+            60,
             22
           ],
-          "outlettype": [],
-          "text": "dac~"
+          "outlettype": [
+            "signal",
+            "signal"
+          ],
+          "text": "plugout~"
         }
       },
       {
@@ -7968,56 +7940,21 @@
       },
       {
         "box": {
-          "id": "loadbang",
+          "id": "thisdevice",
           "maxclass": "newobj",
           "numinlets": 1,
-          "numoutlets": 1,
+          "numoutlets": 2,
           "patching_rect": [
             40,
             930,
-            76,
+            125,
             22
           ],
           "outlettype": [
+            "bang",
             "bang"
           ],
-          "text": "loadbang"
-        }
-      },
-      {
-        "box": {
-          "id": "lb_delay",
-          "maxclass": "newobj",
-          "numinlets": 2,
-          "numoutlets": 1,
-          "patching_rect": [
-            40,
-            960,
-            83,
-            22
-          ],
-          "outlettype": [
-            "bang"
-          ],
-          "text": "delay 500"
-        }
-      },
-      {
-        "box": {
-          "id": "msg_startwindow",
-          "maxclass": "message",
-          "numinlets": 2,
-          "numoutlets": 1,
-          "patching_rect": [
-            40,
-            990,
-            85,
-            22
-          ],
-          "outlettype": [
-            ""
-          ],
-          "text": "startwindow"
+          "text": "live.thisdevice"
         }
       },
       {
@@ -14386,47 +14323,11 @@
       {
         "patchline": {
           "destination": [
-            "lb_delay",
-            0
-          ],
-          "source": [
-            "loadbang",
-            0
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "msg_startwindow",
-            0
-          ],
-          "source": [
-            "lb_delay",
-            0
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "dac",
-            0
-          ],
-          "source": [
-            "msg_startwindow",
-            0
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
             "gr_loop_1",
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14450,7 +14351,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14474,7 +14375,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14498,7 +14399,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14522,7 +14423,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14546,7 +14447,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14570,7 +14471,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14594,7 +14495,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14618,7 +14519,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14642,7 +14543,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14666,7 +14567,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14690,7 +14591,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14714,7 +14615,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
@@ -14822,7 +14723,7 @@
             0
           ],
           "source": [
-            "loadbang",
+            "thisdevice",
             0
           ]
         }
