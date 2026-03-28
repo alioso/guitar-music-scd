@@ -63,6 +63,7 @@ IMPORTANT: expr~ NOT available — use *~ / +~ chains.
 import json
 import math
 import os
+import struct
 
 # ============================================================
 # HELPERS
@@ -578,22 +579,63 @@ for l in lines:
         dropped += 1
 lines = valid_lines
 
-patch = {
+patcher = {
     "fileversion": 1,
     "appversion": {"major": 8, "minor": 1, "revision": 11, "architecture": "x64", "modernui": 1},
-    "classnamespace": "dsp.toplevel",
-    "rect": [100, 100, 2400, 1400],
+    "classnamespace": "box",
+    "rect": [100.0, 100.0, 2400.0, 1400.0],
+    "openrect": [0.0, 0.0, 0.0, 0.0],
+    "bglocked": 0,
+    "openinpresentation": 0,
+    "default_fontsize": 10.0,
+    "default_fontface": 0,
+    "default_fontname": "Arial Bold",
+    "gridonopen": 1,
     "gridsize": [15.0, 15.0],
+    "gridsnaponopen": 1,
+    "objectsnaponopen": 1,
+    "statusbarvisible": 2,
+    "toolbarvisible": 1,
+    "lefttoolbarpinned": 0,
+    "toptoolbarpinned": 0,
+    "righttoolbarpinned": 0,
+    "bottomtoolbarpinned": 0,
+    "toolbars_unpinned_last_save": 0,
+    "tallnewobj": 0,
+    "boxanimatetime": 500,
+    "enablehscroll": 1,
+    "enablevscroll": 1,
+    "devicewidth": 0.0,
+    "description": "",
+    "digest": "",
+    "tags": "",
+    "style": "",
+    "subpatcher_template": "",
+    "assistshowspatchername": 0,
     "boxes": boxes,
     "lines": lines,
     "autosave": 0
 }
 
-output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "anaerobes.maxpat")
-with open(output_path, "w") as f:
-    json.dump(patch, f, indent="\t")
+base_dir    = os.path.dirname(os.path.abspath(__file__))
+maxpat_path = os.path.join(base_dir, "anaerobes.maxpat")
+amxd_path   = os.path.join(base_dir, "anaerobes.amxd")
 
-print(f"Patch written to {output_path}")
+# Write .maxpat (patcher wrapper format, classnamespace: "box")
+with open(maxpat_path, "w") as f:
+    json.dump({"patcher": patcher}, f, indent="\t")
+
+# Write proper binary .amxd (ampf/meta/ptch chunk format)
+json_bytes = json.dumps({"patcher": patcher}, indent="\t").encode("utf-8")
+buf = bytearray()
+buf += b"ampf" + struct.pack("<I", 4) + b"aaaa"
+buf += b"meta" + struct.pack("<I", 4) + struct.pack("<I", 0)
+buf += b"ptch" + struct.pack("<I", len(json_bytes)) + json_bytes
+with open(amxd_path, "wb") as f:
+    f.write(buf)
+
+print(f"Patch written to {maxpat_path}")
+print(f"Also packaged as  {amxd_path}")
 print(f"  Boxes: {len(boxes)}")
 print(f"  Lines: {len(lines)}")
 if dropped:
