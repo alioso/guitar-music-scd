@@ -1,4 +1,4 @@
-# guitar-music-msp — AI Instructions
+# guitar-music-scd — AI Instructions
 
 ## Project
 
@@ -7,12 +7,11 @@ A series of live solo guitar pieces. Input is a guitar through a Scarlett interf
 Each piece lives in its own directory with a `.scd` file and a `README.md`.
 
 ```
-guitar-music-msp/
+guitar-music-scd/
 ├── fan-fiction/fan-fiction.scd   ← Reich phasing piece
 ├── anaerobes/anaerobes.scd
 ├── chimera/chimera.scd
-├── lapopie/lapopie.scd
-└── archived/                     ← old Max for Live attempts (ignore)
+├── tryphon/tryphon.scd
 ```
 
 ## SuperCollider Conventions
@@ -86,8 +85,6 @@ s.freeAll;
 ```
 
 ## Do not
-- Use `loadbang` patterns (not applicable in SC)
-- Use `expr~`, `groove~`, `record~`, or any Max objects
 - Edit `.scd` files without understanding the piece structure
 - Add features not requested
 

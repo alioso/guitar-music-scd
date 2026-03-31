@@ -1,4 +1,4 @@
-# guitar-music-msp — AI Context
+# guitar-music-scd — AI Context
 
 Live solo guitar pieces in **SuperCollider 3.14.1**.
 See CLAUDE.md at the project root for full conventions.

@@ -1,4 +1,4 @@
-# guitar-music-msp
+# guitar-music-scd
 
 Live solo guitar compositions in SuperCollider 3.14.1.
 
@@ -14,10 +14,10 @@ Live solo guitar compositions in SuperCollider 3.14.1.
 
 | Piece | Concept | Duration |
 |---|---|---|
-| [fan-fiction](fan-fiction/) | Steve Reich-style phasing, 4 voices | ~9 min |
+| [fan-fiction](fan-fiction/) | Phasing, 4 voices | ~9 min |
 | [anaerobes](anaerobes/) | Risset guitar quartet, delay + frequency shift | ~8 min |
 | [chimera](chimera/) | Ambient, swell detection + groove voices | ~12 min |
-| [lapopie](lapopie/) | Looping texture, pitch tracking | TBD |
+| [tryphon](tryphon/) | Polyrythm, pitch tracking | TBD |
 
 ## Workflow
 
