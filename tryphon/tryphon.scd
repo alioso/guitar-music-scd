@@ -231,21 +231,7 @@ s.waitForBoot({
         Out.ar(out, (SoundIn.ar(0) * amp).dup);
     }).add;
 
-    // Master: mix bus → JPverb → clip → hardware out
-    SynthDef(\trpMaster, {
-        |busIn=0, out=0, reverbMix=0.15, reverbDecay=3.5, reverbSize=1.1, reverbDamp=0.5|
-        var dry = In.ar(busIn, 2);
-        var wet = JPverb.ar(dry,
-            t60:       reverbDecay,
-            damp:      reverbDamp,
-            size:      reverbSize,
-            earlyDiff: 0.7,
-            modDepth:  0.03,
-            modFreq:   0.12);
-        Out.ar(out, ((dry * (1 - reverbMix)) + (wet * reverbMix)).clip2(1.0));
-    }).add;
-
-    /* GVerb fallback — uncomment and replace trpMaster above if sc3-plugins not installed:
+    // Master: mix bus → GVerb → clip → hardware out
     SynthDef(\trpMaster, {
         |busIn=0, out=0, reverbMix=0.15, reverbDecay=3.5, reverbDamp=0.5|
         var dry  = In.ar(busIn, 2);
@@ -254,7 +240,6 @@ s.waitForBoot({
         var wet  = [verb[0], verb[1]];
         Out.ar(out, ((dry * (1 - reverbMix)) + (wet * reverbMix)).clip2(1.0));
     }).add;
-    */
 
     // Quarter-note click with bar-1 accent — PulseCount keeps beat/bar in sync
     SynthDef(\trpClick, { |out=2, bpm=80|

@@ -53,7 +53,7 @@ REQUIRES sc3-plugins for JPverb (brew install sc3-plugins)
     ],
 
     // Reverb
-    reverbMix:     0.22,   // 0=dry 1=wet — keep subtle, enhances space
+    reverbMix:     0.07,   // 0=dry 1=wet — very subtle, just space not wash
     reverbSize:    1.2,    // room size
     reverbDecay:   4.5,    // decay in seconds
     reverbDamp:    0.4,    // high-freq damping
@@ -145,23 +145,7 @@ s.waitForBoot({
         Out.ar(out, sig.clip2(1.0));
     }).add;
 
-    // Master: mix bus → JPverb reverb → clip → hardware out
-    // Uses JPverb (sc3-plugins). If not installed, swap for GVerb version below.
-    SynthDef(\ffMaster, {
-        |busIn=0, out=0,
-         reverbMix=0.22, reverbSize=1.2, reverbDecay=4.5, reverbDamp=0.4|
-        var dry = In.ar(busIn, 2);
-        var wet = JPverb.ar(dry,
-            t60:  reverbDecay,
-            damp: reverbDamp,
-            size: reverbSize,
-            earlyDiff: 0.7,
-            modDepth: 0.05,
-            modFreq: 0.2);
-        Out.ar(out, ((dry * (1 - reverbMix)) + (wet * reverbMix)).clip2(1.0));
-    }).add;
-
-    /* GVerb fallback — uncomment and replace ffMaster above if sc3-plugins not installed:
+    // Master: mix bus → GVerb reverb → clip → hardware out
     SynthDef(\ffMaster, { |busIn=0, out=0, reverbMix=0.22, reverbDecay=4.5, reverbDamp=0.4|
         var dry  = In.ar(busIn, 2);
         var verb = GVerb.ar(dry[0], roomsize: 30,
@@ -169,7 +153,6 @@ s.waitForBoot({
         var wet  = [verb[0], verb[1]];
         Out.ar(out, ((dry * (1-reverbMix)) + (wet * reverbMix)).clip2(1.0));
     }).add;
-    */
 
     // Optional metronome click to headphone output (requires Scarlett 4i4+)
     SynthDef(\ffClick, { |out=2, bpm=110|
@@ -260,13 +243,13 @@ s.waitForBoot({
                     ff.recSyn.free;
                     ff.voiceSyns.do(_.free);
                     ff.drySyn.free;
-                    ff.masterSyn.free;
                     if(ff.clickSyn.notNil, { ff.clickSyn.free });
 
+                    // Route archive through mix bus so master reverb stays active
                     ff.archPlaySyn = Synth(\ffArchPlay, [
-                        out:    0,
+                        out:    ff.mixBus.index,
                         bufnum: ff.archBuf,
-                    ], ff.grpMaster);
+                    ], ff.grpVoice);
                     nil;
                 });
                 nil;

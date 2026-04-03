@@ -378,21 +378,13 @@ s.waitForBoot({
         Out.ar(out, sig.dup * amp);
     }).add;
 
-    // Mix bus → JPverb → clip → hardware out
-    // GVerb fallback: replace JPverb block with:
-    //   var verb = GVerb.ar(dry[0], roomsize: 40, revtime: reverbDecay,
-    //                       damping: reverbDamp, drylevel: 0);
-    //   var wet  = [verb[0], verb[1]];
+    // Mix bus → GVerb → clip → hardware out
     SynthDef(\anaMaster, {
-        |busIn=0, out=0, reverbMix=0.16, reverbDecay=3.8, reverbSize=1.2, reverbDamp=0.45|
-        var dry = In.ar(busIn, 2);
-        var wet = JPverb.ar(dry,
-            t60:       reverbDecay,
-            damp:      reverbDamp,
-            size:      reverbSize,
-            earlyDiff: 0.72,
-            modDepth:  0.03,
-            modFreq:   0.10);
+        |busIn=0, out=0, reverbMix=0.16, reverbDecay=3.8, reverbDamp=0.45|
+        var dry  = In.ar(busIn, 2);
+        var verb = GVerb.ar(dry[0], roomsize: 40,
+            revtime: reverbDecay, damping: reverbDamp, drylevel: 0);
+        var wet  = [verb[0], verb[1]];
         Out.ar(out, ((dry * (1 - reverbMix)) + (wet * reverbMix)).clip2(1.0));
     }).add;
 
