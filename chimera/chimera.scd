@@ -49,7 +49,7 @@ MOTIVE PARTNER (P4)
     fadeSec:     510,    // fade at 8:30
 
     // Bed (P1–P3)
-    bedAmp:          0.30,   // per voice at full
+    bedAmp:          0.44,   // per voice at full
     bedReverbMix:    0.52,
     bedReverbDecay:  6.5,
     bedReverbDamp:   0.35,
@@ -141,25 +141,31 @@ s.waitForBoot({
     }).add;
 
     // Bed voice — additive synthesis, harmonics breathe independently via LFNoise
-    // freq nudged via Lag during feed windows; subtle pitch drift for liveness
+    // active=0: slow, static character. active=1: more harmonic movement + vibrato + wandering pan
     SynthDef(\chBed, {
         |out=0, freq=220, amp=0.0, ampLag=35, freqLag=45,
-         breathRate=0.07, breathPhase=0.0, pan=0.0|
-        var fSmooth, drift, f, h1, h2, h3, sub, sig, breath, ampSmooth;
+         breathRate=0.07, breathPhase=0.0, pan=0.0,
+         active=0, panMove=0|
+        var fSmooth, drift, vibrato, f, h1, h2, h3, sub, sig, breath, ampSmooth, panSig;
         fSmooth   = Lag.kr(freq, freqLag);
-        drift     = LFNoise1.kr(0.015).range(-0.002, 0.002);
-        f         = fSmooth * (1 + drift);
-        // Harmonics breathe independently — never all loud/silent at once
-        h1        = SinOsc.ar(f)       * LFNoise1.kr(0.04).range(0.50, 1.0);
-        h2        = SinOsc.ar(f * 2)   * LFNoise1.kr(0.03).range(0.00, 0.55) * 0.40;
-        h3        = SinOsc.ar(f * 3)   * LFNoise1.kr(0.05).range(0.00, 0.30) * 0.18;
-        sub       = SinOsc.ar(f * 0.5) * LFNoise1.kr(0.02).range(0.10, 0.60) * 0.30;
-        sig       = (h1 + h2 + h3 + sub) * 0.28;
-        sig       = (sig * 1.8).tanh * 0.55;   // soft saturation — body without harshness
-        sig       = LPF.ar(sig, f * 6);
+        // Active voice: wider drift + slow vibrato for life
+        drift     = LFNoise1.kr(0.015).range(-0.002, 0.002)
+                  + (active * LFNoise1.kr(0.06).range(-0.004, 0.004));
+        vibrato   = active * SinOsc.kr(LFNoise1.kr(0.03).range(3.5, 6.5)) * 0.003;
+        f         = fSmooth * (1 + drift + vibrato);
+        // Active voice: harmonics move faster and reach higher amplitudes
+        h1   = SinOsc.ar(f)       * LFNoise1.kr(0.04 + (active * 0.08)).range(0.40, 1.0);
+        h2   = SinOsc.ar(f * 2)   * LFNoise1.kr(0.03 + (active * 0.09)).range(0.00, 0.60 + (active * 0.25)) * 0.42;
+        h3   = SinOsc.ar(f * 3)   * LFNoise1.kr(0.05 + (active * 0.10)).range(0.00, 0.35 + (active * 0.30)) * 0.20;
+        sub  = SinOsc.ar(f * 0.5) * LFNoise1.kr(0.02 + (active * 0.04)).range(0.08, 0.65) * 0.32;
+        sig  = (h1 + h2 + h3 + sub) * 0.28;
+        sig  = (sig * 1.8).tanh * 0.55;
+        sig  = LPF.ar(sig, f * 6);
         breath    = SinOsc.kr(breathRate, breathPhase).linlin(-1, 1, 0.12, 1.0);
         ampSmooth = Lag.kr(amp, ampLag);
-        Out.ar(out, Pan2.ar(sig * breath * ampSmooth, pan));
+        // panMove=1: slow wandering pan over ~25s cycle
+        panSig    = pan + (panMove * LFNoise1.kr(0.04).range(-0.55, 0.55));
+        Out.ar(out, Pan2.ar(sig * breath * ampSmooth, panSig));
     }).add;
 
     // Records one note into a buffer (fills once then doneAction:2)
@@ -168,12 +174,12 @@ s.waitForBoot({
             recLevel: 1.0, preLevel: 0.0, loop: 0, doneAction: 0);
     }).add;
 
-    // Plays a captured note, gated to its actual duration
-    SynthDef(\chPlay, { |out=0, bufnum, dur=1.0, rate=1.0, amp=0.35, pan=0.0|
+    // Plays a captured note — atk/rel control envelope shape (swell: long atk/rel)
+    SynthDef(\chPlay, { |out=0, bufnum, dur=1.0, rate=1.0, amp=0.35, pan=0.0, atk=0.01, rel=0.08|
         var sig = PlayBuf.ar(1, bufnum,
             rate * BufRateScale.kr(bufnum), loop: 0, doneAction: 2);
         var env = EnvGen.kr(
-            Env.linen(0.01, (dur - 0.09).max(0.01), 0.08),
+            Env.linen(atk, (dur - atk - rel).max(0.01), rel),
             doneAction: 2);
         Out.ar(out, Pan2.ar(sig * env * amp, pan));
     }).add;
@@ -215,16 +221,20 @@ s.waitForBoot({
     ch.detectSyn = Synth(\chDetect, [thresh: ch.threshold], ch.grpRec);
 
     // Bed voices — silent (amp=0) until calibration locks
+    // P1: static, hard left. P2: static, hard right. P3: active + slow wandering pan (centre→sides)
     // breathRate periods 13/17/19s are prime → never align
     ch.bedSyns = [
         Synth(\chBed, [out: ch.bedBus.index, amp: 0,
-            breathRate: 1/13, breathPhase: 0.00, pan: -0.65,
+            breathRate: 1/13, breathPhase: 0.00, pan: -0.88,
+            active: 0, panMove: 0,
             ampLag: ch.bedRiseSecs, freqLag: ch.freqLag], ch.grpBed),
         Synth(\chBed, [out: ch.bedBus.index, amp: 0,
-            breathRate: 1/17, breathPhase: 2.09, pan:  0.65,
+            breathRate: 1/17, breathPhase: 2.09, pan:  0.88,
+            active: 0, panMove: 0,
             ampLag: ch.bedRiseSecs, freqLag: ch.freqLag], ch.grpBed),
         Synth(\chBed, [out: ch.bedBus.index, amp: 0,
             breathRate: 1/19, breathPhase: 4.19, pan:  0.00,
+            active: 1, panMove: 1,
             ampLag: ch.bedRiseSecs, freqLag: ch.freqLag], ch.grpBed),
     ];
 
@@ -269,27 +279,35 @@ s.waitForBoot({
     // ── triggerP4 ────────────────────────────────────────────────────────────
     ch.triggerP4 = {
         var phrase = ch.currentPhrase.copy;
-        var pickCount, delay;
+        var delay;
         ch.currentPhrase = [];
         if(phrase.size > 0, {
-            // Weighted toward 1 note — [1,1,2,all].choose capped at phrase size
-            pickCount = [1, 1, 2, phrase.size].choose.min(phrase.size);
-            // 50/50: immediate counterpoint (0-4s) or late echo (20-60s)
-            delay     = if(0.5.coin, { rrand(0.0, 4.0) }, { rrand(20.0, 60.0) });
-            SystemClock.sched(delay, {
-                pickCount.do({
-                    var noteData = phrase.choose;
+            // Pick 1 or 2 notes from phrase
+            [1, 1, 1, 2].choose.min(phrase.size).do({
+                var noteData = phrase.choose;
+                // Colour: 80% clean, 10% half-speed swell, 10% slight warp
+                var colour   = [0,0,0,0,0,0,0,0,1,2].choose;
+                var rate     = if(colour == 1, { 0.5 }, { if(colour == 2, { rrand(0.82, 1.18) }, { 1.0 }) });
+                var durScale = if(colour == 1, { 2.0 }, { 1.0 });
+                var atk      = if(colour == 1, { 0.6 }, { 0.01 });
+                var rel      = if(colour == 1, { 0.8 }, { 0.08 });
+                // Immediate (0–4s) or late (20–60s), equal weight
+                delay        = if(0.5.coin, { rrand(0.0, 4.0) }, { rrand(20.0, 60.0) });
+                SystemClock.sched(delay, {
                     Synth(\chPlay, [
                         out:    ch.motiveBus.index,
                         bufnum: noteData[\buf],
-                        dur:    noteData[\dur],
+                        dur:    noteData[\dur] * durScale,
+                        rate:   rate,
                         amp:    ch.p4Amp,
-                        pan:    rrand(-0.8, 0.8),
+                        pan:    rrand(-0.75, 0.75),
+                        atk:    atk,
+                        rel:    rel,
                     ], ch.grpMotive);
+                    "P4 → colour:% delay:% s".format(
+                        [\clean,\swell,\warp][colour], delay.round(0.1)).postln;
+                    nil;
                 });
-                "P4 → % note(s), delay % s".format(
-                    pickCount, delay.round(0.1)).postln;
-                nil;
             });
         });
     };
