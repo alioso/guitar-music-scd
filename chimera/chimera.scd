@@ -49,7 +49,7 @@ MOTIVE PARTNER (P4)
     fadeSec:     510,    // fade at 8:30
 
     // Bed (P1–P3)
-    bedAmp:          0.44,   // per voice at full
+    bedAmp:          0.62,   // per voice at full
     bedReverbMix:    0.52,
     bedReverbDecay:  6.5,
     bedReverbDamp:   0.35,
@@ -62,11 +62,12 @@ MOTIVE PARTNER (P4)
     motiveReverbDecay:  4.0,
     motiveReverbDamp:   0.30,
 
-    // P4 response
-    motiveMaxDur:  3.0,  // notes longer than this ignored by P4
-    phraseEndGap:  2.0,  // silence gap to trigger phrase response
-    noteBufDur:    4.0,  // max capture duration per note buffer
-    noteBufCount:  4,    // round-robin note buffers
+    // P4 response — circular phrase buffer architecture
+    motiveMaxDur:  3.5,   // notes longer than this are held harmonics, ignored by P4
+    phraseMinDur:  0.3,   // phrases shorter than this ignored (noise)
+    phraseEndGap:  1.8,   // silence gap that ends a phrase
+    phraseBufDur:  90,    // circular buffer length — comfortably covers max delay
+    p4MaxDelay:    55,    // max seconds before P4 responds to a phrase
 
     threshold:     0.015,
 );
@@ -115,9 +116,10 @@ s.waitForBoot({
     // ── Buffers & buses ───────────────────────────────────────────────────────
     ch.bedBus    = Bus.audio(s, 2);
     ch.motiveBus = Bus.audio(s, 2);
-    ch.noteBufs  = Array.fill(ch.noteBufCount, {
-        Buffer.alloc(s, (s.sampleRate * ch.noteBufDur).ceil.asInteger, 1)
-    });
+    // Single 90s circular phrase buffer — P4 reads positions directly from here
+    ch.phraseBuf   = Buffer.alloc(s,
+        (s.sampleRate * ch.phraseBufDur).ceil.asInteger, 1);
+    ch.bufFrames   = ch.phraseBuf.numFrames;
 
     s.sync;
 
@@ -145,41 +147,50 @@ s.waitForBoot({
     SynthDef(\chBed, {
         |out=0, freq=220, amp=0.0, ampLag=35, freqLag=45,
          breathRate=0.07, breathPhase=0.0, pan=0.0,
-         active=0, panMove=0|
-        var fSmooth, drift, vibrato, f, h1, h2, h3, sub, sig, breath, ampSmooth, panSig;
-        fSmooth   = Lag.kr(freq, freqLag);
-        // Active voice: wider drift + slow vibrato for life
-        drift     = LFNoise1.kr(0.015).range(-0.002, 0.002)
-                  + (active * LFNoise1.kr(0.06).range(-0.004, 0.004));
-        vibrato   = active * SinOsc.kr(LFNoise1.kr(0.03).range(3.5, 6.5)) * 0.003;
-        f         = fSmooth * (1 + drift + vibrato);
-        // Active voice: harmonics move faster and reach higher amplitudes
-        h1   = SinOsc.ar(f)       * LFNoise1.kr(0.04 + (active * 0.08)).range(0.40, 1.0);
-        h2   = SinOsc.ar(f * 2)   * LFNoise1.kr(0.03 + (active * 0.09)).range(0.00, 0.60 + (active * 0.25)) * 0.42;
-        h3   = SinOsc.ar(f * 3)   * LFNoise1.kr(0.05 + (active * 0.10)).range(0.00, 0.35 + (active * 0.30)) * 0.20;
-        sub  = SinOsc.ar(f * 0.5) * LFNoise1.kr(0.02 + (active * 0.04)).range(0.08, 0.65) * 0.32;
-        sig  = (h1 + h2 + h3 + sub) * 0.28;
-        sig  = (sig * 1.8).tanh * 0.55;
-        sig  = LPF.ar(sig, f * 6);
-        breath    = SinOsc.kr(breathRate, breathPhase).linlin(-1, 1, 0.12, 1.0);
+         active=0, panMove=0, chorus=0|
+        var fSmooth, drift, vibrato, f, fChorus;
+        var h1, h2, h3, h4, h5, sub, sig, breath, ampSmooth, panSig;
+        fSmooth = Lag.kr(freq, freqLag);
+        // Chorus detune: static voices get a very slow ±5 cent warble (fills stereo space)
+        fChorus = fSmooth * (1 + (chorus * LFNoise1.kr(0.008).range(-0.003, 0.003)));
+        // Active voice: wider pitch drift + slow vibrato
+        drift   = LFNoise1.kr(0.015).range(-0.002, 0.002)
+                + (active * LFNoise1.kr(0.05).range(-0.005, 0.005));
+        vibrato = active * SinOsc.kr(LFNoise1.kr(0.025).range(3.2, 5.8)) * 0.0025;
+        f       = fChorus * (1 + drift + vibrato);
+        // Harmonics — active voice has faster motion and occasional 5th partial swell
+        h1  = SinOsc.ar(f)       * LFNoise1.kr(0.04 + (active * 0.07)).range(0.55, 1.0);
+        h2  = SinOsc.ar(f * 2)   * LFNoise1.kr(0.03 + (active * 0.08)).range(0.10, 0.65) * 0.45;
+        h3  = SinOsc.ar(f * 3)   * LFNoise1.kr(0.05 + (active * 0.09)).range(0.00, 0.45 + (active * 0.30)) * 0.22;
+        // 5th partial: active voice only — very slow swell in/out, creates harmonic resolution feel
+        h4  = SinOsc.ar(f * 5)   * (active * LFNoise1.kr(0.018).range(0.0, 0.28)) * 0.14;
+        // Sub: always present, breathes slowly
+        sub = SinOsc.ar(f * 0.5) * LFNoise1.kr(0.02 + (active * 0.03)).range(0.18, 0.72) * 0.38;
+        sig = (h1 + h2 + h3 + h4 + sub) * 0.34;
+        sig = (sig * 2.2).tanh * 0.52;   // more drive = fuller mid-range body
+        sig = LPF.ar(sig, f * 7);
+        breath    = SinOsc.kr(breathRate, breathPhase).linlin(-1, 1, 0.15, 1.0);
         ampSmooth = Lag.kr(amp, ampLag);
-        // panMove=1: slow wandering pan over ~25s cycle
-        panSig    = pan + (panMove * LFNoise1.kr(0.04).range(-0.55, 0.55));
+        panSig    = pan + (panMove * LFNoise1.kr(0.035).range(-0.60, 0.60));
         Out.ar(out, Pan2.ar(sig * breath * ampSmooth, panSig));
     }).add;
 
-    // Records one note into a buffer (fills once then doneAction:2)
-    SynthDef(\chRecord, { |bufnum|
+    // Circular phrase recorder — always running, loop:1
+    SynthDef(\chCapture, { |bufnum|
         RecordBuf.ar(SoundIn.ar(0), bufnum,
-            recLevel: 1.0, preLevel: 0.0, loop: 0, doneAction: 0);
+            recLevel: 1.0, preLevel: 0.0, loop: 1);
     }).add;
 
-    // Plays a captured note — atk/rel control envelope shape (swell: long atk/rel)
-    SynthDef(\chPlay, { |out=0, bufnum, dur=1.0, rate=1.0, amp=0.35, pan=0.0, atk=0.01, rel=0.08|
+    // Plays a phrase from the circular buffer at startPos for dur seconds
+    // rate: 1.0=clean, 0.5=half-speed, -1.0=reverse (startPos should be phrase end)
+    SynthDef(\chPlay, {
+        |out=0, bufnum, startPos=0, dur=1.0, rate=1.0, amp=0.35, pan=0.0, atk=0.05, rel=0.15|
+        var playDur = dur / rate.abs;
         var sig = PlayBuf.ar(1, bufnum,
-            rate * BufRateScale.kr(bufnum), loop: 0, doneAction: 2);
+            rate * BufRateScale.kr(bufnum),
+            trigger: 1, startPos: startPos, loop: 0, doneAction: 0);
         var env = EnvGen.kr(
-            Env.linen(atk, (dur - atk - rel).max(0.01), rel),
+            Env.linen(atk, (playDur - atk - rel).max(0.05), rel),
             doneAction: 2);
         Out.ar(out, Pan2.ar(sig * env * amp, pan));
     }).add;
@@ -226,15 +237,15 @@ s.waitForBoot({
     ch.bedSyns = [
         Synth(\chBed, [out: ch.bedBus.index, amp: 0,
             breathRate: 1/13, breathPhase: 0.00, pan: -0.88,
-            active: 0, panMove: 0,
+            active: 0, panMove: 0, chorus: 1,
             ampLag: ch.bedRiseSecs, freqLag: ch.freqLag], ch.grpBed),
         Synth(\chBed, [out: ch.bedBus.index, amp: 0,
             breathRate: 1/17, breathPhase: 2.09, pan:  0.88,
-            active: 0, panMove: 0,
+            active: 0, panMove: 0, chorus: 1,
             ampLag: ch.bedRiseSecs, freqLag: ch.freqLag], ch.grpBed),
         Synth(\chBed, [out: ch.bedBus.index, amp: 0,
             breathRate: 1/19, breathPhase: 4.19, pan:  0.00,
-            active: 1, panMove: 1,
+            active: 1, panMove: 1, chorus: 0,
             ampLag: ch.bedRiseSecs, freqLag: ch.freqLag], ch.grpBed),
     ];
 
@@ -250,19 +261,17 @@ s.waitForBoot({
     ], ch.grpVerb);
 
     // ── State ─────────────────────────────────────────────────────────────────
-    ch.phase         = \waiting;     // waiting / calibrating / running
-    ch.mode          = \motiveMode;  // motiveMode / feedMode
-    ch.firstFired    = false;
-    ch.calibDone     = false;
-    ch.calibSamples  = [];
-    ch.bedFreqs      = [220, 330, 440];  // placeholder until calibration
-
-    ch.nextBuf       = 0;
-    ch.recordSyn     = nil;
-    ch.currentRecBuf = nil;
-    ch.onsetTime     = nil;
-    ch.currentPhrase = [];
-    ch.phraseSeq     = 0;   // incremented on each onset to cancel pending phrase timers
+    ch.phase          = \waiting;
+    ch.mode           = \motiveMode;
+    ch.firstFired     = false;
+    ch.calibDone      = false;
+    ch.calibSamples   = [];
+    ch.bedFreqs       = [220, 330, 440];
+    ch.recStartTime   = nil;   // wall-clock when capture started
+    ch.phraseOnset    = nil;   // wall-clock of first note in current phrase
+    ch.lastRelease    = nil;   // wall-clock of most recent release
+    ch.inPhrase       = false;
+    ch.phraseSeq      = 0;
 
     // ── startBed ─────────────────────────────────────────────────────────────
     ch.startBed = {
@@ -270,45 +279,43 @@ s.waitForBoot({
         ch.bedSyns[0].set(\freq, freqs[0], \amp, ch.bedAmp);
         ch.bedSyns[1].set(\freq, freqs[1], \amp, ch.bedAmp);
         ch.bedSyns[2].set(\freq, freqs[2], \amp, ch.bedAmp);
-        "BED LOCKED → % / % / % Hz — rising over % s".format(
-            freqs[0].round(0.1), freqs[1].round(0.1), freqs[2].round(0.1),
-            ch.bedRiseSecs).postln;
-        "MOTIVE MODE — play phrases".postln;
+        "BED LOCKED → % / % / % Hz".format(
+            freqs[0].round(0.1), freqs[1].round(0.1), freqs[2].round(0.1)).postln;
+        "MOTIVE MODE".postln;
     };
 
-    // ── triggerP4 ────────────────────────────────────────────────────────────
-    ch.triggerP4 = {
-        var phrase = ch.currentPhrase.copy;
-        var delay;
-        ch.currentPhrase = [];
-        if(phrase.size > 0, {
-            // Pick 1 or 2 notes from phrase
-            [1, 1, 1, 2].choose.min(phrase.size).do({
-                var noteData = phrase.choose;
-                // Colour: 80% clean, 10% half-speed swell, 10% slight warp
-                var colour   = [0,0,0,0,0,0,0,0,1,2].choose;
-                var rate     = if(colour == 1, { 0.5 }, { if(colour == 2, { rrand(0.82, 1.18) }, { 1.0 }) });
-                var durScale = if(colour == 1, { 2.0 }, { 1.0 });
-                var atk      = if(colour == 1, { 0.6 }, { 0.01 });
-                var rel      = if(colour == 1, { 0.8 }, { 0.08 });
-                // Immediate (0–4s) or late (20–60s), equal weight
-                delay        = if(0.5.coin, { rrand(0.0, 4.0) }, { rrand(20.0, 60.0) });
-                SystemClock.sched(delay, {
-                    Synth(\chPlay, [
-                        out:    ch.motiveBus.index,
-                        bufnum: noteData[\buf],
-                        dur:    noteData[\dur] * durScale,
-                        rate:   rate,
-                        amp:    ch.p4Amp,
-                        pan:    rrand(-0.75, 0.75),
-                        atk:    atk,
-                        rel:    rel,
-                    ], ch.grpMotive);
-                    "P4 → colour:% delay:% s".format(
-                        [\clean,\swell,\warp][colour], delay.round(0.1)).postln;
-                    nil;
-                });
-            });
+    // ── triggerP4 — plays a phrase from the circular buffer ──────────────────
+    // startSec: seconds from recStartTime when phrase began
+    // phraseDur: phrase length in seconds
+    ch.triggerP4 = { |startSec, phraseDur|
+        var delay    = if(0.4.coin, { rrand(0.5, 5.0) }, { rrand(15.0, ch.p4MaxDelay) });
+        // Colour: 75% clean, 15% half-speed swell, 10% reverse
+        var colour   = [0,0,0,0,0,0,0,0,1,1,1,2].choose;
+        var rate     = if(colour == 1, { 0.5 }, { if(colour == 2, { -1.0 }, { 1.0 }) });
+        var atk      = if(colour == 1, { 0.5 }, { 0.05 });
+        var rel      = if(colour == 1, { 0.6 }, { 0.18 });
+
+        SystemClock.sched(delay, {
+            var sr         = s.sampleRate;
+            var startFrame = (startSec * sr).asInteger % ch.bufFrames;
+            var playStart  = if(colour == 2,
+                // Reverse: start at end of phrase
+                { (startFrame + (phraseDur * sr).asInteger) % ch.bufFrames },
+                { startFrame }
+            );
+            "P4 → % | delay % s".format([\clean,\swell,\rev][colour], delay.round(0.1)).postln;
+            Synth(\chPlay, [
+                out:      ch.motiveBus.index,
+                bufnum:   ch.phraseBuf,
+                startPos: playStart,
+                dur:      phraseDur,
+                rate:     rate,
+                amp:      ch.p4Amp,
+                pan:      rrand(-0.75, 0.75),
+                atk:      atk,
+                rel:      rel,
+            ], ch.grpMotive);
+            nil;
         });
     };
 
@@ -361,50 +368,43 @@ s.waitForBoot({
                 nil;
             });
 
+            // Start circular phrase capture
+            ch.recStartTime = Main.elapsedTime;
+            ch.captureSyn   = Synth(\chCapture, [bufnum: ch.phraseBuf], ch.grpRec);
+
             OSCdef(\chFirstNote).free;
         });
     }, '/ch/firstNote');
 
-    // Onset — start recording, reset phrase timer
+    // Onset — mark phrase start if not already in one
     OSCdef(\chOnset, { |msg|
-        var amp = msg[3];
-        // Increment sequence to cancel any pending phrase timer
         ch.phraseSeq = ch.phraseSeq + 1;
-        ch.onsetTime = Main.elapsedTime;
-
-        // Stop any previous recording
-        if(ch.recordSyn.notNil, { ch.recordSyn.free; ch.recordSyn = nil });
-
-        ch.currentRecBuf = ch.noteBufs[ch.nextBuf];
-        ch.nextBuf       = (ch.nextBuf + 1) % ch.noteBufCount;
-        ch.recordSyn     = Synth(\chRecord, [bufnum: ch.currentRecBuf], ch.grpRec);
+        if(ch.inPhrase.not, {
+            ch.phraseOnset = Main.elapsedTime;
+            ch.inPhrase    = true;
+        });
     }, '/ch/onset');
 
-    // Release — stop recording, classify note, start phrase timer
+    // Release — note last release time, start phrase-end countdown
     OSCdef(\chRelease, { |msg|
-        var dur, mySeq;
-        if(ch.recordSyn.notNil, { ch.recordSyn.free; ch.recordSyn = nil });
+        var mySeq, noteDur;
+        noteDur        = Main.elapsedTime - (ch.phraseOnset ? Main.elapsedTime);
+        ch.lastRelease = Main.elapsedTime;
+        mySeq          = ch.phraseSeq;
 
-        if(ch.onsetTime.notNil, {
-            dur          = Main.elapsedTime - ch.onsetTime;
-            ch.onsetTime = nil;
-
-            // Add to phrase if motive note (short) and in correct state/mode
-            if((ch.mode == \motiveMode) && (dur < ch.motiveMaxDur)
-                    && (ch.phase == \running), {
-                ch.currentPhrase = ch.currentPhrase.add((
-                    buf: ch.currentRecBuf,
-                    dur: dur,
-                ));
-                // Schedule phrase-end — fires only if phraseSeq unchanged
-                mySeq = ch.phraseSeq;
-                SystemClock.sched(ch.phraseEndGap, {
-                    if(ch.phraseSeq == mySeq, {
-                        ch[\triggerP4].value;
-                    });
-                    nil;
+        SystemClock.sched(ch.phraseEndGap, {
+            if((ch.phraseSeq == mySeq) && ch.inPhrase
+                    && (ch.phase == \running) && (ch.mode == \motiveMode), {
+                var now        = Main.elapsedTime;
+                var phraseDur  = now - ch.phraseOnset - ch.phraseEndGap;
+                var startSec   = ch.phraseOnset - ch.recStartTime;
+                ch.inPhrase    = false;
+                if((phraseDur > ch.phraseMinDur) && (phraseDur < 20.0), {
+                    "P4 phrase % s → queuing response".format(phraseDur.round(0.1)).postln;
+                    ch[\triggerP4].(startSec, phraseDur);
                 });
             });
+            nil;
         });
     }, '/ch/release');
 
@@ -462,7 +462,7 @@ OSCdef(\chFirstNote).free;
 OSCdef(\chOnset).free;
 OSCdef(\chRelease).free;
 OSCdef(\chPitch).free;
-~ch.noteBufs.do(_.free);
+~ch.phraseBuf.free;
 ~ch.bedBus.free;
 ~ch.motiveBus.free;
 s.freeAll;
