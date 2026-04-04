@@ -1,391 +1,452 @@
 /*
 Chimera
-Ambient guitar — autonomous partner bed, shimmer reverb
+Generative guitar — synthesized partner bed + motive echo partner
 SuperCollider 3.14.1
 
 SETUP
   Input:  guitar → Scarlett input 0 (mono)
   Output: stereo output 0+1 (speakers)
 
-  Server setup — put this in your SC startup file (File > Open startup file):
-    s.options.inDevice  = "Scarlett 2i2 USB";   // adjust to your model
+  Server startup file:
+    s.options.inDevice  = "Scarlett 2i2 USB";
     s.options.outDevice = "Scarlett 2i2 USB";
 
-STRUCTURE
-  t=0         First sound → capture buffer starts filling. Partners begin scanning.
-  t~1–2 min   Root locks after 3 confirmed swells → shimmer activates.
-  t=6 min     Mid-section: reverb expands 4.5→8s, partner breath slows.
-  t=10 min    Fade begins — partners dissolve one by one over 2 min.
-  t~12 min    Silence — evaluate Block 3 to stop cleanly.
+STRUCTURE (times from first note)
+  0:00    First note → calibration. Post: CALIBRATING.
+  ~1:30   6 unique pitches detected OR 90s elapsed → bed locks and rises.
+  2:30    FEED 1 — play swells/harmonics. Bed nudges toward your pitches.
+  3:00    MOTIVE MODE — play phrases. P4 responds.
+  5:30    FEED 2
+  6:00    MOTIVE MODE
+  8:00    FEED 3 / ending swell
+  8:30    Fade — bed dissolves over 35s
+  9:00    Silence
 
-PARTNER BED (5 voices — the ocean)
-  A 90s circular buffer records the guitar continuously.
-  5 partners each read from it using a Phasor at slightly different rates —
-  they drift apart over time, never returning to the same relative position.
-  Each partner breathes with its own LFO (prime-ish periods: 13/17/19/23/29s).
-  The input grazes the surface. The ocean was already there.
+BED (P1–P3 — the ocean)
+  3 synthesized additive voices, frequencies locked from calibration pitches.
+  Harmonics breathe independently via LFNoise — never static, never sudden.
+  Slow pitch drift. Separate long reverb bus. Self-sustaining: does not echo input.
+  During feed windows only: your pitches slowly nudge the bed (Lag 45s).
 
-SHIMMER REVERB (melodic surface)
-  In-key notes only → PitchShift up octave + octave+5th → long reverb tail.
-  Key = Aeolian on detected root.
-
-ROOT DETECTION
-  First 3 confirmed swells (slow amp + pitch confidence) vote by majority.
-  Pitch normalized to 130–260 Hz (C3–C4). Locked for entire piece.
-
-Uses GVerb (built-in). No external plugins required.
+MOTIVE PARTNER (P4)
+  Only active in motive mode. Captures notes shorter than 3s.
+  When phrase ends (2s silence): plays 1–all notes, randomly delayed 0–4s or 20–60s.
+  Routed through same reverb bus as dry guitar (more present, shorter tail).
 */
 
+
 // ─────────────────────────────────────────────────────────────────────────────
-// BLOCK 1 — CONFIGURATION (Cmd+Return inside this block first)
+// BLOCK 1 — CONFIGURATION
 // ─────────────────────────────────────────────────────────────────────────────
 (
 ~ch = (
-    // Timing (seconds from first sound)
-    totalDur:     720,    // 12 min arc
-    fadeDur:      120,    // 2 min fade, starts at t=600s
-    midShiftTime: 360,    // 6 min: reverb expands, partner breath slows
+    // Timing (seconds from first note)
+    totalDur:    540,    // 9 min
+    calibDur:     90,    // calibration window
+    calibNotes:    6,    // unique pitch classes to lock bed
+    bedRiseSecs:  35,    // bed amplitude fade-in duration
+    feedWindows: [[150, 180], [330, 360], [480, 510]],
+    fadeSec:     510,    // fade at 8:30
 
-    // Detection
-    threshold:    0.015,  // first-sound amplitude (0..1)
-    swellThresh:  0.020,  // slow-envelope amplitude for swell detection
-    swellsNeeded: 3,      // confirmed swells to lock root
+    // Bed (P1–P3)
+    bedAmp:          0.30,   // per voice at full
+    bedReverbMix:    0.52,
+    bedReverbDecay:  6.5,
+    bedReverbDamp:   0.35,
+    freqLag:         45.0,   // pitch nudge transition time during feed
 
-    // Levels
-    dryAmp:       0.38,   // dry guitar — grazing the surface
-    shimmerAmp:   0.34,   // shimmer reverb — in-key sparkle
+    // Motive bus — dry guitar + P4
+    dryAmp:             0.42,
+    p4Amp:              0.34,
+    motiveReverbMix:    0.52,
+    motiveReverbDecay:  4.0,
+    motiveReverbDamp:   0.30,
 
-    // Capture buffer — guitar is always being recorded here (90s circular)
-    capBufDur: 90,
+    // P4 response
+    motiveMaxDur:  3.0,  // notes longer than this ignored by P4
+    phraseEndGap:  2.0,  // silence gap to trigger phrase response
+    noteBufDur:    4.0,  // max capture duration per note buffer
+    noteBufCount:  4,    // round-robin note buffers
 
-    // Partner bed — 5 autonomous buffer scanners
-    // startFrac: where in buffer each partner begins (spread across 90s)
-    // rateMul:   near 1.0 — tiny pitch drift, partners slowly diverge over the piece
-    // breathRate: amplitude LFO Hz — prime-ish periods, never align (13/17/19/23/29s)
-    // breathPhase: LFO start phase so partners breathe independently from bar 1
-    // ampLag: controls fade-out smoothness (set amp=0 to fade)
-    partners: [
-        (startFrac: 0.00, rateMul: 1.000, breathRate: 1/13, breathPhase: 0.00, pan: -0.75, amp: 0.34, ampLag: 25),
-        (startFrac: 0.20, rateMul: 0.998, breathRate: 1/17, breathPhase: 2.09, pan: -0.35, amp: 0.32, ampLag: 35),
-        (startFrac: 0.40, rateMul: 1.002, breathRate: 1/19, breathPhase: 4.19, pan:  0.35, amp: 0.32, ampLag: 40),
-        (startFrac: 0.60, rateMul: 0.999, breathRate: 1/23, breathPhase: 1.05, pan:  0.75, amp: 0.30, ampLag: 50),
-        (startFrac: 0.80, rateMul: 1.001, breathRate: 1/29, breathPhase: 3.14, pan:  0.00, amp: 0.28, ampLag: 60),
-    ],
-
-    // Master reverb — decay ramps 4.5→8.0s at mid-section via Lag
-    reverbMix:    0.16,
-    reverbDecay:  4.5,
-    reverbDamp:   0.30,
-
-    // Guitar reverb (dry path)
-    guitarReverbMix:   0.28,
-    guitarReverbDecay: 2.5,
-
-    // Shimmer
-    shimmerDecay: 9.0,
+    threshold:     0.015,
 );
-
 "Chimera — config loaded".postln;
-"  arc: % min | fade at % s | mid-shift at % s".format(
-    (~ch.totalDur / 60).round(0.1),
-    ~ch.totalDur - ~ch.fadeDur,
-    ~ch.midShiftTime).postln;
+"  Calibration: % pitches in first % s | Fade at % s | End at % s".format(
+    ~ch.calibNotes, ~ch.calibDur, ~ch.fadeSec, ~ch.totalDur).postln;
 )
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BLOCK 2 — START (Cmd+Return inside this block)
+// BLOCK 2 — START
 // ─────────────────────────────────────────────────────────────────────────────
 (
 s.waitForBoot({
     var ch = ~ch;
 
-    // ── Helper functions ──────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-    // Fold Hz into 130–260 Hz (C3–C4)
+    // Normalize Hz into 80–320 Hz (bass/mid range for bed voices)
     ch.normalizeHz = { |hz|
         var h = hz;
-        while({ h < 130  }, { h = h * 2 });
-        while({ h >= 260 }, { h = h / 2 });
+        while({ h < 80  }, { h = h * 2 });
+        while({ h >= 320 }, { h = h / 2 });
         h
     };
 
-    // Majority-vote root Hz from array of raw detected Hz values
-    ch.computeRoot = { |hzArray|
-        var midiNotes, counts, best;
-        midiNotes = hzArray.collect({ |hz|
-            var h = ch[\normalizeHz].(hz);
-            ((h / 440).log2 * 12 + 69).round(1)
+    // Pick top 3 pitch-class buckets from calibration samples → 3 bed Hz values
+    ch.lockBedFreqs = { |samples|
+        var normSamples, buckets, sortedSemis, top3Hz, root;
+        normSamples = samples.collect({ |hz| ch[\normalizeHz].(hz) });
+        buckets     = Dictionary.new;
+        normSamples.do({ |hz|
+            var semi = ((hz / 440).log2 * 12).round(1).asInteger;
+            buckets[semi] = (buckets[semi] ? 0) + 1;
         });
-        counts = Dictionary.new;
-        midiNotes.do({ |n| counts[n] = (counts[n] ? 0) + 1 });
-        best = counts.keys.maxItem({ |k| counts[k] });
-        ch[\normalizeHz].(440 * (2 ** ((best - 69) / 12)))
-    };
-
-    // Aeolian scale pitch classes from root Hz (intervals: 0 2 3 5 7 8 10)
-    ch.computeScalePCs = { |rootHz|
-        var rootMidi = ((rootHz / 440).log2 * 12 + 69).round(1).asInteger;
-        [0, 2, 3, 5, 7, 8, 10].collect({ |i| (rootMidi + i) % 12 })
-    };
-
-    // Is detected Hz within one semitone of any scale tone?
-    ch.isInKey = { |hz|
-        if(ch.scalePCs.isNil, { false }, {
-            var pc = ((hz / 440).log2 * 12 + 69).round(1).asInteger % 12;
-            ch.scalePCs.includes(pc)
-        })
+        sortedSemis = buckets.keys.asArray.sort({ |a, b| buckets[b] < buckets[a] });
+        top3Hz      = sortedSemis.collect({ |s| ch[\normalizeHz].(440 * (2 ** (s / 12))) });
+        root        = top3Hz[0] ? 220;
+        [
+            top3Hz[0] ? root,
+            top3Hz[1] ? (root * 1.5),
+            top3Hz[2] ? (root * 2.0),
+        ]
     };
 
     // ── Buffers & buses ───────────────────────────────────────────────────────
-    ch.capBuf = Buffer.alloc(s,
-        (s.sampleRate * ch.capBufDur).ceil.asInteger, 1);
-    ch.mixBus   = Bus.audio(s, 2);
-    ch.inKeyBus = Bus.control(s, 1);
-    ch.inKeyBus.set(0);
+    ch.bedBus    = Bus.audio(s, 2);
+    ch.motiveBus = Bus.audio(s, 2);
+    ch.noteBufs  = Array.fill(ch.noteBufCount, {
+        Buffer.alloc(s, (s.sampleRate * ch.noteBufDur).ceil.asInteger, 1)
+    });
 
     s.sync;
 
     // ── SynthDefs ─────────────────────────────────────────────────────────────
 
-    // Amplitude + pitch detector
-    // Fires: /ch/firstSound on first fast transient
-    //        /ch/swell on slow swell with pitch confidence
-    //        /ch/pitch at 10 Hz for shimmer gating
-    SynthDef(\chDetect, { |fastThresh=0.015, swellThresh=0.020|
-        var sig, fastAmp, slowAmp, pitch, freq, hasFreq, fastAbove, swellAbove;
-        sig        = SoundIn.ar(0);
-        fastAmp    = Amplitude.kr(sig, attackTime: 0.005, releaseTime: 0.10);
-        slowAmp    = Amplitude.kr(sig, attackTime: 0.50,  releaseTime: 2.00);
-        pitch      = Pitch.kr(sig, ampThreshold: 0.02, median: 7);
-        freq       = pitch[0];
-        hasFreq    = pitch[1];
-        fastAbove  = fastAmp > fastThresh;
-        swellAbove = (slowAmp > swellThresh) * hasFreq;
-
-        // First sound — rising edge on fast amp
-        SendReply.kr(fastAbove * (1 - Delay1.kr(fastAbove)), '/ch/firstSound', fastAmp);
-
-        // Swell — rising edge on slow amp + pitch confident
-        SendReply.kr(swellAbove * (1 - Delay1.kr(swellAbove)), '/ch/swell',
-            [freq, hasFreq, slowAmp]);
-
-        // Continuous pitch at 10 Hz for shimmer key-gate
-        SendReply.kr(Impulse.kr(10), '/ch/pitch', [freq, hasFreq]);
+    // Onset / release / continuous pitch detector
+    SynthDef(\chDetect, { |thresh=0.015|
+        var sig, amp, pitch, freq, hasFreq, above, onset, release;
+        sig     = SoundIn.ar(0);
+        amp     = Amplitude.kr(sig, attackTime: 0.005, releaseTime: 0.15);
+        pitch   = Pitch.kr(sig, ampThreshold: 0.015, median: 7);
+        freq    = pitch[0];
+        hasFreq = pitch[1];
+        above   = amp > thresh;
+        onset   = above * (1 - Delay1.kr(above));
+        release = (1 - above) * Delay1.kr(above);
+        SendReply.kr(onset,          '/ch/firstNote', [amp]);
+        SendReply.kr(onset,          '/ch/onset',     [amp, freq, hasFreq]);
+        SendReply.kr(release,        '/ch/release',   [amp]);
+        SendReply.kr(Impulse.kr(10), '/ch/pitch',     [freq, hasFreq, amp]);
     }).add;
 
-    // Rolling capture — always recording guitar into circular buffer
-    SynthDef(\chCapture, { |bufnum|
-        RecordBuf.ar(SoundIn.ar(0), bufnum, recLevel: 1.0, preLevel: 0.0, loop: 1);
-    }).add;
-
-    // Autonomous partner — reads buffer at its own rate, breathes with its own LFO
-    // Partners start at different positions (startFrac) and drift apart over time (rateMul)
-    // ampLag controls fade-out: set(\amp, 0) fades over ampLag seconds
-    SynthDef(\chPartner, {
-        |out=0, bufnum, amp=0.30, pan=0.0,
-         startFrac=0.0, rateMul=1.0,
-         breathRate=0.07, breathPhase=0.0,
-         ampLag=30.0|
-        var frames    = BufFrames.kr(bufnum);
-        var rate      = BufRateScale.kr(bufnum) * rateMul;
-        var phase     = Phasor.ar(0, rate, 0, frames, startFrac * frames);
-        var sig       = BufRd.ar(1, bufnum, phase, loop: 1, interpolation: 4);
-        var breath    = SinOsc.kr(breathRate, breathPhase).linlin(-1, 1, 0.04, 1.0);
-        var ampSmooth = Lag.kr(amp, ampLag);
+    // Bed voice — additive synthesis, harmonics breathe independently via LFNoise
+    // freq nudged via Lag during feed windows; subtle pitch drift for liveness
+    SynthDef(\chBed, {
+        |out=0, freq=220, amp=0.0, ampLag=35, freqLag=45,
+         breathRate=0.07, breathPhase=0.0, pan=0.0|
+        var fSmooth, drift, f, h1, h2, h3, sub, sig, breath, ampSmooth;
+        fSmooth   = Lag.kr(freq, freqLag);
+        drift     = LFNoise1.kr(0.015).range(-0.002, 0.002);
+        f         = fSmooth * (1 + drift);
+        // Harmonics breathe independently — never all loud/silent at once
+        h1        = SinOsc.ar(f)       * LFNoise1.kr(0.04).range(0.50, 1.0);
+        h2        = SinOsc.ar(f * 2)   * LFNoise1.kr(0.03).range(0.00, 0.55) * 0.40;
+        h3        = SinOsc.ar(f * 3)   * LFNoise1.kr(0.05).range(0.00, 0.30) * 0.18;
+        sub       = SinOsc.ar(f * 0.5) * LFNoise1.kr(0.02).range(0.10, 0.60) * 0.30;
+        sig       = (h1 + h2 + h3 + sub) * 0.28;
+        sig       = (sig * 1.8).tanh * 0.55;   // soft saturation — body without harshness
+        sig       = LPF.ar(sig, f * 6);
+        breath    = SinOsc.kr(breathRate, breathPhase).linlin(-1, 1, 0.12, 1.0);
+        ampSmooth = Lag.kr(amp, ampLag);
         Out.ar(out, Pan2.ar(sig * breath * ampSmooth, pan));
     }).add;
 
-    // Dry guitar with its own short reverb — separate from the floor's deep space
-    SynthDef(\chDry, {
-        |out=0, amp=0.52, reverbMix=0.32, reverbDecay=2.5|
-        var sig  = SoundIn.ar(0);
-        var verb = GVerb.ar(sig, roomsize: 20, revtime: reverbDecay, damping: 0.50, drylevel: 0);
+    // Records one note into a buffer (fills once then doneAction:2)
+    SynthDef(\chRecord, { |bufnum|
+        RecordBuf.ar(SoundIn.ar(0), bufnum,
+            recLevel: 1.0, preLevel: 0.0, loop: 0, doneAction: 0);
+    }).add;
+
+    // Plays a captured note, gated to its actual duration
+    SynthDef(\chPlay, { |out=0, bufnum, dur=1.0, rate=1.0, amp=0.35, pan=0.0|
+        var sig = PlayBuf.ar(1, bufnum,
+            rate * BufRateScale.kr(bufnum), loop: 0, doneAction: 2);
+        var env = EnvGen.kr(
+            Env.linen(0.01, (dur - 0.09).max(0.01), 0.08),
+            doneAction: 2);
+        Out.ar(out, Pan2.ar(sig * env * amp, pan));
+    }).add;
+
+    // Dry guitar → motive bus
+    SynthDef(\chDry, { |out=0, amp=0.42|
+        Out.ar(out, (SoundIn.ar(0) * amp).dup);
+    }).add;
+
+    // Bed reverb: bed bus → GVerb → hardware out (long, ambient)
+    SynthDef(\chBedVerb, {
+        |busIn=0, out=0, mix=0.52, decay=6.5, damp=0.35|
+        var dry  = In.ar(busIn, 2);
+        var verb = GVerb.ar(dry[0], roomsize: 80,
+            revtime: decay, damping: damp, drylevel: 0);
         var wet  = [verb[0], verb[1]];
-        Out.ar(out, ((sig.dup * (1 - reverbMix)) + (wet * reverbMix)) * amp);
+        Out.ar(out, ((dry * (1 - mix)) + (wet * mix)).clip2(1.0));
     }).add;
 
-    // Shimmer reverb — in-key notes only, pitch-shifted up 1 octave + octave+5th
-    // inKeyBus smoothly gates input (80ms lag to avoid clicks)
-    SynthDef(\chShimmer, {
-        |out=0, inKeyBusIdx=0, amp=0.32, reverbDecay=9.0|
-        var gate = Lag.kr(In.kr(inKeyBusIdx), 0.08);
-        var sig  = SoundIn.ar(0) * gate;
-        var up1  = PitchShift.ar(sig, 0.2, 2.0, 0.0, 0.01);   // +1 octave
-        var up2  = PitchShift.ar(sig, 0.2, 3.0, 0.0, 0.01);   // +1 octave + 5th
-        var feed = up1 + (up2 * 0.45);
-        var verb = GVerb.ar(feed, roomsize: 100, revtime: reverbDecay, damping: 0.25, drylevel: 0);
-        Out.ar(out, [verb[0], verb[1]] * amp);
-    }).add;
-
-    // Master: mix bus → GVerb → clip → hardware out
-    // reverbDecay uses Lag so mid-section ramp is smooth (set decayLag=120 at t=6min)
-    SynthDef(\chMaster, {
-        |busIn=0, out=0, reverbMix=0.18, reverbDecay=4.5, reverbDecayLag=1.0, reverbDamp=0.30|
-        var dry         = In.ar(busIn, 2);
-        var decayLagged = Lag.kr(reverbDecay, reverbDecayLag);
-        var verb        = GVerb.ar(dry[0], roomsize: 50,
-            revtime: decayLagged, damping: reverbDamp, drylevel: 0);
-        var wet         = [verb[0], verb[1]];
-        Out.ar(out, ((dry * (1 - reverbMix)) + (wet * reverbMix)).clip2(1.0));
+    // Motive reverb: motive bus (dry guitar + P4) → GVerb → hardware out (more present)
+    SynthDef(\chMotiveVerb, {
+        |busIn=0, out=0, mix=0.52, decay=4.0, damp=0.30|
+        var dry  = In.ar(busIn, 2);
+        var verb = GVerb.ar(dry[0], roomsize: 40,
+            revtime: decay, damping: damp, drylevel: 0);
+        var wet  = [verb[0], verb[1]];
+        Out.ar(out, ((dry * (1 - mix)) + (wet * mix)).clip2(1.0));
     }).add;
 
     s.sync;
 
     // ── Groups ────────────────────────────────────────────────────────────────
     ch.grpRec    = Group.new(s);
-    ch.grpVoice  = Group.after(ch.grpRec);
-    ch.grpDry    = Group.after(ch.grpVoice);
-    ch.grpMaster = Group.after(ch.grpDry);
+    ch.grpBed    = Group.after(ch.grpRec);
+    ch.grpMotive = Group.after(ch.grpBed);
+    ch.grpVerb   = Group.after(ch.grpMotive);
 
-    // ── Start synths ──────────────────────────────────────────────────────────
-    ch.capSyn    = Synth(\chCapture, [bufnum: ch.capBuf], ch.grpRec);
-    ch.detectSyn = Synth(\chDetect,
-        [fastThresh: ch.threshold, swellThresh: ch.swellThresh], ch.grpRec);
+    // ── Synths ────────────────────────────────────────────────────────────────
+    ch.detectSyn = Synth(\chDetect, [thresh: ch.threshold], ch.grpRec);
 
-    // Partner bed — all running from boot, amp=0 until first note opens them
-    ch.partnerSyns = ch.partners.collect({ |p|
-        Synth(\chPartner, [
-            out:         ch.mixBus.index,
-            bufnum:      ch.capBuf,
-            amp:         0,
-            pan:         p[\pan],
-            startFrac:   p[\startFrac],
-            rateMul:     p[\rateMul],
-            breathRate:  p[\breathRate],
-            breathPhase: p[\breathPhase],
-            ampLag:      p[\ampLag],
-        ], ch.grpVoice);
-    });
+    // Bed voices — silent (amp=0) until calibration locks
+    // breathRate periods 13/17/19s are prime → never align
+    ch.bedSyns = [
+        Synth(\chBed, [out: ch.bedBus.index, amp: 0,
+            breathRate: 1/13, breathPhase: 0.00, pan: -0.65,
+            ampLag: ch.bedRiseSecs, freqLag: ch.freqLag], ch.grpBed),
+        Synth(\chBed, [out: ch.bedBus.index, amp: 0,
+            breathRate: 1/17, breathPhase: 2.09, pan:  0.65,
+            ampLag: ch.bedRiseSecs, freqLag: ch.freqLag], ch.grpBed),
+        Synth(\chBed, [out: ch.bedBus.index, amp: 0,
+            breathRate: 1/19, breathPhase: 4.19, pan:  0.00,
+            ampLag: ch.bedRiseSecs, freqLag: ch.freqLag], ch.grpBed),
+    ];
 
-    ch.drySyn = Synth(\chDry, [
-        out:         ch.mixBus.index,
-        amp:         ch.dryAmp,
-        reverbMix:   ch.guitarReverbMix,
-        reverbDecay: ch.guitarReverbDecay,
-    ], ch.grpDry);
+    ch.drySyn = Synth(\chDry, [out: ch.motiveBus.index, amp: ch.dryAmp], ch.grpMotive);
 
-    ch.shimmerSyn = Synth(\chShimmer, [
-        out:         ch.mixBus.index,
-        inKeyBusIdx: ch.inKeyBus.index,
-        amp:         ch.shimmerAmp,
-        reverbDecay: ch.shimmerDecay,
-    ], ch.grpDry);
-
-    ch.masterSyn = Synth(\chMaster, [
-        busIn:       ch.mixBus.index,
-        out:         0,
-        reverbMix:   ch.reverbMix,
-        reverbDecay: ch.reverbDecay,
-        reverbDamp:  ch.reverbDamp,
-    ], ch.grpMaster);
+    ch.bedVerbSyn = Synth(\chBedVerb, [
+        busIn: ch.bedBus.index, out: 0,
+        mix: ch.bedReverbMix, decay: ch.bedReverbDecay, damp: ch.bedReverbDamp,
+    ], ch.grpVerb);
+    ch.motiveVerbSyn = Synth(\chMotiveVerb, [
+        busIn: ch.motiveBus.index, out: 0,
+        mix: ch.motiveReverbMix, decay: ch.motiveReverbDecay, damp: ch.motiveReverbDamp,
+    ], ch.grpVerb);
 
     // ── State ─────────────────────────────────────────────────────────────────
-    ch.firstFired   = false;
-    ch.rootLocked   = false;
-    ch.swellSamples = [];
-    ch.scalePCs     = nil;
+    ch.phase         = \waiting;     // waiting / calibrating / running
+    ch.mode          = \motiveMode;  // motiveMode / feedMode
+    ch.firstFired    = false;
+    ch.calibDone     = false;
+    ch.calibSamples  = [];
+    ch.bedFreqs      = [220, 330, 440];  // placeholder until calibration
 
-    // ── First sound handler ───────────────────────────────────────────────────
-    OSCdef(\chFirstSound, { |msg|
+    ch.nextBuf       = 0;
+    ch.recordSyn     = nil;
+    ch.currentRecBuf = nil;
+    ch.onsetTime     = nil;
+    ch.currentPhrase = [];
+    ch.phraseSeq     = 0;   // incremented on each onset to cancel pending phrase timers
+
+    // ── startBed ─────────────────────────────────────────────────────────────
+    ch.startBed = {
+        var freqs = ch.bedFreqs;
+        ch.bedSyns[0].set(\freq, freqs[0], \amp, ch.bedAmp);
+        ch.bedSyns[1].set(\freq, freqs[1], \amp, ch.bedAmp);
+        ch.bedSyns[2].set(\freq, freqs[2], \amp, ch.bedAmp);
+        "BED LOCKED → % / % / % Hz — rising over % s".format(
+            freqs[0].round(0.1), freqs[1].round(0.1), freqs[2].round(0.1),
+            ch.bedRiseSecs).postln;
+        "MOTIVE MODE — play phrases".postln;
+    };
+
+    // ── triggerP4 ────────────────────────────────────────────────────────────
+    ch.triggerP4 = {
+        var phrase = ch.currentPhrase.copy;
+        var pickCount, delay;
+        ch.currentPhrase = [];
+        if(phrase.size > 0, {
+            // Weighted toward 1 note — [1,1,2,all].choose capped at phrase size
+            pickCount = [1, 1, 2, phrase.size].choose.min(phrase.size);
+            // 50/50: immediate counterpoint (0-4s) or late echo (20-60s)
+            delay     = if(0.5.coin, { rrand(0.0, 4.0) }, { rrand(20.0, 60.0) });
+            SystemClock.sched(delay, {
+                pickCount.do({
+                    var noteData = phrase.choose;
+                    Synth(\chPlay, [
+                        out:    ch.motiveBus.index,
+                        bufnum: noteData[\buf],
+                        dur:    noteData[\dur],
+                        amp:    ch.p4Amp,
+                        pan:    rrand(-0.8, 0.8),
+                    ], ch.grpMotive);
+                });
+                "P4 → % note(s), delay % s".format(
+                    pickCount, delay.round(0.1)).postln;
+                nil;
+            });
+        });
+    };
+
+    // ── OSC handlers ──────────────────────────────────────────────────────────
+
+    // First note — start timeline, schedule feed windows and fade
+    OSCdef(\chFirstNote, { |msg|
         if(ch.firstFired.not, {
             ch.firstFired = true;
+            ch.phase      = \calibrating;
+            "CHIMERA — STARTED".postln;
+            "CALIBRATING — play % distinct harmonics to define the bed".format(
+                ch.calibNotes).postln;
 
-            { "Chimera — first sound. Timer started.".postln;
-              "Play % slow swells to lock root pitch.".format(ch.swellsNeeded).postln;
-            }.defer;
-
-            // Open partner bed — each partner's ampLag controls its fade-in speed
-            ch.partners.do({ |p, i|
-                ch.partnerSyns[i].set(\amp, p[\amp]);
-            });
-
-            // ── Mid-section at t=6 min ────────────────────────────────────────
-            SystemClock.sched(ch.midShiftTime, {
-                { "Mid-section — space expanding...".postln; }.defer;
-
-                // A: master reverb decay 4.5 → 8.0s, ramped over 120s
-                ch.masterSyn.set(\reverbDecay, 8.0, \reverbDecayLag, 120);
-
-                // B: all partners breathe slower — period roughly doubles (more sustained)
-                ch.partners.do({ |p, i|
-                    ch.partnerSyns[i].set(\breathRate, p[\breathRate] * 0.5);
+            // Auto-close calibration after calibDur even if not enough notes
+            SystemClock.sched(ch.calibDur, {
+                if(ch.calibDone.not, {
+                    ch.calibDone = true;
+                    ch.phase     = \running;
+                    if(ch.calibSamples.size >= 3, {
+                        ch.bedFreqs = ch[\lockBedFreqs].(ch.calibSamples);
+                    });
+                    ch[\startBed].value;
                 });
-
                 nil;
             });
 
-            // ── Fade at t=10 min ──────────────────────────────────────────────
-            // Set all partner amps to 0 — each has its own ampLag so they dissolve
-            // at different rates (25/35/40/50/60s), staggering naturally
-            SystemClock.sched(ch.totalDur - ch.fadeDur, {
-                { "Chimera — fading...".postln; }.defer;
-                ch.partnerSyns.do({ |syn| syn.set(\amp, 0) });
-                { "Fading to silence...".postln; }.defer;
+            // Feed windows
+            ch.feedWindows.do({ |win, i|
+                SystemClock.sched(win[0], {
+                    ch.mode = \feedMode;
+                    "FEED % — play swells/harmonics".format(i + 1).postln;
+                    nil;
+                });
+                SystemClock.sched(win[1], {
+                    ch.mode = \motiveMode;
+                    "MOTIVE MODE — play phrases".postln;
+                    nil;
+                });
+            });
+
+            // Fade and end
+            SystemClock.sched(ch.fadeSec, {
+                ch.bedSyns.do({ |syn| syn.set(\amp, 0) });
+                "FADING...".postln;
                 nil;
             });
+            SystemClock.sched(ch.totalDur, {
+                "SILENCE — evaluate Block 3 to stop".postln;
+                nil;
+            });
+
+            OSCdef(\chFirstNote).free;
         });
-    }, '/ch/firstSound');
+    }, '/ch/firstNote');
 
-    // ── Swell handler — root detection + lazy floor reactions ─────────────────
-    OSCdef(\chSwell, { |msg|
-        var freq    = msg[3];
-        var hasFreq = msg[4];
+    // Onset — start recording, reset phrase timer
+    OSCdef(\chOnset, { |msg|
+        var amp = msg[3];
+        // Increment sequence to cancel any pending phrase timer
+        ch.phraseSeq = ch.phraseSeq + 1;
+        ch.onsetTime = Main.elapsedTime;
 
-        // Root collection phase
-        if(ch.rootLocked.not && (hasFreq > 0.5) && (freq > 50) && (freq < 2000), {
-            ch.swellSamples = ch.swellSamples.add(freq);
-            { "  Swell % / %: % Hz".format(
-                ch.swellSamples.size, ch.swellsNeeded, freq.round(0.1)).postln;
-            }.defer;
+        // Stop any previous recording
+        if(ch.recordSyn.notNil, { ch.recordSyn.free; ch.recordSyn = nil });
 
-            if(ch.swellSamples.size >= ch.swellsNeeded, {
-                ch.rootHz   = ch[\computeRoot].(ch.swellSamples);
-                ch.scalePCs = ch[\computeScalePCs].(ch.rootHz);
-                ch.rootLocked = true;
+        ch.currentRecBuf = ch.noteBufs[ch.nextBuf];
+        ch.nextBuf       = (ch.nextBuf + 1) % ch.noteBufCount;
+        ch.recordSyn     = Synth(\chRecord, [bufnum: ch.currentRecBuf], ch.grpRec);
+    }, '/ch/onset');
 
-                { "ROOT LOCKED → % Hz | Aeolian PCs: % — shimmer active".format(
-                    ch.rootHz.round(0.1), ch.scalePCs).postln; }.defer;
+    // Release — stop recording, classify note, start phrase timer
+    OSCdef(\chRelease, { |msg|
+        var dur, mySeq;
+        if(ch.recordSyn.notNil, { ch.recordSyn.free; ch.recordSyn = nil });
+
+        if(ch.onsetTime.notNil, {
+            dur          = Main.elapsedTime - ch.onsetTime;
+            ch.onsetTime = nil;
+
+            // Add to phrase if motive note (short) and in correct state/mode
+            if((ch.mode == \motiveMode) && (dur < ch.motiveMaxDur)
+                    && (ch.phase == \running), {
+                ch.currentPhrase = ch.currentPhrase.add((
+                    buf: ch.currentRecBuf,
+                    dur: dur,
+                ));
+                // Schedule phrase-end — fires only if phraseSeq unchanged
+                mySeq = ch.phraseSeq;
+                SystemClock.sched(ch.phraseEndGap, {
+                    if(ch.phraseSeq == mySeq, {
+                        ch[\triggerP4].value;
+                    });
+                    nil;
+                });
             });
         });
-    }, '/ch/swell');
+    }, '/ch/release');
 
-    // ── Pitch monitor — shimmer key-gate (10 Hz) ──────────────────────────────
+    // Pitch — calibration collection + feed window pitch nudging
     OSCdef(\chPitch, { |msg|
-        var freq    = msg[3];
-        var hasFreq = msg[4];
-        ch.inKeyBus.set(
-            (ch.rootLocked && (hasFreq > 0.5) && (freq > 50) && (freq < 5000)
-                && ch[\isInKey].(freq)).binaryValue
-        );
+        var freq, hasFreq, amp, normHz, dists, nearestIdx, uniquePCs;
+        freq    = msg[3];
+        hasFreq = msg[4];
+        amp     = msg[5];
+
+        if((hasFreq > 0.5) && (amp > ch.threshold)
+                && (freq > 50) && (freq < 3000), {
+
+            // Calibration: collect samples, count unique pitch classes
+            if((ch.phase == \calibrating) && ch.calibDone.not, {
+                ch.calibSamples = ch.calibSamples.add(freq);
+                uniquePCs = ch.calibSamples.collect({ |hz|
+                    var h = ch[\normalizeHz].(hz);
+                    ((h / 440).log2 * 12).round(1).asInteger
+                }).asSet.size;
+                if(uniquePCs >= ch.calibNotes, {
+                    ch.calibDone = true;
+                    ch.phase     = \running;
+                    ch.bedFreqs  = ch[\lockBedFreqs].(ch.calibSamples);
+                    ch[\startBed].value;
+                });
+            });
+
+            // Feed window: nudge the nearest bed voice toward this pitch
+            if(ch.mode == \feedMode, {
+                normHz     = ch[\normalizeHz].(freq);
+                dists      = ch.bedFreqs.collect({ |bHz| (normHz - bHz).abs });
+                nearestIdx = dists.minIndex;
+                ch.bedFreqs[nearestIdx] = normHz;
+                ch.bedSyns[nearestIdx].set(\freq, normHz);
+            });
+        });
     }, '/ch/pitch');
 
     // ── Ready ─────────────────────────────────────────────────────────────────
     "".postln;
     "Chimera — running. Play guitar when ready.".postln;
-    "Threshold: %. Bow/swell % notes to lock root.".format(
-        ch.threshold, ch.swellsNeeded).postln;
-    "Timeline from first sound:".postln;
-    "  ~1–2 min : root locks — shimmer activates on in-key notes".postln;
-    "  % s      : mid-section — reverb expands, partners breathe slower".format(
-        ch.midShiftTime).postln;
-    "  % s      : fade begins (2 min)".format(ch.totalDur - ch.fadeDur).postln;
-    "  ~% min   : silence — evaluate Block 3 to stop".format(
-        ((ch.totalDur + 140) / 60).round(0.5)).postln;
+    "  Calibration: % harmonics in first % s".format(ch.calibNotes, ch.calibDur).postln;
+    "  Feed windows: 2:30–3:00 | 5:30–6:00 | 8:00–8:30".postln;
+    "  Fade at 8:30 | Silence at 9:00".postln;
 });
 )
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BLOCK 3 — STOP (Cmd+Return to end cleanly)
+// BLOCK 3 — STOP
 // ─────────────────────────────────────────────────────────────────────────────
 (
-OSCdef(\chFirstSound).free;
-OSCdef(\chSwell).free;
+OSCdef(\chFirstNote).free;
+OSCdef(\chOnset).free;
+OSCdef(\chRelease).free;
 OSCdef(\chPitch).free;
-~ch.capBuf.free;
-~ch.mixBus.free;
-~ch.inKeyBus.free;
+~ch.noteBufs.do(_.free);
+~ch.bedBus.free;
+~ch.motiveBus.free;
 s.freeAll;
 "Chimera — stopped.".postln;
 )
