@@ -1,6 +1,6 @@
 /*
 Chimera
-Generative guitar — synthesized partner bed + motive echo partner
+Generative guitar — synthesized partner bed + live companion echo
 SuperCollider 3.14.1
 
 SETUP
@@ -15,23 +15,25 @@ STRUCTURE (times from first note)
   0:00    First note → calibration. Post: CALIBRATING.
   ~1:30   6 unique pitches detected OR 90s elapsed → bed locks and rises.
   2:30    FEED 1 — play swells/harmonics. Bed nudges toward your pitches.
-  3:00    MOTIVE MODE — play phrases. P4 responds.
+  3:00    MOTIVE MODE — play phrases. Companion echoes.
   5:30    FEED 2
   6:00    MOTIVE MODE
   8:00    FEED 3 / ending swell
   8:30    Fade — bed dissolves over 35s
   9:00    Silence
 
-BED (P1–P3 — the ocean)
-  3 synthesized additive voices, frequencies locked from calibration pitches.
+BED (P1–P4 — the ocean)
+  3 synthesized additive voices + 1 restless P4 voice,
+  frequencies locked from calibration pitches.
   Harmonics breathe independently via LFNoise — never static, never sudden.
   Slow pitch drift. Separate long reverb bus. Self-sustaining: does not echo input.
   During feed windows only: your pitches slowly nudge the bed (Lag 45s).
 
-MOTIVE PARTNER (P4)
-  Only active in motive mode. Captures notes shorter than 3s.
-  When phrase ends (2s silence): plays 1–all notes, randomly delayed 0–4s or 20–60s.
-  Routed through same reverb bus as dry guitar (more present, shorter tail).
+COMPANION (the ghost guitarist)
+  Continuous tape-loop delay, 1–6s, slowly wandering.
+  Pans around the stereo field independently.
+  Short room reverb — sounds present, like a second guitarist in the room.
+  Starts when the bed locks. Completely autonomous: no phrase detection.
 */
 
 
@@ -49,26 +51,26 @@ MOTIVE PARTNER (P4)
     fadeSec:     510,    // fade at 8:30
 
     // Bed (P1–P3)
-    bedAmp:          0.58,   // per voice at full
+    bedAmp:          0.58,
     bedReverbMix:    0.52,
     bedReverbDecay:  6.5,
     bedReverbDamp:   0.35,
     freqLag:         45.0,   // pitch nudge transition time during feed
 
-    // Motive bus — dry guitar + P4
+    // P4 bed voice (restless 4th bed voice)
+    p4Amp:           0.38,
+
+    // Motive bus — dry guitar
     dryAmp:             0.42,
-    p4Amp:              0.34,
     motiveReverbMix:    0.52,
     motiveReverbDecay:  4.0,
     motiveReverbDamp:   0.30,
 
-    // P4 response
-    motiveMaxDur:  3.5,   // notes longer than this are held harmonics, ignored by P4
-    phraseMinDur:  0.4,   // phrases shorter than this ignored (noise/single tap)
-    phraseEndGap:  1.8,   // silence gap that ends a phrase
-    phraseBufDur:  12,    // max phrase duration per buffer (seconds)
-    phraseBufCount: 8,    // pool size — 8×12s = 96s, more than max delay
-    p4MaxDelay:    45,    // max seconds before P4 responds
+    // Companion — tape-loop delay, self-contained, direct to hardware
+    // Starts when bed locks (not before — silent during calibration)
+    companionAmp:      0.32,
+    companionDelayMin: 1.0,
+    companionDelayMax: 6.0,
 
     threshold:     0.015,
 );
@@ -87,7 +89,6 @@ s.waitForBoot({
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    // Normalize Hz into 80–320 Hz (bass/mid range for bed voices)
     ch.normalizeHz = { |hz|
         var h = hz;
         while({ h < 80  }, { h = h * 2 });
@@ -95,7 +96,6 @@ s.waitForBoot({
         h
     };
 
-    // Pick top 3 pitch-class buckets from calibration samples → 3 bed Hz values
     ch.lockBedFreqs = { |samples|
         var normSamples, buckets, sortedSemis, top3Hz, root;
         normSamples = samples.collect({ |hz| ch[\normalizeHz].(hz) });
@@ -114,22 +114,17 @@ s.waitForBoot({
         ]
     };
 
-    // ── Buffers & buses ───────────────────────────────────────────────────────
+    // ── Buses ─────────────────────────────────────────────────────────────────
     ch.bedBus    = Bus.audio(s, 2);
     ch.motiveBus = Bus.audio(s, 2);
-    // Phrase buffer pool — pre-allocated, round-robin per phrase
-    ch.phraseBufs = Array.fill(ch.phraseBufCount, {
-        Buffer.alloc(s, (s.sampleRate * ch.phraseBufDur).ceil.asInteger, 1)
-    });
-    ch.nextPhraseBuf = 0;
 
     s.sync;
 
     // ── SynthDefs ─────────────────────────────────────────────────────────────
 
-    // Onset / release / continuous pitch detector
+    // Pitch detector — fires firstNote once; streams pitch for calibration/feed
     SynthDef(\chDetect, { |thresh=0.015|
-        var sig, amp, pitch, freq, hasFreq, above, onset, release;
+        var sig, amp, pitch, freq, hasFreq, above, onset;
         sig     = SoundIn.ar(0);
         amp     = Amplitude.kr(sig, attackTime: 0.005, releaseTime: 0.15);
         pitch   = Pitch.kr(sig, ampThreshold: 0.015, median: 7);
@@ -137,15 +132,12 @@ s.waitForBoot({
         hasFreq = pitch[1];
         above   = amp > thresh;
         onset   = above * (1 - Delay1.kr(above));
-        release = (1 - above) * Delay1.kr(above);
         SendReply.kr(onset,          '/ch/firstNote', [amp]);
-        SendReply.kr(onset,          '/ch/onset',     [amp, freq, hasFreq]);
-        SendReply.kr(release,        '/ch/release',   [amp]);
         SendReply.kr(Impulse.kr(10), '/ch/pitch',     [freq, hasFreq, amp]);
     }).add;
 
     // Bed voice — additive synthesis, harmonics breathe independently via LFNoise
-    // active=0: slow, static character. active=1: more harmonic movement + vibrato + wandering pan
+    // active=0: slow, static. active=1: more motion + vibrato + wandering pan
     SynthDef(\chBed, {
         |out=0, freq=220, amp=0.0, ampLag=35, freqLag=45,
          breathRate=0.07, breathPhase=0.0, pan=0.0,
@@ -153,23 +145,18 @@ s.waitForBoot({
         var fSmooth, drift, vibrato, f, fChorus;
         var h1, h2, h3, h4, h5, sub, sig, breath, ampSmooth, panSig;
         fSmooth = Lag.kr(freq, freqLag);
-        // Chorus detune: static voices get a very slow ±5 cent warble (fills stereo space)
         fChorus = fSmooth * (1 + (chorus * LFNoise1.kr(0.008).range(-0.003, 0.003)));
-        // Active voice: wider pitch drift + slow vibrato
         drift   = LFNoise1.kr(0.015).range(-0.002, 0.002)
                 + (active * LFNoise1.kr(0.05).range(-0.005, 0.005));
         vibrato = active * SinOsc.kr(LFNoise1.kr(0.025).range(3.2, 5.8)) * 0.0025;
         f       = fChorus * (1 + drift + vibrato);
-        // Harmonics — active voice has faster motion and occasional 5th partial swell
         h1  = SinOsc.ar(f)       * LFNoise1.kr(0.04 + (active * 0.07)).range(0.55, 1.0);
         h2  = SinOsc.ar(f * 2)   * LFNoise1.kr(0.03 + (active * 0.08)).range(0.10, 0.65) * 0.45;
         h3  = SinOsc.ar(f * 3)   * LFNoise1.kr(0.05 + (active * 0.09)).range(0.00, 0.45 + (active * 0.30)) * 0.22;
-        // 5th partial: active voice only — very slow swell in/out, creates harmonic resolution feel
         h4  = SinOsc.ar(f * 5)   * (active * LFNoise1.kr(0.018).range(0.0, 0.28)) * 0.14;
-        // Sub: always present, breathes slowly
         sub = SinOsc.ar(f * 0.5) * LFNoise1.kr(0.02 + (active * 0.03)).range(0.18, 0.72) * 0.38;
         sig = (h1 + h2 + h3 + h4 + sub) * 0.34;
-        sig = (sig * 2.2).tanh * 0.52;   // more drive = fuller mid-range body
+        sig = (sig * 2.2).tanh * 0.52;
         sig = LPF.ar(sig, f * 7);
         breath    = SinOsc.kr(breathRate, breathPhase).linlin(-1, 1, 0.15, 1.0);
         ampSmooth = Lag.kr(amp, ampLag);
@@ -177,9 +164,7 @@ s.waitForBoot({
         Out.ar(out, Pan2.ar(sig * breath * ampSmooth, panSig));
     }).add;
 
-    // P4 bed voice — synthesized, persistent, more restless than the static bed voices
-    // Updated each time P4 contributes to the bed (freq + amp set from language)
-    // Faster harmonic motion, wider pan wander — the active edge of the ocean
+    // P4 bed voice — persistent, more restless than the static bed voices
     SynthDef(\chP4Bed, {
         |out=0, freq=220, amp=0.0, ampLag=18, freqLag=20|
         var fSmooth, f, drift, vibrato;
@@ -195,36 +180,30 @@ s.waitForBoot({
         sig      = (h1 + h2 + h3 + sub) * 0.32;
         sig      = (sig * 2.4).tanh * 0.50;
         sig      = LPF.ar(sig, f * 7);
-        // Breath: faster period (7s) — noticeably restless against the static bed voices
         breath   = SinOsc.kr(1/7, LFNoise0.kr(0.02).range(0, 2pi)).linlin(-1, 1, 0.05, 1.0);
-        // Pan wanders slowly across full field
         pan      = LFNoise1.kr(0.025).range(-0.90, 0.90);
         ampSmooth = Lag.kr(amp, ampLag);
         Out.ar(out, Pan2.ar(sig * breath * ampSmooth, pan));
     }).add;
 
-    // Records a phrase into a buffer then stops (loop:0, doneAction:2)
-    SynthDef(\chPhraseRec, { |bufnum|
-        RecordBuf.ar(SoundIn.ar(0), bufnum,
-            recLevel: 1.0, preLevel: 0.0, loop: 0, doneAction: 2);
-    }).add;
-
-    // Plays back a phrase buffer
-    SynthDef(\chPlay, {
-        |out=0, bufnum, dur=1.0, rate=1.0, amp=0.35, pan=0.0, atk=0.05, rel=0.15|
-        var playDur = dur / rate.abs;
-        var sig = PlayBuf.ar(1, bufnum,
-            rate * BufRateScale.kr(bufnum),
-            loop: 0, doneAction: 2);
-        var env = EnvGen.kr(
-            Env.linen(atk, (playDur - atk - rel).max(0.05), rel),
-            doneAction: 2);
-        Out.ar(out, Pan2.ar(sig * env * amp, pan));
-    }).add;
-
     // Dry guitar → motive bus
     SynthDef(\chDry, { |out=0, amp=0.42|
         Out.ar(out, (SoundIn.ar(0) * amp).dup);
+    }).add;
+
+    // Companion — tape-loop delay, outputs directly to hardware (not through buses).
+    // Starts silent (amp=0); activated from startBed when the piece is running.
+    // DelayL handles all timing internally — no language-side state.
+    SynthDef(\chCompanion, {
+        |out=0, amp=0.0, delayMin=1.0, delayMax=6.0|
+        var sig, delay, echo, pan, verb, mix;
+        sig   = SoundIn.ar(0);
+        delay = LFNoise1.kr(0.04).range(delayMin, delayMax);
+        echo  = DelayL.ar(sig, delayMax + 0.5, delay);
+        pan   = LFNoise1.kr(0.025).range(-0.75, 0.75);
+        verb  = GVerb.ar(echo, roomsize: 25, revtime: 2.2, damping: 0.45, drylevel: 0);
+        mix   = (Pan2.ar(echo, pan) * 0.55) + ([verb[0], verb[1]] * 0.45);
+        Out.ar(out, (mix * Lag.kr(amp, 8.0)).clip2(1.0));
     }).add;
 
     // Bed reverb: bed bus → GVerb → hardware out (long, ambient)
@@ -237,7 +216,7 @@ s.waitForBoot({
         Out.ar(out, ((dry * (1 - mix)) + (wet * mix)).clip2(1.0));
     }).add;
 
-    // Motive reverb: motive bus (dry guitar + P4) → GVerb → hardware out (more present)
+    // Motive reverb: motive bus (dry guitar) → GVerb → hardware out
     SynthDef(\chMotiveVerb, {
         |busIn=0, out=0, mix=0.52, decay=4.0, damp=0.30|
         var dry  = In.ar(busIn, 2);
@@ -254,13 +233,12 @@ s.waitForBoot({
     ch.grpBed    = Group.after(ch.grpRec);
     ch.grpMotive = Group.after(ch.grpBed);
     ch.grpVerb   = Group.after(ch.grpMotive);
+    ch.grpComp   = Group.after(ch.grpVerb);   // companion: fully independent
 
     // ── Synths ────────────────────────────────────────────────────────────────
     ch.detectSyn = Synth(\chDetect, [thresh: ch.threshold], ch.grpRec);
 
-    // Bed voices — silent (amp=0) until calibration locks
-    // P1: static, hard left. P2: static, hard right. P3: active + slow wandering pan (centre→sides)
-    // breathRate periods 13/17/19s are prime → never align
+    // Bed voices — silent until calibration locks
     ch.bedSyns = [
         Synth(\chBed, [out: ch.bedBus.index, amp: 0,
             breathRate: 1/13, breathPhase: 0.00, pan: -0.88,
@@ -275,11 +253,17 @@ s.waitForBoot({
             active: 1, panMove: 1, chorus: 0,
             ampLag: ch.bedRiseSecs, freqLag: ch.freqLag], ch.grpBed),
     ];
-
-    // P4 bed voice — persistent synthesized voice, amp=0 until first P4 bed contribution
     ch.p4BedSyn = Synth(\chP4Bed, [out: ch.bedBus.index, amp: 0], ch.grpBed);
 
     ch.drySyn = Synth(\chDry, [out: ch.motiveBus.index, amp: ch.dryAmp], ch.grpMotive);
+
+    // Companion starts SILENT — activated by startBed when bed locks
+    ch.companionSyn = Synth(\chCompanion, [
+        out:      0,
+        amp:      0.0,
+        delayMin: ch.companionDelayMin,
+        delayMax: ch.companionDelayMax,
+    ], ch.grpComp);
 
     ch.bedVerbSyn = Synth(\chBedVerb, [
         busIn: ch.bedBus.index, out: 0,
@@ -291,16 +275,12 @@ s.waitForBoot({
     ], ch.grpVerb);
 
     // ── State ─────────────────────────────────────────────────────────────────
-    ch.phase         = \waiting;
-    ch.mode          = \motiveMode;
-    ch.firstFired    = false;
-    ch.calibDone     = false;
-    ch.calibSamples  = [];
-    ch.bedFreqs      = [220, 330, 440];
-    ch.phraseOnset   = nil;
-    ch.inPhrase      = false;
-    ch.phraseSeq     = 0;
-    ch.recSyn        = nil;
+    ch.phase        = \waiting;
+    ch.mode         = \motiveMode;
+    ch.firstFired   = false;
+    ch.calibDone    = false;
+    ch.calibSamples = [];
+    ch.bedFreqs     = [220, 330, 440];
 
     // ── startBed ─────────────────────────────────────────────────────────────
     ch.startBed = {
@@ -308,52 +288,18 @@ s.waitForBoot({
         ch.bedSyns[0].set(\freq, freqs[0], \amp, ch.bedAmp);
         ch.bedSyns[1].set(\freq, freqs[1], \amp, ch.bedAmp);
         ch.bedSyns[2].set(\freq, freqs[2], \amp, ch.bedAmp);
-        // Reset phrase state so calibration notes don't bleed in
-        ch.inPhrase  = false;
-        ch.phraseOnset = nil;
-        ch.phraseSeq = ch.phraseSeq + 1;
-        if(ch.recSyn.notNil, { ch.recSyn.free; ch.recSyn = nil });
+        // P4 bed: slightly detuned fifth, more restless character
+        ch.p4BedSyn.set(\freq, freqs[1] * 1.01, \amp, ch.p4Amp);
+        // Companion wakes up now — 8s fade-in via Lag inside SynthDef
+        ch.companionSyn.set(\amp, ch.companionAmp);
         "BED LOCKED → % / % / % Hz".format(
             freqs[0].round(0.1), freqs[1].round(0.1), freqs[2].round(0.1)).postln;
-        "MOTIVE MODE".postln;
-    };
-
-    // ── triggerP4 ─────────────────────────────────────────────────────────────
-    // colour 0 (70%): clean echo → motiveBus, plays once, sounds like companion guitar
-    // colour 1 (30%): bed contribution → update persistent p4BedSyn with new freq, stays alive
-    ch.triggerP4 = { |buf, phraseDur|
-        var delay  = if(0.4.coin, { rrand(0.5, 5.0) }, { rrand(12.0, ch.p4MaxDelay) });
-        var colour = [0,0,0,0,0,0,0,1,1,1].choose;   // 70% clean echo, 30% bed
-        SystemClock.sched(delay, {
-            if(colour == 0, {
-                // Clean echo — play the phrase back as a companion guitar
-                "P4 → echo | delay % s".format(delay.round(0.1)).postln;
-                Synth(\chPlay, [
-                    out:    ch.motiveBus.index,
-                    bufnum: buf.bufnum,
-                    dur:    phraseDur,
-                    rate:   1.0,
-                    amp:    ch.p4Amp,
-                    pan:    rrand(-0.75, 0.75),
-                    atk:    0.04,
-                    rel:    0.15,
-                ], ch.grpMotive);
-            }, {
-                // Bed contribution — pick a freq from bedFreqs (or slight variation),
-                // update the persistent p4BedSyn. It stays alive until next bed contribution.
-                var freqBase = ch.bedFreqs.choose;
-                var freq     = freqBase * [0.5, 1.0, 1.5, 2.0].choose;
-                freq         = freq * rrand(0.98, 1.02);   // tiny detune
-                "P4 → bed | freq % Hz | delay % s".format(freq.round(0.1), delay.round(0.1)).postln;
-                ch.p4BedSyn.set(\freq, freq, \amp, ch.p4Amp * 0.85);
-            });
-            nil;
-        });
+        "COMPANION active — echo % –% s".format(
+            ch.companionDelayMin, ch.companionDelayMax).postln;
     };
 
     // ── OSC handlers ──────────────────────────────────────────────────────────
 
-    // First note — start timeline, schedule feed windows and fade
     OSCdef(\chFirstNote, { |msg|
         if(ch.firstFired.not, {
             ch.firstFired = true;
@@ -364,7 +310,7 @@ s.waitForBoot({
 
             // Auto-close calibration after calibDur even if not enough notes
             SystemClock.sched(ch.calibDur, {
-                if(ch.calibDone.not, {
+                if(ch.alive && ch.calibDone.not, {
                     ch.calibDone = true;
                     ch.phase     = \running;
                     if(ch.calibSamples.size >= 3, {
@@ -378,26 +324,35 @@ s.waitForBoot({
             // Feed windows
             ch.feedWindows.do({ |win, i|
                 SystemClock.sched(win[0], {
-                    ch.mode = \feedMode;
-                    "FEED % — play swells/harmonics".format(i + 1).postln;
+                    if(ch.alive, {
+                        ch.mode = \feedMode;
+                        "FEED % — play swells/harmonics".format(i + 1).postln;
+                    });
                     nil;
                 });
                 SystemClock.sched(win[1], {
-                    ch.mode = \motiveMode;
-                    "MOTIVE MODE — play phrases".postln;
+                    if(ch.alive, {
+                        ch.mode = \motiveMode;
+                        "MOTIVE MODE".postln;
+                    });
                     nil;
                 });
             });
 
             // Fade and end
             SystemClock.sched(ch.fadeSec, {
-                ch.bedSyns.do({ |syn| syn.set(\amp, 0) });
-                ch.p4BedSyn.set(\amp, 0);
-                "FADING...".postln;
+                if(ch.alive, {
+                    ch.bedSyns.do({ |syn| syn.set(\amp, 0) });
+                    ch.p4BedSyn.set(\amp, 0);
+                    ch.companionSyn.set(\amp, 0);
+                    "FADING...".postln;
+                });
                 nil;
             });
             SystemClock.sched(ch.totalDur, {
-                "SILENCE — evaluate Block 3 to stop".postln;
+                if(ch.alive, {
+                    "SILENCE — evaluate Block 3 to stop".postln;
+                });
                 nil;
             });
 
@@ -405,45 +360,6 @@ s.waitForBoot({
         });
     }, '/ch/firstNote');
 
-    // Onset — start recording a phrase buffer on first note; extend on subsequent notes
-    OSCdef(\chOnset, { |msg|
-        ch.phraseSeq = ch.phraseSeq + 1;
-        if((ch.phase == \running) && (ch.mode == \motiveMode), {
-            if(ch.inPhrase.not, {
-                // Fresh phrase: grab next buffer, start recording
-                var buf      = ch.phraseBufs[ch.nextPhraseBuf];
-                ch.nextPhraseBuf = (ch.nextPhraseBuf + 1) % ch.phraseBufCount;
-                ch.phraseOnset   = Main.elapsedTime;
-                ch.inPhrase      = true;
-                ch.currentBuf    = buf;
-                if(ch.recSyn.notNil, { ch.recSyn.free });
-                ch.recSyn = Synth(\chPhraseRec, [bufnum: buf.bufnum], ch.grpRec);
-            });
-            // If already in phrase, just keep recording (recSyn already running)
-        });
-    }, '/ch/onset');
-
-    // Release — start phrase-end countdown; if no new note arrives, close and queue P4
-    OSCdef(\chRelease, { |msg|
-        var mySeq = ch.phraseSeq;
-        SystemClock.sched(ch.phraseEndGap, {
-            if((ch.phraseSeq == mySeq) && ch.inPhrase
-                    && ch.phraseOnset.notNil, {
-                var phraseDur = Main.elapsedTime - ch.phraseOnset - ch.phraseEndGap;
-                var buf       = ch.currentBuf;
-                ch.inPhrase   = false;
-                ch.phraseOnset = nil;
-                if(ch.recSyn.notNil, { ch.recSyn.free; ch.recSyn = nil });
-                if((phraseDur > ch.phraseMinDur) && (phraseDur < ch.phraseBufDur), {
-                    "P4 phrase % s → queuing".format(phraseDur.round(0.1)).postln;
-                    ch[\triggerP4].(buf, phraseDur);
-                });
-            });
-            nil;
-        });
-    }, '/ch/release');
-
-    // Pitch — calibration collection + feed window pitch nudging
     OSCdef(\chPitch, { |msg|
         var freq, hasFreq, amp, normHz, dists, nearestIdx, uniquePCs;
         freq    = msg[3];
@@ -453,7 +369,6 @@ s.waitForBoot({
         if((hasFreq > 0.5) && (amp > ch.threshold)
                 && (freq > 50) && (freq < 3000), {
 
-            // Calibration: collect samples, count unique pitch classes
             if((ch.phase == \calibrating) && ch.calibDone.not, {
                 ch.calibSamples = ch.calibSamples.add(freq);
                 uniquePCs = ch.calibSamples.collect({ |hz|
@@ -468,7 +383,6 @@ s.waitForBoot({
                 });
             });
 
-            // Feed window: nudge the nearest bed voice toward this pitch
             if(ch.mode == \feedMode, {
                 normHz     = ch[\normalizeHz].(freq);
                 dists      = ch.bedFreqs.collect({ |bHz| (normHz - bHz).abs });
@@ -479,11 +393,15 @@ s.waitForBoot({
         });
     }, '/ch/pitch');
 
+    ch.alive = true;
+
     // ── Ready ─────────────────────────────────────────────────────────────────
     "".postln;
     "Chimera — running. Play guitar when ready.".postln;
     "  Calibration: % harmonics in first % s".format(ch.calibNotes, ch.calibDur).postln;
     "  Feed windows: 2:30–3:00 | 5:30–6:00 | 8:00–8:30".postln;
+    "  Companion: echo % –% s, starts when bed locks".format(
+        ch.companionDelayMin, ch.companionDelayMax).postln;
     "  Fade at 8:30 | Silence at 9:00".postln;
 });
 )
@@ -493,11 +411,9 @@ s.waitForBoot({
 // BLOCK 3 — STOP
 // ─────────────────────────────────────────────────────────────────────────────
 (
+~ch.alive = false;
 OSCdef(\chFirstNote).free;
-OSCdef(\chOnset).free;
-OSCdef(\chRelease).free;
 OSCdef(\chPitch).free;
-~ch.phraseBufs.do(_.free);
 ~ch.bedBus.free;
 ~ch.motiveBus.free;
 s.freeAll;

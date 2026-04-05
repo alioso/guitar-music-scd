@@ -220,42 +220,50 @@ s.waitForBoot({
 
             // +8 bars: gate all 4 voices open (fade-in via Env.asr over fadeDur)
             SystemClock.sched(ff.entryDur, {
-                { "Voices fading in over % bars...".format(ff.fadeBars).postln; }.defer;
-                ff.voiceSyns.do({ |syn| syn.set(\gate, 1) });
+                if(ff.alive, {
+                    { "Voices fading in over % bars...".format(ff.fadeBars).postln; }.defer;
+                    ff.voiceSyns.do({ |syn| syn.set(\gate, 1) });
+                });
                 nil;
             });
 
             // +16 bars: start archive recording
             SystemClock.sched(ff.recDur, {
-                { "Archive recording (% bars = % sec)..."
-                    .format(ff.archBars, ff.archDur.round(1)).postln; }.defer;
+                if(ff.alive, {
+                    { "Archive recording (% bars = % sec)..."
+                        .format(ff.archBars, ff.archDur.round(1)).postln; }.defer;
 
-                ff.archRecSyn = Synth(\ffArchRec, [
-                    bufnum: ff.archBuf,
-                    busIn:  ff.mixBus.index,
-                ], ff.grpMaster);
-
-                // +16+64 bars: stop live, switch to archive loop
-                SystemClock.sched(ff.archDur, {
-                    { "Archive complete — looping. Guitar no longer needed.".postln; }.defer;
-
-                    ff.archRecSyn.free;
-                    ff.recSyn.free;
-                    ff.voiceSyns.do(_.free);
-                    ff.drySyn.free;
-                    if(ff.clickSyn.notNil, { ff.clickSyn.free });
-
-                    // Route archive through mix bus so master reverb stays active
-                    ff.archPlaySyn = Synth(\ffArchPlay, [
-                        out:    ff.mixBus.index,
+                    ff.archRecSyn = Synth(\ffArchRec, [
                         bufnum: ff.archBuf,
-                    ], ff.grpVoice);
-                    nil;
+                        busIn:  ff.mixBus.index,
+                    ], ff.grpMaster);
+
+                    // +16+64 bars: stop live, switch to archive loop
+                    SystemClock.sched(ff.archDur, {
+                        if(ff.alive, {
+                            { "Archive complete — looping. Guitar no longer needed.".postln; }.defer;
+
+                            ff.archRecSyn.free;
+                            ff.recSyn.free;
+                            ff.voiceSyns.do(_.free);
+                            ff.drySyn.free;
+                            if(ff.clickSyn.notNil, { ff.clickSyn.free });
+
+                            // Route archive through mix bus so master reverb stays active
+                            ff.archPlaySyn = Synth(\ffArchPlay, [
+                                out:    ff.mixBus.index,
+                                bufnum: ff.archBuf,
+                            ], ff.grpVoice);
+                        });
+                        nil;
+                    });
                 });
                 nil;
             });
         });
     }, '/ff/firstNote');
+
+    ff.alive = true;
 
     "".postln;
     "Fan Fiction — running. Play guitar when ready.".postln;
@@ -275,6 +283,7 @@ s.waitForBoot({
 // BLOCK 3 — STOP (Cmd+Return to end cleanly)
 // ─────────────────────────────────────────────────────────────────────────────
 (
+~ff.alive = false;
 OSCdef(\ffFirstNote).free;
 ~ff.loopBuf.free;
 ~ff.archBuf.free;

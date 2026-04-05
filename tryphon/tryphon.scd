@@ -150,7 +150,7 @@ s.waitForBoot({
         var spec     = trp.patterns[partnerIdx][cycleIdx];
         var k        = spec[0];
         var n        = spec[1];
-        var pattern  = trp.euclidean.(k, n);
+        var pattern  = trp[\euclidean].(k, n);
         var bufnum   = trp.bufs[cycleIdx].bufnum;
         var amp      = trp.partnerAmp;
         var pan      = trp.pans[partnerIdx];
@@ -167,7 +167,7 @@ s.waitForBoot({
         trp.routines[partnerIdx] = Routine({
             var step = 0;
             loop {
-                if(pattern[step % n] == 1, {
+                if(trp.alive && (pattern[step % n] == 1), {
                     // Read from the current position in the 4-bar loop
                     var elapsed  = Main.elapsedTime - trp.bufStart[cycleIdx];
                     var startPos = (elapsed % loopDur * s.sampleRate)
@@ -282,6 +282,7 @@ s.waitForBoot({
 
     // ── State ─────────────────────────────────────────────────────────────────
     trp.firstFired = false;
+    trp.alive      = true;
 
     // ── First-note handler ────────────────────────────────────────────────────
     OSCdef(\trpFirstNote, { |msg|
@@ -298,23 +299,25 @@ s.waitForBoot({
             trp.recSyns[0]  = Synth(\trpRec, [bufnum: trp.bufs[0]], trp.grpRec);
 
             SystemClock.sched(trp.loopDur, {
-                { "Loop recorded. Intro build starting...".postln; }.defer;
-                trp.startPartner.(0, 0);   // P1 — E(3,16)
-
-                SystemClock.sched(trp.buildStep, {
-                    trp.startPartner.(1, 0);   // P2 — E(4,11)
+                if(trp.alive, {
+                    { "Loop recorded. Intro build starting...".postln; }.defer;
+                    trp[\startPartner].(0, 0);   // P1 — E(3,16)
 
                     SystemClock.sched(trp.buildStep, {
-                        trp.startPartner.(2, 0);   // P3 — E(5,9)
-
-                        SystemClock.sched(trp.buildStep, {
-                            trp.startPartner.(3, 0);   // P4 — E(6,13)
+                        if(trp.alive, { trp[\startPartner].(1, 0) });   // P2 — E(4,11)
+                        nil
+                    });
+                    SystemClock.sched(trp.buildStep * 2, {
+                        if(trp.alive, { trp[\startPartner].(2, 0) });   // P3 — E(5,9)
+                        nil
+                    });
+                    SystemClock.sched(trp.buildStep * 3, {
+                        if(trp.alive, {
+                            trp[\startPartner].(3, 0);   // P4 — E(6,13)
                             { "Cycle 1 — full texture.".postln; }.defer;
-                            nil
                         });
                         nil
                     });
-                    nil
                 });
                 nil
             });
@@ -322,32 +325,36 @@ s.waitForBoot({
             // ── Cycle 1 → 2 transition (T=180s) ─────────────────────────────
 
             SystemClock.sched(trp.cycleTimes[0], {
-                { "\n─── Cycle 1→2 — P2–P4 dropped. P1 holds. Re-recording...".postln; }.defer;
-                [1, 2, 3].do { |i| trp.stopPartner.(i) };
+                if(trp.alive, {
+                    { "\n─── Cycle 1→2 — P2–P4 dropped. P1 holds. Re-recording...".postln; }.defer;
+                    [1, 2, 3].do { |i| trp[\stopPartner].(i) };
 
-                trp.bufStart[1] = Main.elapsedTime;
-                trp.recSyns[1]  = Synth(\trpRec, [bufnum: trp.bufs[1]], trp.grpRec);
+                    trp.bufStart[1] = Main.elapsedTime;
+                    trp.recSyns[1]  = Synth(\trpRec, [bufnum: trp.bufs[1]], trp.grpRec);
 
-                SystemClock.sched(trp.loopDur, {
-                    { "Cycle 2 — P1 switching, partners re-entering...".postln; }.defer;
-                    trp.startPartner.(0, 1);   // P1 → E(4,16)
-
-                    SystemClock.sched(trp.buildStep, {
-                        trp.startPartner.(1, 1);   // P2 — E(5,11)
-
-                        SystemClock.sched(trp.buildStep, {
-                            trp.startPartner.(2, 1);   // P3 — E(6,9)
+                    SystemClock.sched(trp.loopDur, {
+                        if(trp.alive, {
+                            { "Cycle 2 — P1 switching, partners re-entering...".postln; }.defer;
+                            trp[\startPartner].(0, 1);   // P1 → E(4,16)
 
                             SystemClock.sched(trp.buildStep, {
-                                trp.startPartner.(3, 1);   // P4 — E(7,13)
-                                { "Cycle 2 — full texture.".postln; }.defer;
+                                if(trp.alive, { trp[\startPartner].(1, 1) });   // P2
                                 nil
                             });
-                            nil
+                            SystemClock.sched(trp.buildStep * 2, {
+                                if(trp.alive, { trp[\startPartner].(2, 1) });   // P3
+                                nil
+                            });
+                            SystemClock.sched(trp.buildStep * 3, {
+                                if(trp.alive, {
+                                    trp[\startPartner].(3, 1);   // P4
+                                    { "Cycle 2 — full texture.".postln; }.defer;
+                                });
+                                nil
+                            });
                         });
                         nil
                     });
-                    nil
                 });
                 nil
             });
@@ -355,32 +362,36 @@ s.waitForBoot({
             // ── Cycle 2 → 3 transition (T=300s) ─────────────────────────────
 
             SystemClock.sched(trp.cycleTimes[1], {
-                { "\n─── Cycle 2→3 — P2–P4 dropped. P1 holds. Re-recording...".postln; }.defer;
-                [1, 2, 3].do { |i| trp.stopPartner.(i) };
+                if(trp.alive, {
+                    { "\n─── Cycle 2→3 — P2–P4 dropped. P1 holds. Re-recording...".postln; }.defer;
+                    [1, 2, 3].do { |i| trp[\stopPartner].(i) };
 
-                trp.bufStart[2] = Main.elapsedTime;
-                trp.recSyns[2]  = Synth(\trpRec, [bufnum: trp.bufs[2]], trp.grpRec);
+                    trp.bufStart[2] = Main.elapsedTime;
+                    trp.recSyns[2]  = Synth(\trpRec, [bufnum: trp.bufs[2]], trp.grpRec);
 
-                SystemClock.sched(trp.loopDur, {
-                    { "Cycle 3 — P1 switching, partners re-entering...".postln; }.defer;
-                    trp.startPartner.(0, 2);   // P1 → E(5,16)
-
-                    SystemClock.sched(trp.buildStep, {
-                        trp.startPartner.(1, 2);   // P2 — E(7,11)
-
-                        SystemClock.sched(trp.buildStep, {
-                            trp.startPartner.(2, 2);   // P3 — E(7,9)
+                    SystemClock.sched(trp.loopDur, {
+                        if(trp.alive, {
+                            { "Cycle 3 — P1 switching, partners re-entering...".postln; }.defer;
+                            trp[\startPartner].(0, 2);   // P1 → E(5,16)
 
                             SystemClock.sched(trp.buildStep, {
-                                trp.startPartner.(3, 2);   // P4 — E(9,13)
-                                { "Cycle 3 — full texture.".postln; }.defer;
+                                if(trp.alive, { trp[\startPartner].(1, 2) });   // P2
                                 nil
                             });
-                            nil
+                            SystemClock.sched(trp.buildStep * 2, {
+                                if(trp.alive, { trp[\startPartner].(2, 2) });   // P3
+                                nil
+                            });
+                            SystemClock.sched(trp.buildStep * 3, {
+                                if(trp.alive, {
+                                    trp[\startPartner].(3, 2);   // P4
+                                    { "Cycle 3 — full texture.".postln; }.defer;
+                                });
+                                nil
+                            });
                         });
                         nil
                     });
-                    nil
                 });
                 nil
             });
@@ -388,20 +399,25 @@ s.waitForBoot({
             // ── Duo phase ────────────────────────────────────────────────────
 
             SystemClock.sched(trp.totalDur - trp.endDropBefore, {
-                { "\n─── Duo — P2–P4 dropped. Input + P1 only.".postln; }.defer;
-                [1, 2, 3].do { |i| trp.stopPartner.(i) };
+                if(trp.alive, {
+                    { "\n─── Duo — P2–P4 dropped. Input + P1 only.".postln; }.defer;
+                    [1, 2, 3].do { |i| trp[\stopPartner].(i) };
+                });
                 nil
             });
 
             // ── Hard stop ────────────────────────────────────────────────────
 
             SystemClock.sched(trp.totalDur, {
-                { "Tryphon — hard stop.".postln; }.defer;
-                OSCdef(\trpFirstNote).free;
-                trp.routines.do { |r| if(r.notNil, { r.stop }) };
-                trp.bufs.do(_.free);
-                trp.mixBus.free;
-                s.freeAll;
+                if(trp.alive, {
+                    { "Tryphon — hard stop.".postln; }.defer;
+                    trp.alive = false;
+                    OSCdef(\trpFirstNote).free;
+                    trp.routines.do { |r| if(r.notNil, { r.stop }) };
+                    s.freeAll;
+                    // Buffers and bus are freed server-side by s.freeAll.
+                    // Block 3 handles SC language cleanup.
+                });
                 nil
             });
 
@@ -428,10 +444,11 @@ s.waitForBoot({
 // BLOCK 3 — STOP (Cmd+Return to end cleanly)
 // ─────────────────────────────────────────────────────────────────────────────
 (
+~trp.alive = false;
 OSCdef(\trpFirstNote).free;
 ~trp.routines.do { |r| if(r.notNil, { r.stop }) };
-~trp.bufs.do(_.free);
-~trp.mixBus.free;
+if(~trp.bufs.notNil, { ~trp.bufs.do { |b| if(b.notNil, { b.free }) } });
+if(~trp.mixBus.notNil, { ~trp.mixBus.free });
 s.freeAll;
 "Tryphon — stopped.".postln;
 )
