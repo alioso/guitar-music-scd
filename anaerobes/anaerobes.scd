@@ -240,26 +240,29 @@ s.waitForBoot({
             if(doPlay.not, {
                 result = (play: false, restBeats: (ana.restDurs[ana.restWeights.windex]) * 1.0);
             }, {
+                var candidates, biased, lastMidi, intervalWeights, weights, chosenMidi, bufs;
+                var durBeats, beatDur, ring, dec, amp;
+
                 // Candidates in register range
-                var candidates = libKeys.select { |m|
+                candidates = libKeys.select { |m|
                     (m >= partner[\regLow]) && (m <= partner[\regHigh])
                 };
                 if(candidates.isEmpty) { candidates = libKeys };
 
                 // Filter by harmonic bias if enough matches
-                var biased = candidates.select { |m| partner[\currentBias].includes(m % 12) };
+                biased = candidates.select { |m| partner[\currentBias].includes(m % 12) };
                 if(biased.size >= 2) { candidates = biased };
 
                 // Avoid immediate repetition
-                var lastMidi = partner[\lastMidi];
+                lastMidi = partner[\lastMidi];
                 if(lastMidi.notNil && (candidates.size > 1), {
                     candidates = candidates.reject { |m| m == lastMidi };
                 });
 
                 // Interval weighting
-                var intervalWeights = [0.0, 1.8, 1.6, 1.4, 0.9, 0.7, 0.5,
-                                       0.5, 0.6, 0.4, 0.3, 0.3, 0.8, 0.3, 0.2, 0.2, 0.1];
-                var weights = if(lastMidi.notNil, {
+                intervalWeights = [0.0, 1.8, 1.6, 1.4, 0.9, 0.7, 0.5,
+                                   0.5, 0.6, 0.4, 0.3, 0.3, 0.8, 0.3, 0.2, 0.2, 0.1];
+                weights = if(lastMidi.notNil, {
                     candidates.collect { |m|
                         intervalWeights.at((m - lastMidi).abs.min(16))
                     }
@@ -268,26 +271,26 @@ s.waitForBoot({
                 });
                 if(weights.sum <= 0) { weights = Array.fill(candidates.size, 1.0) };
 
-                var chosenMidi = candidates[weights.windex];
-                var bufs       = lib[chosenMidi];
+                chosenMidi = candidates[weights.windex];
+                bufs       = lib[chosenMidi];
 
                 if(bufs.isNil || bufs.isEmpty, {
                     result = (play: false, restBeats: 1.0);
                 }, {
                     // Duration
-                    var durBeats = if(ana.rhythmLock, {
+                    durBeats = if(ana.rhythmLock, {
                         1.0
                     }, {
                         ana.durations[partner[\rhythmWeights].windex]
                     });
-                    var beatDur = TempoClock.default.beatDur;
+                    beatDur = TempoClock.default.beatDur;
 
                     // Envelope decay
-                    var ring = 1.0.rand < partner[\ringProb];
-                    var dec  = if(ring, { durBeats * beatDur * 0.90 }, { 0.15 });
+                    ring = 1.0.rand < partner[\ringProb];
+                    dec  = if(ring, { durBeats * beatDur * 0.90 }, { 0.15 });
 
                     // Dynamic
-                    var amp = ana.groupAmp * partner[\ampBase] * ana.partnerAmp * rrand(0.75, 1.0);
+                    amp = ana.groupAmp * partner[\ampBase] * ana.partnerAmp * rrand(0.75, 1.0);
 
                     partner[\lastMidi] = chosenMidi;
 
@@ -310,7 +313,7 @@ s.waitForBoot({
 
         ana.routines[partnerIdx] = Routine({
             loop {
-                var d = ana.decide.(partnerIdx);
+                var d = ana[\decide].(partnerIdx);
                 if(d[\play], {
                     Synth(\anaHit, [
                         out:    busIdx,
@@ -477,7 +480,7 @@ s.waitForBoot({
             // Partner entries
             ana.partnerEntryTimes.do { |t, i|
                 SystemClock.sched(t, {
-                    ana.startPartner.(i);
+                    ana[\startPartner].(i);
                     nil
                 });
             };
@@ -497,9 +500,9 @@ s.waitForBoot({
 
             // Coord 2: decelerando cue (T=225s)
             SystemClock.sched(ana.coordTimes[2], {
-                ana.playCue.(\slowDown);
+                ana[\playCue].(\slowDown);
                 SystemClock.sched(TempoClock.default.beatDur * 16, {
-                    ana.tempoRamp.(ana.decelTargetBpm, ana.decelOverBars);
+                    ana[\tempoRamp].(ana.decelTargetBpm, ana.decelOverBars);
                     nil
                 });
                 nil
@@ -507,7 +510,7 @@ s.waitForBoot({
 
             // Harmonic shift: voice cue then mute + seed Library B
             SystemClock.sched(ana.shiftCueTime, {
-                ana.playCue.(\newHarmony);
+                ana[\playCue].(\newHarmony);
                 SystemClock.sched(TempoClock.default.beatDur * 16, {
                     { "Dry muted. Seeding Library B...".postln; }.defer;
                     ana.dryMuted   = true;
@@ -526,8 +529,8 @@ s.waitForBoot({
                         ana.activeLib = ana.libB;
                         ana.dryMuted  = false;
                         ana.drySyn.set(\amp, ana.dryAmp);
-                        ana.playCue.(\harmonyNow);
-                        ana.updateBias.(newBias);
+                        ana[\playCue].(\harmonyNow);
+                        ana[\updateBias].(newBias);
                         { "Library B active. Bias: %".format(newBias).postln; }.defer;
                         nil
                     });
@@ -549,9 +552,9 @@ s.waitForBoot({
 
             // Accelerando cue (T=370s)
             SystemClock.sched(ana.accelCueTime, {
-                ana.playCue.(\speedUp);
+                ana[\playCue].(\speedUp);
                 SystemClock.sched(TempoClock.default.beatDur * 16, {
-                    ana.tempoRamp.(ana.accelTargetBpm, ana.accelOverBars);
+                    ana[\tempoRamp].(ana.accelTargetBpm, ana.accelOverBars);
                     nil
                 });
                 nil
@@ -559,11 +562,11 @@ s.waitForBoot({
 
             // Return to Library A (T=407s)
             SystemClock.sched(ana.returnCueTime, {
-                ana.playCue.(\returning);
+                ana[\playCue].(\returning);
                 SystemClock.sched(TempoClock.default.beatDur * 16, {
                     ana.activeLib = ana.libA;
                     ana.recordLib = ana.libA;
-                    ana.updateBias.(ana.harmonicBias);
+                    ana[\updateBias].(ana.harmonicBias);
                     { "Library A active.".postln; }.defer;
                     nil
                 });
@@ -579,15 +582,16 @@ s.waitForBoot({
 
             // End cue (T = totalDur - 16 beats)
             SystemClock.sched(ana.totalDur - (TempoClock.default.beatDur * 16), {
-                ana.playCue.(\endSoon);
+                ana[\playCue].(\endSoon);
                 nil
             });
 
             // Final bar: stop routines, each partner plays one long note with 1-bar fade
             SystemClock.sched(ana.totalDur, {
+                var barDurNow;
                 { "Final bar.".postln; }.defer;
-                4.do { |i| ana.stopPartner.(i) };
-                var barDurNow = TempoClock.default.beatDur * 4;
+                4.do { |i| ana[\stopPartner].(i) };
+                barDurNow = TempoClock.default.beatDur * 4;
                 4.do { |i|
                     var lib     = ana.activeLib;
                     var partner = ana.partners[i];
@@ -630,9 +634,10 @@ s.waitForBoot({
 
         // ── Ongoing note capture ──────────────────────────────────────────────
         if(ana.firstFired && ((now - ana.lastOnsetTime) > ana.onsetRefractory), {
+            var buf, midiF;
             ana.lastOnsetTime = now;
-            var buf   = ana.nextBuf.();
-            var midiF = if((hasFreq > 0.5) && (freq > 40) && (freq < 3000), {
+            buf   = ana[\nextBuf].();
+            midiF = if((hasFreq > 0.5) && (freq > 40) && (freq < 3000), {
                 ((freq / 440).log2 * 12 + 69).round.asInteger
             }, { nil });
 
@@ -640,7 +645,7 @@ s.waitForBoot({
 
             if(midiF.notNil, {
                 SystemClock.sched(ana.captureDur + 0.05, {
-                    ana.addToLib.(buf, midiF, ana.recordLib);
+                    ana[\addToLib].(buf, midiF, ana.recordLib);
                     if(ana.recordLib === ana.libB, {
                         ana.libBPitches = ana.libBPitches.add(midiF % 12);
                     });

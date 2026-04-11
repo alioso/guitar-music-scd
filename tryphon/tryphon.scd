@@ -34,7 +34,7 @@ REQUIRES sc3-plugins note in README; master uses GVerb like other pieces.
     bpm:     80,
     recBars: 4,
 
-    partnerAmp: 0.13,   // per spawned slice; 4 voices × ~2 overlapping = ~8 simultaneous
+    partnerAmp: 0.17,   // per spawned slice; 4 voices × ~2 overlapping = ~8 simultaneous
     dryAmp:     0.32,
 
     // Master
@@ -50,6 +50,10 @@ REQUIRES sc3-plugins note in README; master uses GVerb like other pieces.
 
     clickOn:      true,
     clickOutChan: 2,
+
+    // Live-input processing voice (P5) — separate circular buffer, random effects
+    liveAmp:      0.20,   // amplitude; dynamics come directly from your playing
+    liveBufSecs:  8.0,    // how many seconds of recent input are kept
 
     // Per-voice drifting rhythm — two LFOs per voice, no euclidean math.
     // stepMul:    base tempo vs global 16th (irrational → voices never realign)
@@ -87,12 +91,16 @@ s.waitForBoot({
     var bufFrames = (s.sampleRate * trp.loopDur).ceil.asInteger;
 
     trp.bufs = 3.collect { Buffer.alloc(s, bufFrames, 1) };
+    // Circular live buffer — always contains the most recent liveBufSecs of input
+    trp.liveBuf     = Buffer.alloc(s, (s.sampleRate * trp.liveBufSecs).ceil.asInteger, 1);
     trp.recFinished = [nil, nil, nil];
     trp.recSyns     = [nil, nil, nil];
     trp.routines    = [nil, nil, nil, nil];
     trp.partnerSyns = [nil, nil, nil, nil];
     trp.mixBus      = Bus.audio(s, 2);
     trp.partnerT0   = [0, 0, 0, 0];
+    trp.liveRoutine = nil;
+    trp.liveRecSyn  = nil;
 
     s.sync;
 
@@ -199,6 +207,30 @@ s.waitForBoot({
         Out.ar(out, Pan2.ar(sig * env * amp, pan));
     }).add;
 
+    // Continuously writes guitar input into circular buffer (loop:1 = overwrite)
+    SynthDef(\trpLiveRec, { |bufnum|
+        RecordBuf.ar(SoundIn.ar(0), bufnum, recLevel: 1.0, preLevel: 0.0, loop: 1);
+    }).add;
+
+    // Live-input processing: pitch (via rate), reverse, and saturation.
+    // startPos/endPos define read direction — reverse = endPos < startPos.
+    // dur = numFrames/sampleRate/rate so slower sweep = lower pitch.
+    SynthDef(\trpLiveProc, { |out=0, bufnum=0, startPos=0.0, endPos=22050.0, dur=0.75,
+        satAmt=0.0, amp=0.18, pan=0.0|
+        var nFrames  = BufFrames.ir(bufnum);
+        var pos      = Line.ar(startPos, endPos, dur) % nFrames;
+        var sig      = BufRd.ar(1, bufnum, pos, 1, 4);
+        var gain     = 1 + (satAmt * 5);       // tanh drive
+        var sat_sig  = (sig * gain).tanh / gain.sqrt;  // compensated soft-clip
+        var out_sig  = sig + ((sat_sig - sig) * satAmt);
+        var releaseT = 0.25.min(dur * 0.35);
+        var attackT  = 0.03.min(dur * 0.08);
+        var env      = EnvGen.kr(
+            Env.linen(attackT, (dur - attackT - releaseT).max(0.001), releaseT, 1, \sine),
+            doneAction: 2);
+        Out.ar(out, Pan2.ar(out_sig * env * amp, pan));
+    }).add;
+
     SynthDef(\trpDry, { |out=0, amp=0.58|
         Out.ar(out, (SoundIn.ar(0) * amp).dup);
     }).add;
@@ -230,7 +262,9 @@ s.waitForBoot({
     trp.grpDry    = Group.after(trp.grpVoice);
     trp.grpMaster = Group.after(trp.grpDry);
 
-    trp.detectSyn = Synth(\trpDetect, [thresh: trp.threshold], trp.grpRec);
+    trp.detectSyn  = Synth(\trpDetect, [thresh: trp.threshold], trp.grpRec);
+    // Live circular recorder starts immediately — needs 8s of material before P5 enters
+    trp.liveRecSyn = Synth(\trpLiveRec, [bufnum: trp.liveBuf], trp.grpRec);
     trp.drySyn    = Synth(\trpDry,
         [out: trp.mixBus.index, amp: trp.dryAmp], trp.grpDry);
     trp.masterSyn = Synth(\trpMaster, [
@@ -248,6 +282,52 @@ s.waitForBoot({
     trp.firstFired = false;
     trp.alive      = true;
 
+    // Live processing voice (P5): reads from circular live buffer, random effects.
+    // Fires at exponentially-distributed random intervals (0.4–9s) → never a delay.
+    // Effects: forward, reverse, down-4th (5 st), down-5th (7 st), down-octave,
+    //          reverse+octave, and random saturation combos.
+    trp.startLive = {
+        var lBuf    = trp.liveBuf;
+        var outSlot = [trp.mixBus.index];
+        var ampSlot = [trp.liveAmp];
+        var sr      = s.sampleRate;
+
+        trp.liveRoutine = Routine({
+            var nf, rPos, effect, rate, rev, sat, startPos, endPos, dur, pan;
+            while { ~trp.alive } {
+                exprand(0.4, 9.0).wait;  // exponential = more short gaps, rare long silences
+                effect = #[\fwd, \rev, \down4, \down5, \down8, \rev8, \sat].choose;
+                nf     = (rrand(0.2, 1.8) * sr).asInteger;
+                rPos   = ((lBuf.numFrames - nf).max(1) * 1.0.rand).asInteger;
+                rate   = 1.0; rev = false; sat = 0.0;
+                case
+                { effect == \fwd  } { /* defaults */ }
+                { effect == \rev  } { rev = true }
+                { effect == \down4 } { rate = 2.0 ** (-5.0/12) }           // down a 4th
+                { effect == \down5 } { rate = 2.0 ** (-7.0/12) }           // down a 5th
+                { effect == \down8 } { rate = 0.5 }                         // down an octave
+                { effect == \rev8  } { rate = 0.5; rev = true; sat = 0.15 } // reverse octave
+                { true } { rate = rrand(0.45, 1.3); rev = (1.0.rand < 0.35); sat = rrand(0.25, 0.65) };
+                startPos = if(rev, { rPos + nf - 1 }, { rPos }).asFloat;
+                endPos   = if(rev, { rPos },           { rPos + nf - 1 }).asFloat;
+                dur      = (nf / sr / rate).max(0.05);
+                pan      = 1.0.rand2;
+                Synth(\trpLiveProc, [
+                    out:      outSlot[0],
+                    bufnum:   lBuf.bufnum,
+                    startPos: startPos,
+                    endPos:   endPos,
+                    dur:      dur,
+                    satAmt:   sat,
+                    amp:      ampSlot[0],
+                    pan:      pan,
+                ], trp.grpVoice);
+            };
+        });
+        { trp.liveRoutine.play(SystemClock) }.defer(0.001);
+        { "  P5 live proc — started".postln; }.defer;
+    };
+
     OSCdef(\trpFirstNote, { |msg|
         if(trp.firstFired.not, {
             trp.firstFired = true;
@@ -262,6 +342,14 @@ s.waitForBoot({
                     trp.recFinished[0] = Main.elapsedTime;
                     { "Loop 1 ready — strata build...".postln; }.defer;
                     trp[\startPartner].(0, 0);
+                    // P5 enters 30s after full bed (full bed = loopDur + buildStep×3 from first note)
+                    SystemClock.sched(trp.buildStep * 3 + 30, {
+                        if(trp.alive, {
+                            trp[\startLive].();
+                            { "P5 live proc — entering.".postln; }.defer;
+                        });
+                        nil
+                    });
                     SystemClock.sched(trp.buildStep, { if(trp.alive, { trp[\startPartner].(1, 0) }); nil });
                     SystemClock.sched(trp.buildStep * 2, { if(trp.alive, { trp[\startPartner].(2, 0) }); nil });
                     SystemClock.sched(trp.buildStep * 3, {
@@ -340,10 +428,13 @@ s.waitForBoot({
                     { "Tryphon — hard stop.".postln; }.defer;
                     trp.alive = false;
                     OSCdef(\trpFirstNote).free;
+                    if(trp.liveRoutine.notNil, { trp.liveRoutine.stop; trp.liveRoutine = nil });
                     Routine({
                         0.35.wait;
                         trp.partnerSyns.do { |syn| if(syn.notNil, { syn.free }) };
                         trp.bufs.do { |b| if(b.notNil, { b.free }) };
+                        if(trp.liveBuf.notNil, { trp.liveBuf.free; trp.liveBuf = nil });
+                        if(trp.liveRecSyn.notNil, { trp.liveRecSyn.free; trp.liveRecSyn = nil });
                         if(trp.mixBus.notNil, { trp.mixBus.free });
                         s.freeAll;
                         trp.routines = [nil, nil, nil, nil];
@@ -371,10 +462,13 @@ s.waitForBoot({
 (
 ~trp.alive = false;
 OSCdef(\trpFirstNote).free;
+if(~trp.liveRoutine.notNil, { ~trp.liveRoutine.stop; ~trp.liveRoutine = nil });
 Routine({
     0.35.wait;
     if(~trp.partnerSyns.notNil, { ~trp.partnerSyns.do { |s| if(s.notNil, { s.free }) } });
     if(~trp.bufs.notNil, { ~trp.bufs.do { |b| if(b.notNil, { b.free }) } });
+    if(~trp.liveBuf.notNil, { ~trp.liveBuf.free });
+    if(~trp.liveRecSyn.notNil, { ~trp.liveRecSyn.free });
     if(~trp.mixBus.notNil, { ~trp.mixBus.free });
     s.freeAll;
     ~trp.routines = [nil, nil, nil, nil];
