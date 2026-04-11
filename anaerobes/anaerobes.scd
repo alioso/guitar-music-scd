@@ -34,8 +34,8 @@ REQUIRES sc3-plugins for JPverb (brew install sc3-plugins)
     totalDur: 480,      // 8 min from first note
 
     // Partner entry times from first note (seconds)
-    // P1 at 90s, P2 at 120s, P3 at 150s, P4 at 180s
-    partnerEntryTimes: [90, 120, 150, 180],
+    // P1 at 45s, P2 at 70s, P3 at 95s, P4 at 120s
+    partnerEntryTimes: [45, 70, 95, 120],
 
     // Coordination events from first note (seconds)
     // [0]=180 group attack (coincides with P4 entry)
@@ -69,7 +69,7 @@ REQUIRES sc3-plugins for JPverb (brew install sc3-plugins)
         (regLow:40, regHigh:60, rhythmWeights:[3,4,2,0,1,0,0], ringProb:0.85, playProb:0.40, ampBase:0.90, pan:-0.6),
         (regLow:52, regHigh:69, rhythmWeights:[1,3,4,1,2,1,0], ringProb:0.65, playProb:0.55, ampBase:0.85, pan:-0.25),
         (regLow:62, regHigh:79, rhythmWeights:[0,1,3,3,3,3,1], ringProb:0.50, playProb:0.60, ampBase:0.80, pan:0.25),
-        (regLow:69, regHigh:90, rhythmWeights:[0,0,2,2,4,3,2], ringProb:0.35, playProb:0.75, ampBase:0.75, pan:0.60),
+        (regLow:69, regHigh:90, rhythmWeights:[0,0,1,1,3,4,4], ringProb:0.20, playProb:0.95, ampBase:1.0,  pan:0.60),
     ],
 
     // Library
@@ -80,7 +80,7 @@ REQUIRES sc3-plugins for JPverb (brew install sc3-plugins)
     onsetRefractory:  0.25,   // min seconds between captures
 
     // Mix levels
-    partnerAmp:   1.0,
+    partnerAmp:   1.5,
     dryAmp:       0.55,
     reverbMix:    0.16,
     reverbDecay:  3.8,
@@ -668,10 +668,11 @@ s.waitForBoot({
     "".postln;
     "Timeline from first note:".postln;
     "  0:00–1:30  Library A seeding — play wide range of notes".postln;
-    "  1:30       P1 enters (low, long, contemplative)".postln;
-    "  2:00       P2 enters (mid-low, melodic)".postln;
-    "  2:30       P3 enters (mid-high, restless)".postln;
-    "  3:00       Coord 1 — group attack, P4 enters (high, energetic)".postln;
+    "  0:45       P1 enters (low, long, contemplative)".postln;
+    "  1:10       P2 enters (mid-low, melodic)".postln;
+    "  1:35       P3 enters (mid-high, restless)".postln;
+    "  2:00       P4 enters (high, dense, dark horse)".postln;
+    "  3:00       Coord 1 — group attack".postln;
     "  3:30       Coord 2 — forte swell, groupAmp → 1.0".postln;
     "  3:45       Voice: slow down in four bars → decelerando (66 BPM over 16 bars)".postln;
     "  4:20       Voice: record new harmony in four bars".postln;
