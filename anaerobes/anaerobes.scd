@@ -80,7 +80,7 @@ REQUIRES sc3-plugins for JPverb (brew install sc3-plugins)
     onsetRefractory:  0.25,   // min seconds between captures
 
     // Mix levels
-    partnerAmp:   0.26,
+    partnerAmp:   1.0,
     dryAmp:       0.55,
     reverbMix:    0.16,
     reverbDecay:  3.8,
@@ -195,7 +195,7 @@ s.waitForBoot({
         var startTempo = TempoClock.default.tempo;
         var endTempo   = targetBpm / 60;
         var totalBeats = overBars * 4;
-        Routine({
+        ana.rampRoutine = Routine({
             totalBeats.do { |i|
                 var t        = (i + 1) / totalBeats;
                 var newTempo = startTempo + ((endTempo - startTempo) * t);
@@ -320,7 +320,7 @@ s.waitForBoot({
                         bufnum: d[\buf].bufnum,
                         amp:    d[\amp],
                         pan:    pan,
-                        atk:    0.005,
+                        atk:    0.04,
                         dec:    d[\dec],
                         dist:   d[\dist],
                     ], grp);
@@ -608,7 +608,7 @@ s.waitForBoot({
                                 bufnum: bufs.choose.bufnum,
                                 amp:    ana.groupAmp * partner[\ampBase] * ana.partnerAmp,
                                 pan:    partner[\pan],
-                                atk:    0.005,
+                                atk:    0.04,
                                 dec:    barDurNow - 0.1,
                                 dist:   0.0,
                             ], ana.grpVoice);
@@ -693,6 +693,7 @@ s.waitForBoot({
 (
 OSCdef(\anaOnset).free;
 ~ana.routines.do { |r| if(r.notNil, { r.stop }) };
+if(~ana.rampRoutine.notNil, { ~ana.rampRoutine.stop });
 ~ana.bufPool.do(_.free);
 ~ana.cueBufs.do(_.free);
 ~ana.mixBus.free;
