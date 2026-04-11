@@ -30,9 +30,10 @@ BED (P1–P4 — the ocean)
   During feed windows only: your pitches slowly nudge the bed (Lag 45s).
 
 COMPANION (the ghost guitarist)
-  Continuous tape-loop delay, 1–6s, slowly wandering.
+  Granular cloud: live input written to a looping buffer, TGrains reads it back
+  with wandering position, density (6–20 grains/s), grain duration, and pitch scatter.
   Pans around the stereo field independently.
-  Short room reverb — sounds present, like a second guitarist in the room.
+  Short room reverb — textural rather than a straight echo.
   Starts when the bed locks. Completely autonomous: no phrase detection.
 */
 
@@ -66,11 +67,10 @@ COMPANION (the ghost guitarist)
     motiveReverbDecay:  4.0,
     motiveReverbDamp:   0.30,
 
-    // Companion — tape-loop delay, self-contained, direct to hardware
+    // Companion — granular cloud, self-contained, direct to hardware
     // Starts when bed locks (not before — silent during calibration)
-    companionAmp:      0.32,
-    companionDelayMin: 1.0,
-    companionDelayMax: 6.0,
+    companionAmp:     0.38,
+    companionBufSecs: 8.0,
 
     threshold:     0.015,
 );
@@ -191,18 +191,33 @@ s.waitForBoot({
         Out.ar(out, (SoundIn.ar(0) * amp).dup);
     }).add;
 
-    // Companion — tape-loop delay, outputs directly to hardware (not through buses).
+    // Companion — granular cloud, outputs directly to hardware (not through buses).
     // Starts silent (amp=0); activated from startBed when the piece is running.
-    // DelayL handles all timing internally — no language-side state.
+    // BufWr records live input; TGrains reads it back as a scattered cloud.
     SynthDef(\chCompanion, {
-        |out=0, amp=0.0, delayMin=1.0, delayMax=6.0|
-        var sig, delay, echo, pan, verb, mix;
-        sig   = SoundIn.ar(0);
-        delay = LFNoise1.kr(0.04).range(delayMin, delayMax);
-        echo  = DelayL.ar(sig, delayMax + 0.5, delay);
-        pan   = LFNoise1.kr(0.025).range(-0.75, 0.75);
-        verb  = GVerb.ar(echo, roomsize: 25, revtime: 2.2, damping: 0.45, drylevel: 0);
-        mix   = (Pan2.ar(echo, pan) * 0.55) + ([verb[0], verb[1]] * 0.45);
+        |out=0, amp=0.0, bufnum=0|
+        var sig, density, grainDur, rate, pos, grainPan, cloud, verb, mix;
+        sig = SoundIn.ar(0);
+        // Write live guitar continuously into the buffer
+        BufWr.ar(sig, bufnum, Phasor.ar(0, BufRateScale.kr(bufnum), 0, BufFrames.kr(bufnum)));
+        // Granular readout — all parameters wander slowly and independently
+        density  = LFNoise1.kr(0.07).range(6, 20);
+        grainDur = LFNoise1.kr(0.04).range(0.06, 0.40);
+        rate     = LFNoise1.kr(0.02).range(0.92, 1.08);
+        pos      = LFNoise1.kr(0.02).range(0.05, 0.95) * BufDur.kr(bufnum);
+        grainPan = LFNoise1.kr(0.035).range(-0.85, 0.85);
+        cloud = TGrains.ar(2,
+            trigger:   Impulse.ar(density),
+            bufnum:    bufnum,
+            rate:      rate,
+            centerPos: pos,
+            dur:       grainDur,
+            pan:       grainPan,
+            amp:       0.15,
+            interp:    2
+        );
+        verb = GVerb.ar(cloud[0], roomsize: 35, revtime: 3.5, damping: 0.4, drylevel: 0);
+        mix  = (cloud * 0.55) + ([verb[0], verb[1]] * 0.45);
         Out.ar(out, (mix * Lag.kr(amp, 8.0)).clip2(1.0));
     }).add;
 
@@ -225,6 +240,12 @@ s.waitForBoot({
         var wet  = [verb[0], verb[1]];
         Out.ar(out, ((dry * (1 - mix)) + (wet * mix)).clip2(1.0));
     }).add;
+
+    s.sync;
+
+    // ── Companion buffer ──────────────────────────────────────────────────────
+    ch.companionBuf = Buffer.alloc(s,
+        (s.sampleRate * ch.companionBufSecs).ceil.asInteger, 1);
 
     s.sync;
 
@@ -259,10 +280,9 @@ s.waitForBoot({
 
     // Companion starts SILENT — activated by startBed when bed locks
     ch.companionSyn = Synth(\chCompanion, [
-        out:      0,
-        amp:      0.0,
-        delayMin: ch.companionDelayMin,
-        delayMax: ch.companionDelayMax,
+        out:    0,
+        amp:    0.0,
+        bufnum: ch.companionBuf.bufnum,
     ], ch.grpComp);
 
     ch.bedVerbSyn = Synth(\chBedVerb, [
@@ -294,8 +314,8 @@ s.waitForBoot({
         ch.companionSyn.set(\amp, ch.companionAmp);
         "BED LOCKED → % / % / % Hz".format(
             freqs[0].round(0.1), freqs[1].round(0.1), freqs[2].round(0.1)).postln;
-        "COMPANION active — echo % –% s".format(
-            ch.companionDelayMin, ch.companionDelayMax).postln;
+        "COMPANION active — granular cloud (% s buffer)".format(
+            ch.companionBufSecs).postln;
     };
 
     // ── OSC handlers ──────────────────────────────────────────────────────────
@@ -400,8 +420,8 @@ s.waitForBoot({
     "Chimera — running. Play guitar when ready.".postln;
     "  Calibration: % harmonics in first % s".format(ch.calibNotes, ch.calibDur).postln;
     "  Feed windows: 2:30–3:00 | 5:30–6:00 | 8:00–8:30".postln;
-    "  Companion: echo % –% s, starts when bed locks".format(
-        ch.companionDelayMin, ch.companionDelayMax).postln;
+    "  Companion: granular cloud (% s buffer), starts when bed locks".format(
+        ch.companionBufSecs).postln;
     "  Fade at 8:30 | Silence at 9:00".postln;
 });
 )
@@ -416,6 +436,7 @@ OSCdef(\chFirstNote).free;
 OSCdef(\chPitch).free;
 ~ch.bedBus.free;
 ~ch.motiveBus.free;
+~ch.companionBuf.free;
 s.freeAll;
 "Chimera — stopped.".postln;
 )
