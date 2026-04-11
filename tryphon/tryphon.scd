@@ -65,8 +65,10 @@ REQUIRES sc3-plugins for JPverb (brew install sc3-plugins)
     pans: [-0.7, -0.3, 0.3, 0.7],
 
     // Mix levels
-    partnerAmp: 0.22,   // per hit — overlapping washes accumulate
-    dryAmp:     0.58,   // live guitar passthrough level
+    partnerAmp:  0.14,  // per voice — 4 voices × 0.14 + dryAmp 0.30 = 0.86 max, safe
+    releaseTime: 2.0,   // envelope release when gate→0. Must exceed max gap in any pattern.
+                        // P1 E(3,16) max gap = 5 steps × 0.1875s = 0.9375s < 2.0 ✓
+    dryAmp:      0.30,  // live guitar passthrough
 
     // Master reverb (JPverb — subtle, not too wet)
     reverbMix:   0.15,
@@ -121,8 +123,9 @@ s.waitForBoot({
     // so no buffer is ever overwritten while in active use.
     trp.bufs      = 3.collect { Buffer.alloc(s, bufFrames, 1) };
     trp.bufStart  = [0.0, 0.0, 0.0];   // Main.elapsedTime when each recording started
-    trp.recSyns   = [nil, nil, nil];
-    trp.routines  = [nil, nil, nil, nil];
+    trp.recSyns    = [nil, nil, nil];
+    trp.routines   = [nil, nil, nil, nil];
+    trp.partnerSyns = [nil, nil, nil, nil];
     trp.mixBus    = Bus.audio(s, 2);
 
     s.sync;
@@ -143,43 +146,39 @@ s.waitForBoot({
     // Starts (or restarts) one partner: spawns a Routine stepping through its
     // euclidean pattern at 16th-note rate, triggering \trpHit on each '1'.
     //
-    // Buffer read position is anchored to the current loop phase at hit time,
-    // so all partners on the same cycle buffer stay temporally coherent —
-    // a partner that enters late reads the "right" moment in the loop.
+    // Each partner is a single persistent Synth reading the loop buffer.
+    // The euclidean pattern sets gate=1 (attack/sustain) or gate=0 (release)
+    // every 16th-note step. No Synth spawning → no amplitude stacking.
+    // Each partner reads from a different quarter of the buffer for harmonic variety.
     trp.startPartner = { |partnerIdx, cycleIdx|
         var spec     = trp.patterns[partnerIdx][cycleIdx];
         var k        = spec[0];
         var n        = spec[1];
         var pattern  = trp[\euclidean].(k, n);
-        var bufnum   = trp.bufs[cycleIdx].bufnum;
-        var amp      = trp.partnerAmp;
-        var pan      = trp.pans[partnerIdx];
-        var hitDur   = trp.barDur;
+        var buf      = trp.bufs[cycleIdx];
+        var startPos = (buf.numFrames * partnerIdx / 4).asInteger;
         var stepDur  = trp.stepDur;
-        var loopDur  = trp.loopDur;
-        var busIdx   = trp.mixBus.index;
-        var grp      = trp.grpVoice;
+        var syn;
 
-        if(trp.routines[partnerIdx].notNil, {
-            trp.routines[partnerIdx].stop;
-        });
+        if(trp.routines[partnerIdx].notNil, { trp.routines[partnerIdx].stop });
+        if(trp.partnerSyns[partnerIdx].notNil, { trp.partnerSyns[partnerIdx].free });
+
+        syn = Synth(\trpPartner, [
+            out:         trp.mixBus.index,
+            bufnum:      buf.bufnum,
+            startPos:    startPos,
+            amp:         trp.partnerAmp,
+            pan:         trp.pans[partnerIdx],
+            gate:        0,
+            releaseTime: trp.releaseTime,
+        ], trp.grpVoice);
+        trp.partnerSyns[partnerIdx] = syn;
 
         trp.routines[partnerIdx] = Routine({
             var step = 0;
             loop {
-                if(trp.alive && (pattern[step % n] == 1), {
-                    // Read from the current position in the 4-bar loop
-                    var elapsed  = Main.elapsedTime - trp.bufStart[cycleIdx];
-                    var startPos = (elapsed % loopDur * s.sampleRate)
-                                       .asInteger.clip(0, bufFrames - 1);
-                    Synth(\trpHit, [
-                        out:      busIdx,
-                        bufnum:   bufnum,
-                        startPos: startPos,
-                        amp:      amp,
-                        pan:      pan,
-                        hitDur:   hitDur,
-                    ], grp);
+                if(trp.alive, {
+                    syn.set(\gate, pattern[step % n]);
                 });
                 stepDur.wait;
                 step = step + 1;
@@ -190,9 +189,17 @@ s.waitForBoot({
     };
 
     trp.stopPartner = { |partnerIdx|
+        var syn;
         if(trp.routines[partnerIdx].notNil, {
             trp.routines[partnerIdx].stop;
             trp.routines[partnerIdx] = nil;
+        });
+        // gate=0 → release tail plays out; explicit free after releaseTime (no doneAction)
+        if(trp.partnerSyns[partnerIdx].notNil, {
+            syn = trp.partnerSyns[partnerIdx];
+            syn.set(\gate, 0);
+            SystemClock.sched(trp.releaseTime + 0.2, { syn.free; nil });
+            trp.partnerSyns[partnerIdx] = nil;
         });
     };
 
@@ -213,16 +220,19 @@ s.waitForBoot({
         SendReply.kr(trig, '/trp/firstNote', amp);
     }).add;
 
-    // Per-euclidean-hit playback. Reads from startPos in the loop buffer,
-    // loop:1 so playback wraps cleanly if startPos is near the buffer end.
-    // 1-bar amplitude envelope (sine curve), self-frees after hitDur seconds.
-    SynthDef(\trpHit, {
-        |out=0, bufnum=0, startPos=0, amp=0.22, pan=0.0, hitDur=3.0|
-        var env = EnvGen.kr(
-            Env([0, 1, 1, 0], [0.005, hitDur * 0.83, hitDur * 0.17], curve: \sine),
-            doneAction: 2);
+    // Persistent partner voice. Reads the loop buffer continuously at rate 1.
+    // startPos staggers each partner's read position around the loop, giving
+    // each voice a different harmonic slice of the recording.
+    // gate=1 → attack; gate=0 → release → self-free (doneAction:2).
+    // releaseTime > any euclidean gap → Synth never accidentally frees mid-piece.
+    SynthDef(\trpPartner, {
+        |out=0, bufnum=0, startPos=0, amp=0.14, pan=0.0, gate=0, releaseTime=2.0|
         var sig = PlayBuf.ar(1, bufnum,
             BufRateScale.kr(bufnum), startPos: startPos, loop: 1);
+        var env = EnvGen.kr(
+            Env.asr(0.05, 1.0, releaseTime, curve: \sine),
+            gate, doneAction: 0);   // 0 = no auto-free; gate starts at 0 so ASR release
+                                    // would fire doneAction:2 immediately at creation
         Out.ar(out, Pan2.ar(sig * env * amp, pan));
     }).add;
 
@@ -231,13 +241,16 @@ s.waitForBoot({
         Out.ar(out, (SoundIn.ar(0) * amp).dup);
     }).add;
 
-    // Master: mix bus → GVerb → clip → hardware out
+    // Master: mix bus → GVerb → hardware out
+    // GVerb produces NaN with hot input (>1.0) and permanently silences output.
+    // Fix: clip to 0.7 before GVerb, Sanitize after to catch any residual NaN/Inf.
     SynthDef(\trpMaster, {
         |busIn=0, out=0, reverbMix=0.15, reverbDecay=3.5, reverbDamp=0.5|
         var dry  = In.ar(busIn, 2);
-        var verb = GVerb.ar(dry[0], roomsize: 30,
+        var safe = dry.clip2(0.7);             // protect GVerb from hot signals
+        var verb = GVerb.ar(safe[0], roomsize: 30,
             revtime: reverbDecay, damping: reverbDamp, drylevel: 0);
-        var wet  = [verb[0], verb[1]];
+        var wet  = Sanitize.ar([verb[0], verb[1]]);  // NaN/Inf → 0
         Out.ar(out, ((dry * (1 - reverbMix)) + (wet * reverbMix)).clip2(1.0));
     }).add;
 
@@ -414,6 +427,7 @@ s.waitForBoot({
                     trp.alive = false;
                     OSCdef(\trpFirstNote).free;
                     trp.routines.do { |r| if(r.notNil, { r.stop }) };
+                    trp.partnerSyns.do { |syn| if(syn.notNil, { syn.free }) };
                     s.freeAll;
                     // Buffers and bus are freed server-side by s.freeAll.
                     // Block 3 handles SC language cleanup.
@@ -447,6 +461,7 @@ s.waitForBoot({
 ~trp.alive = false;
 OSCdef(\trpFirstNote).free;
 ~trp.routines.do { |r| if(r.notNil, { r.stop }) };
+if(~trp.partnerSyns.notNil, { ~trp.partnerSyns.do { |syn| if(syn.notNil, { syn.free }) } });
 if(~trp.bufs.notNil, { ~trp.bufs.do { |b| if(b.notNil, { b.free }) } });
 if(~trp.mixBus.notNil, { ~trp.mixBus.free });
 s.freeAll;
