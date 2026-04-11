@@ -34,7 +34,7 @@ REQUIRES sc3-plugins note in README; master uses GVerb like other pieces.
     bpm:     80,
     recBars: 4,
 
-    partnerAmp: 0.09,   // per spawned slice; 4 voices × ~3 overlapping = ~12 simultaneous
+    partnerAmp: 0.13,   // per spawned slice; 4 voices × ~2 overlapping = ~8 simultaneous
     dryAmp:     0.32,
 
     // Master
@@ -51,51 +51,20 @@ REQUIRES sc3-plugins note in README; master uses GVerb like other pieces.
     clickOn:      true,
     clickOutChan: 2,
 
-    // ── Per-voice metadata (independent evolution) ──────────────────────────
-    // stepMul: base vs global 16th (≠1 ⇒ immediate polyrhythm vs grid)
-    // driftHz / driftDepth: breathing of the step interval (living tempo)
-    // evolveHz / evolveDepth: second slow LFO on top of stepMul
-    // mutateSec: how often this voice nudges k / rotation / stochastic bias
-    // patternMode: \euclid | \stoch | \blend
-    // stochHit: baseline hit chance per step when stoch/blend
-    // euclidByCycle: [[k,n], ...] for cycles 1..3
+    // Per-voice drifting rhythm — two LFOs per voice, no euclidean math.
+    // stepMul:    base tempo vs global 16th (irrational → voices never realign)
+    // driftHz/driftDepth:   LFO 1 — breathes the step interval (living tempo)
+    // evolveHz/evolveDepth: LFO 2 — breathes the hit probability (fills & spaces)
+    // hitProb:    base probability of firing on any step (drifts via evolve LFO)
     partnerVoices: [
-        (
-            pan: -0.75, readQuarter: 0,
-            stepMul: 1.0, driftHz: 0.055, driftDepth: 0.09,
-            evolveHz: 0.0027, evolveDepth: 0.045,
-            mutateSec: 16.0,
-            patternMode: \blend,
-            stochHit: 0.34,
-            euclidByCycle: [[3, 16], [4, 16], [5, 16]],
-        ),
-        (
-            pan: -0.25, readQuarter: 1,
-            stepMul: 1.063, driftHz: 0.048, driftDepth: 0.11,
-            evolveHz: 0.0038, evolveDepth: 0.052,
-            mutateSec: 21.0,
-            patternMode: \blend,
-            stochHit: 0.38,
-            euclidByCycle: [[4, 11], [5, 11], [7, 11]],
-        ),
-        (
-            pan: 0.25, readQuarter: 2,
-            stepMul: 0.94, driftHz: 0.062, driftDepth: 0.10,
-            evolveHz: 0.0044, evolveDepth: 0.048,
-            mutateSec: 13.0,
-            patternMode: \stoch,
-            stochHit: 0.42,
-            euclidByCycle: [[5, 9], [6, 9], [7, 9]],
-        ),
-        (
-            pan: 0.75, readQuarter: 3,
-            stepMul: 1.11, driftHz: 0.041, driftDepth: 0.12,
-            evolveHz: 0.0031, evolveDepth: 0.06,
-            mutateSec: 26.0,
-            patternMode: \euclid,
-            stochHit: 0.30,
-            euclidByCycle: [[6, 13], [7, 13], [9, 13]],
-        ),
+        (pan: -0.75, stepMul: 1.0,   driftHz: 0.055, driftDepth: 0.09,
+                     evolveHz: 0.0027, evolveDepth: 0.30, hitProb: 0.22),
+        (pan: -0.25, stepMul: 1.063, driftHz: 0.048, driftDepth: 0.11,
+                     evolveHz: 0.0038, evolveDepth: 0.28, hitProb: 0.28),
+        (pan:  0.25, stepMul: 0.94,  driftHz: 0.062, driftDepth: 0.10,
+                     evolveHz: 0.0044, evolveDepth: 0.32, hitProb: 0.25),
+        (pan:  0.75, stepMul: 1.11,  driftHz: 0.041, driftDepth: 0.12,
+                     evolveHz: 0.0031, evolveDepth: 0.35, hitProb: 0.20),
     ],
 );
 
@@ -127,140 +96,66 @@ s.waitForBoot({
 
     s.sync;
 
-    trp.euclidean = { |k, n|
-        var pattern = [], bucket = 0;
-        n.do {
-            bucket = bucket + k;
-            if(bucket >= n) { bucket = bucket - n; pattern = pattern.add(1) }
-            { pattern = pattern.add(0) };
-        };
-        pattern
-    };
-
-    // Loop playhead in frames (0 .. numFrames-1), synced to when recording ended.
-    // Integer buffer index only — nested Routines must not close over arg names
-    // like cycleIdx/partnerIdx: they can resolve via Event parent (~trp) and break.
-    trp.playheadFrames = { |bufIdx|
-        var bi, done, bf;
-        bi = case
-            { bufIdx.isKindOf(SimpleNumber) } { bufIdx.asInteger }
-            { bufIdx.isKindOf(ArrayedCollection) && (bufIdx.size > 0) } { bufIdx[0].asInteger }
-            { true } { 0 };
-        bi = bi.clip(0, 2);
-        done = trp.recFinished[bi];
-        bf = trp.bufs[bi].numFrames.max(1);
-        // No ^ (non-local return) — ^ from inside a Routine crashes with
-        // "Return from non-local block" because waitForBoot already returned.
-        if(done.isNil,
-            { 0 },
-            { (((Main.elapsedTime - done) / trp.loopDur).frac * bf).floor.asInteger.clip(0, bf - 1) }
-        )
-    };
-
     trp.startPartner = { |partnerIdx, cycleIdx|
-        var voice, spec, k, n, pat, rot, buf, qOff, mode, stoch;
-        var pIdx, cIdx, strataBufSlot, strataPartnerSlot, oldR, newR;
+        var voice, buf, pIdx, cIdx, oldR, newR;
         var mixBusSlot, bufNumSlot, stepDurSlot, ampSlot;
         pIdx = partnerIdx.asInteger.clip(0, 3);
         cIdx = cycleIdx.asInteger.clip(0, 2);
-        strataBufSlot = [cIdx];
-        strataPartnerSlot = [pIdx];
-        voice = trp.partnerVoices[pIdx].copy;
-        spec  = voice[\euclidByCycle][cIdx];
-        k     = spec[0];
-        n     = spec[1];
-        pat   = trp[\euclidean].(k, n).asArray;
-        rot   = (pIdx * 4 + (cIdx * 2)) % n;
-        pat   = pat.rotate(rot);
+        voice = trp.partnerVoices[pIdx];
         buf   = trp.bufs[cIdx];
-        qOff  = (buf.numFrames * (voice[\readQuarter] ? 0) / 4).asInteger;
-        mode  = (voice[\patternMode] ? \blend).asSymbol;
-        stoch = voice[\stochHit] ? 0.35;
-        mixBusSlot = [trp.mixBus.index];
-        bufNumSlot = [buf.bufnum];
+        mixBusSlot  = [trp.mixBus.index];
+        bufNumSlot  = [buf.bufnum];
         stepDurSlot = [trp.stepDur];
-        ampSlot = [trp.partnerAmp];
+        ampSlot     = [trp.partnerAmp];
 
         if(trp.routines[pIdx].notNil, {
             oldR = trp.routines[pIdx];
             trp.routines[pIdx] = nil;
             AppClock.sched(0.02, { if(oldR.isPlaying, { oldR.stop }); nil });
         });
-        if(trp.partnerSyns[pIdx].notNil, {
-            trp.partnerSyns[pIdx].free;
-            trp.partnerSyns[pIdx] = nil;
-        });
 
         trp.partnerT0[pIdx] = Main.elapsedTime;
 
-        // Never Routine.play(SystemClock) from inside SystemClock.sched (loop
-        // callback) — re-entrancy → "Tried to resume the running thread".
-        // .defer breaks the stack; then play is safe.
+        // .defer avoids re-entrancy when called from SystemClock.sched
         newR = Routine({
-            var step, nextMutate, kk, nn, pattern, st, slc, amp, pan, mulB;
-            var dh, dd, eh, ed, t0, now, dt, w, hit, ph, msec, nf, stFr;
-            step = 0;
-            nextMutate = Main.elapsedTime + (voice[\mutateSec] ? 18) * rrand(0.75, 1.25);
-            kk = k;
-            nn = n;
-            pattern = pat;
-            st = stoch;
-            slc = voice[\sliceSecs] ? trp.barDur;  // default = 1 bar (3s at 80 BPM)
-            amp = ampSlot[0];
-            pan = voice[\pan] ? 0;
-            mulB = voice[\stepMul] ? 1;
-            dh = voice[\driftHz] ? 0.05;
-            dd = voice[\driftDepth] ? 0.08;
-            eh = voice[\evolveHz] ? 0.003;
-            ed = voice[\evolveDepth] ? 0.05;
-            t0 = trp.partnerT0[strataPartnerSlot[0]];
+            var dh, dd, eh, ed, hp, mulB, slc, amp, pan, t0;
+            var now, dt, w, nf, stFr, prob;
+            dh   = voice[\driftHz]    ? 0.05;
+            dd   = voice[\driftDepth] ? 0.08;
+            eh   = voice[\evolveHz]   ? 0.003;
+            ed   = voice[\evolveDepth]? 0.30;
+            hp   = voice[\hitProb]    ? 0.25;
+            mulB = voice[\stepMul]    ? 1.0;
+            slc  = voice[\sliceSecs]  ? (trp.barDur / 4);  // 1 quarter note = natural note length
+            amp  = ampSlot[0];
+            pan  = voice[\pan] ? 0.0;
+            t0   = trp.partnerT0[pIdx];
+
             while { ~trp.alive } {
-                now = Main.elapsedTime;
-                dt = now - t0;
-                w = stepDurSlot[0] * mulB
-                    * (1 + (sin(2pi * dh * dt) * dd))
-                    * (1 + (sin(2pi * eh * dt) * ed));
-                hit = false;
-
-                if(now >= nextMutate, {
-                    msec = voice[\mutateSec] ? 18;
-                    nextMutate = now + msec * rrand(0.7, 1.3);
-                    kk = (kk + [-1, 0, 1].choose).clip(2, nn - 1);
-                    pattern = trp[\euclidean].(kk, nn).asArray.rotate(rrand(0, nn - 1));
-                    st = (st + rrand(-0.08, 0.08)).clip(0.12, 0.62);
-                });
-
-                case { mode == \euclid } {
-                    hit = pattern[step % nn] == 1;
-                }
-                { mode == \stoch } {
-                    hit = 1.0.rand < st;
-                }
-                { true } {
-                    hit = (pattern[step % nn] == 1) or: { 1.0.rand < st };
-                };
-
-                if(hit, {
-                    ph = (trp[\playheadFrames].(strataBufSlot) + qOff) % buf.numFrames.max(1);
-                    nf = (slc * s.sampleRate).asInteger.max(8);
-                    nf = min(nf, buf.numFrames - ph).max(8);
-                    stFr = ph;
+                now  = Main.elapsedTime;
+                dt   = now - t0;
+                // LFO 1: breathes the step interval — each voice has its own drifting tempo
+                w    = stepDurSlot[0] * mulB * (1 + (sin(2pi * dh * dt) * dd));
+                // LFO 2: breathes the hit probability — creates natural fills and spaces
+                prob = hp * (1 + (sin(2pi * eh * dt) * ed)).clip(0.3, 1.7);
+                if(1.0.rand < prob, {
+                    nf   = (slc * s.sampleRate).asInteger.max(8);
+                    stFr = ((buf.numFrames - nf).max(1) * 1.0.rand).asInteger;
                     Synth(\trpSlice, [
-                        out: mixBusSlot[0], bufnum: bufNumSlot[0],
-                        startFrame: stFr, numFrames: nf,
-                        amp: amp, pan: pan,
+                        out:        mixBusSlot[0],
+                        bufnum:     bufNumSlot[0],
+                        startFrame: stFr,
+                        numFrames:  nf,
+                        amp:        amp,
+                        pan:        pan,
                     ], trp.grpVoice);
                 });
-
                 w.max(0.02).wait;
-                step = step + 1;
             };
         });
         trp.routines[pIdx] = newR;
         { newR.play(SystemClock) }.defer(0.001);
-
-        { "  P% — strata on (cycle %) | mode %".format(
-            pIdx + 1, cIdx + 1, mode).postln; }.defer;
+        { "  P% — drifting (cycle %)".format(pIdx + 1, cIdx + 1).postln; }.defer;
     };
 
     trp.stopPartner = { |partnerIdx|
