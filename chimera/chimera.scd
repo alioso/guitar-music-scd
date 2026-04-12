@@ -47,7 +47,7 @@ COMPANION (the ghost guitarist)
     totalDur:    540,    // 9 min
     calibDur:     90,    // calibration window
     calibNotes:    6,    // unique pitch classes to lock bed
-    bedRiseSecs:  35,    // bed amplitude fade-in duration
+    bedRiseSecs:  55,    // bed amplitude fade-in duration
     feedWindows: [[150, 180], [330, 360], [480, 510]],
     fadeSec:     510,    // fade at 8:30
 
@@ -69,7 +69,7 @@ COMPANION (the ghost guitarist)
 
     // Companion — granular cloud, self-contained, direct to hardware
     // Starts when bed locks (not before — silent during calibration)
-    companionAmp:     0.38,
+    companionAmp:     0.65,
     companionBufSecs: 8.0,
 
     threshold:     0.015,
@@ -305,11 +305,25 @@ s.waitForBoot({
     // ── startBed ─────────────────────────────────────────────────────────────
     ch.startBed = {
         var freqs = ch.bedFreqs;
-        ch.bedSyns[0].set(\freq, freqs[0], \amp, ch.bedAmp);
-        ch.bedSyns[1].set(\freq, freqs[1], \amp, ch.bedAmp);
-        ch.bedSyns[2].set(\freq, freqs[2], \amp, ch.bedAmp);
-        // P4 bed: slightly detuned fifth, more restless character
-        ch.p4BedSyn.set(\freq, freqs[1] * 1.01, \amp, ch.p4Amp);
+        // Step 1: snap to correct pitches while still silent (freqLag → 0, amp still 0)
+        // This prevents the dissonant pitch-glide from 220 Hz being audible during fade-in
+        ch.bedSyns[0].set(\freq, freqs[0], \freqLag, 0.0);
+        ch.bedSyns[1].set(\freq, freqs[1], \freqLag, 0.0);
+        ch.bedSyns[2].set(\freq, freqs[2], \freqLag, 0.0);
+        ch.p4BedSyn.set(\freq, freqs[1] * 1.01, \freqLag, 0.0);
+        // Step 2: start amplitude rise — bed blooms on the correct pitches
+        ch.bedSyns[0].set(\amp, ch.bedAmp);
+        ch.bedSyns[1].set(\amp, ch.bedAmp);
+        ch.bedSyns[2].set(\amp, ch.bedAmp);
+        ch.p4BedSyn.set(\amp, ch.p4Amp);
+        // Step 3: restore freqLag ~40s from now, before first feed window (~60s away)
+        SystemClock.sched(40, {
+            if(ch.alive, {
+                ch.bedSyns.do({ |syn| syn.set(\freqLag, ch.freqLag) });
+                ch.p4BedSyn.set(\freqLag, 20);
+            });
+            nil
+        });
         // Companion wakes up now — 8s fade-in via Lag inside SynthDef
         ch.companionSyn.set(\amp, ch.companionAmp);
         "BED LOCKED → % / % / % Hz".format(
