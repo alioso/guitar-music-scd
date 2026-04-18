@@ -19,7 +19,7 @@ SETUP
          (granulating a granulated signal is intentional — keep density low)
 
 SAMPLE FILES
-  Place in the same folder as this file:
+  Place in vanilla/samples/:
     samp_1.wav   samp_2.wav   samp_3.wav
 
 STRUCTURE (~5 min from first note)
@@ -76,11 +76,11 @@ postln("Vanilla: config loaded.");
 s.waitForBoot {
     var dir = thisProcess.nowExecutingPath.dirname;
 
-    // Pre-recorded buffers — place samp_1/2/3.wav next to this file
+    // Pre-recorded buffers — place samp_1/2/3.wav in vanilla/samples/
     ~vanBufs = [
-        Buffer.read(s, dir +/+ "samp_1.wav"),
-        Buffer.read(s, dir +/+ "samp_2.wav"),
-        Buffer.read(s, dir +/+ "samp_3.wav"),
+        Buffer.read(s, dir +/+ "samples/samp_1.wav"),
+        Buffer.read(s, dir +/+ "samples/samp_2.wav"),
+        Buffer.read(s, dir +/+ "samples/samp_3.wav"),
     ];
 
     // Live capture buffers — 30s mono, one per P4/P5

@@ -88,7 +88,7 @@ Pan positions assume 8-channel circular layout (0=front, ±1=rear). Adjust `~van
 
 ## How to run
 
-1. Place `samp_1.wav`, `samp_2.wav`, `samp_3.wav` in the `vanilla/` folder
+1. Place `samp_1.wav`, `samp_2.wav`, `samp_3.wav` in `vanilla/samples/`
 2. Open `vanilla.scd`
 3. Evaluate **Block 1** — sets `~numChans`, configures server channels
 4. Boot the server if not already running (`s.boot`)
