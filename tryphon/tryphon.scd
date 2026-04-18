@@ -34,7 +34,7 @@ REQUIRES sc3-plugins note in README; master uses GVerb like other pieces.
     bpm:     80,
     recBars: 4,
 
-    partnerAmp: 0.17,   // per spawned slice; 4 voices × ~2 overlapping = ~8 simultaneous
+    partnerAmp: 0.16,   // per spawned slice; 4 voices × ~2 overlapping = ~8 simultaneous
     dryAmp:     0.32,
 
     // Master
@@ -50,9 +50,10 @@ REQUIRES sc3-plugins note in README; master uses GVerb like other pieces.
 
     clickOn:      true,
     clickOutChan: 2,
+    cueVoice:     "Samantha",
 
     // Live-input processing voice (P5) — separate circular buffer, random effects
-    liveAmp:      0.20,   // amplitude; dynamics come directly from your playing
+    liveAmp:      0.24,   // amplitude; dynamics come directly from your playing
     liveBufSecs:  8.0,    // how many seconds of recent input are kept
 
     // Per-voice drifting rhythm — two LFOs per voice, no euclidean math.
@@ -147,8 +148,17 @@ s.waitForBoot({
                 // LFO 2: breathes the hit probability — creates natural fills and spaces
                 prob = hp * (1 + (sin(2pi * eh * dt) * ed)).clip(0.3, 1.7);
                 if(1.0.rand < prob, {
-                    nf   = (slc * s.sampleRate).asInteger.max(8);
-                    stFr = ((buf.numFrames - nf).max(1) * 1.0.rand).asInteger;
+                    var ph, voiceOff, jitter, bf;
+                    nf      = (slc * s.sampleRate).asInteger.max(8);
+                    bf      = buf.numFrames;
+                    // Anchor to the recording playhead so fragments start near note onsets.
+                    // Pure random positions always land mid-sustain (guitar attack = ~5% of note).
+                    ph      = if(trp.recFinished[cIdx].isNil, 0, {
+                        (((Main.elapsedTime - trp.recFinished[cIdx]) / trp.loopDur).frac * bf).asInteger
+                    });
+                    voiceOff = (bf * pIdx / 4).asInteger;    // each voice reads different quarter
+                    jitter   = (bf * 0.12.rand2).asInteger;  // ±12% ≈ ±1.4s — keeps it moving
+                    stFr    = ((ph + voiceOff + jitter + bf) % bf).min(bf - nf).max(0);
                     Synth(\trpSlice, [
                         out:        mixBusSlot[0],
                         bufnum:     bufNumSlot[0],
@@ -255,7 +265,26 @@ s.waitForBoot({
         Out.ar(out, sig.dup);
     }).add;
 
+    SynthDef(\trpVoice, { |out=2, bufnum=0, amp=0.88|
+        var sig = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum), loop: 0, doneAction: 2);
+        Out.ar(out, sig.dup * amp);
+    }).add;
+
     s.sync;
+
+    // Pre-render voice cue words (async — done well before any countdown fires at ~168s+)
+    trp.cueBufs = ();
+    {
+        var words = [\four, \three, \two, \one];
+        var texts = ["four", "three", "two", "one"];
+        words.do { |key, i|
+            var path = "/tmp/trp_cue_" ++ key ++ ".aiff";
+            ("say -v " ++ trp.cueVoice ++ " -o " ++ path.shellQuote ++ " " ++ texts[i].shellQuote).unixCmd;
+            1.5.wait;
+            trp.cueBufs[key] = Buffer.read(s, path);
+        };
+        { "Voice cues loaded.".postln }.defer;
+    }.fork(AppClock);
 
     trp.grpRec    = Group.new(s);
     trp.grpVoice  = Group.after(trp.grpRec);
@@ -295,9 +324,9 @@ s.waitForBoot({
         trp.liveRoutine = Routine({
             var nf, rPos, effect, rate, rev, sat, startPos, endPos, dur, pan;
             while { ~trp.alive } {
-                exprand(0.4, 9.0).wait;  // exponential = more short gaps, rare long silences
+                exprand(0.3, 6.0).wait;  // exponential = more short gaps, rare long silences
                 effect = #[\fwd, \rev, \down4, \down5, \down8, \rev8, \sat].choose;
-                nf     = (rrand(0.2, 1.8) * sr).asInteger;
+                nf     = (rrand(0.4, 3.5) * sr).asInteger;
                 rPos   = ((lBuf.numFrames - nf).max(1) * 1.0.rand).asInteger;
                 rate   = 1.0; rev = false; sat = 0.0;
                 case
@@ -326,6 +355,22 @@ s.waitForBoot({
         });
         { trp.liveRoutine.play(SystemClock) }.defer(0.001);
         { "  P5 live proc — started".postln; }.defer;
+    };
+
+    // Play "4 3 2 1" countdown on cue output, bar-aligned, delayFromNow seconds from first note
+    trp.playCountdown = { |delayFromNow|
+        var words = [\four, \three, \two, \one];
+        4.do { |i|
+            SystemClock.sched(delayFromNow + (i * trp.barDur), {
+                if(~trp.alive, {
+                    var buf = trp.cueBufs[words[i]];
+                    if(buf.notNil, {
+                        Synth(\trpVoice, [out: trp.clickOutChan, bufnum: buf.bufnum], trp.grpMaster);
+                    });
+                });
+                nil
+            });
+        };
     };
 
     OSCdef(\trpFirstNote, { |msg|
@@ -362,6 +407,11 @@ s.waitForBoot({
                 });
                 nil
             });
+
+            // Countdowns: 4 bars = 12s before each transition
+            trp[\playCountdown].(trp.cycleTimes[0] - (trp.barDur * 4));
+            trp[\playCountdown].(trp.cycleTimes[1] - (trp.barDur * 4));
+            trp[\playCountdown].(trp.totalDur - (trp.barDur * 4));
 
             SystemClock.sched(trp.cycleTimes[0], {
                 if(trp.alive, {
@@ -415,14 +465,6 @@ s.waitForBoot({
                 nil
             });
 
-            SystemClock.sched(trp.totalDur - trp.endDropBefore, {
-                if(trp.alive, {
-                    { "\n─── Duo — P2–P4 off.".postln; }.defer;
-                    [1, 2, 3].do { |i| trp[\stopPartner].(i) };
-                });
-                nil
-            });
-
             SystemClock.sched(trp.totalDur, {
                 if(trp.alive, {
                     { "Tryphon — hard stop.".postln; }.defer;
@@ -450,8 +492,7 @@ s.waitForBoot({
     "Tryphon — running (living strata). Threshold %.".format(trp.threshold).postln;
     "  +%s  partners begin after loop 1".format(trp.loopDur.round(1)).postln;
     "  +%s  cycle 2 | +%s  cycle 3".format(trp.cycleTimes[0], trp.cycleTimes[1]).postln;
- "  +%s  duo | +%s  stop".format(
-        trp.totalDur - trp.endDropBefore, trp.totalDur).postln;
+    "  +%s  hard stop".format(trp.totalDur).postln;
 });
 )
 
