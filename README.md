@@ -17,7 +17,9 @@ Live solo guitar compositions in SuperCollider 3.14.1.
 | [fan-fiction](fan-fiction/) | Phasing, 4 voices | ~9 min |
 | [anaerobes](anaerobes/) | Risset guitar quartet, delay + frequency shift | ~8 min |
 | [chimera](chimera/) | Ambient, swell detection + groove voices | ~12 min |
-| [tryphon](tryphon/) | Polyrythm, pitch tracking | TBD |
+| [tryphon](tryphon/) | Polyrhythm, 4 drifting partners + live processing | ~7 min |
+| [armorika](armorika/) | TBD | TBD |
+| [vanilla](vanilla/) | Granular sampler, 5 partners, pre-recorded + live capture | ~5 min |
 
 ## Workflow
 
