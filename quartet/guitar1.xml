@@ -1,0 +1,954 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN"
+  "http://www.musicxml.org/dtds/partwise.dtd">
+<score-partwise version="4.0">
+  <work><work-title>Quartet No. 1</work-title></work>
+  <identification>
+    <creator type="composer">Alban Bailly</creator>
+    <encoding>
+      <software>Claude Code</software>
+      <encoding-date>2026-04-18</encoding-date>
+    </encoding>
+  </identification>
+  <part-list>
+    <score-part id="P1">
+      <part-name>Guitar 1</part-name>
+      <part-abbreviation>G.1</part-abbreviation>
+    </score-part>
+  </part-list>
+  <part id="P1">
+
+    <!-- ═══════════════════════════════════════════════════════
+         SECTION A  bars 1–16  Introduction
+         ═══════════════════════════════════════════════════════ -->
+
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <key><fifths>0</fifths></key>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <direction placement="above">
+        <direction-type>
+          <metronome parentheses="no">
+            <beat-unit>quarter</beat-unit>
+            <per-minute>110</per-minute>
+          </metronome>
+        </direction-type>
+        <sound tempo="110"/>
+      </direction>
+      <direction placement="below"><direction-type><dynamics><mf/></dynamics></direction-type></direction>
+      <!-- E4(q) F4(e) Eb4(e) G4(q) Ab4(q) -->
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="2">
+      <!-- Bb4(dq) A4(e) G4(q) F#4(q) -->
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="3">
+      <!-- F4(h) E4(q) D4(q) -->
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="4">
+      <!-- R(w) -->
+      <note><rest/><duration>16</duration><type>whole</type></note>
+    </measure>
+
+    <measure number="5">
+      <direction placement="below"><direction-type><dynamics><mp/></dynamics></direction-type></direction>
+      <!-- D5(e) C5(e) Bb4(e) A4(e) G4(q) F4(q) -->
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="6">
+      <!-- E4(q) F4(q) G4(q) Ab4(q) -->
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="7">
+      <!-- A4(dq) Bb4(e) C5(q) B4(q) -->
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="8">
+      <!-- R(h) E4(dq) F4(e) -->
+      <note><rest/><duration>8</duration><type>half</type></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="9">
+      <direction placement="below"><direction-type><dynamics><mf/></dynamics></direction-type></direction>
+      <!-- G4(q) Ab4(q) A4(q) Bb4(q) -->
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="10">
+      <!-- Eb5(e) D5(e) C5(e) B4(e) Bb4(q) A4(q) -->
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="11">
+      <!-- G#4(q) A4(e) B4(e) C5(q) D5(q) -->
+      <note><pitch><step>G</step><alter>1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="12">
+      <direction placement="below"><direction-type><dynamics><f/></dynamics></direction-type></direction>
+      <!-- E5(h) R(h) -->
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><rest/><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="13">
+      <direction placement="below"><direction-type><dynamics><mp/></dynamics></direction-type></direction>
+      <!-- R(q) A4(e) G4(e) F4(q) E4(q) -->
+      <note><rest/><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="14">
+      <!-- Eb4(q) D4(e) Db4(e) C4(q) B3(q) -->
+      <note><pitch><step>E</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>D</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>3</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="15">
+      <!-- R(h) D4(q) E4(q) -->
+      <note><rest/><duration>8</duration><type>half</type></note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="16">
+      <!-- F4(h) G4(h) -->
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <!-- ═══════════════════════════════════════════════════════
+         SECTION B  bars 17–32  Development
+         ═══════════════════════════════════════════════════════ -->
+
+    <measure number="17">
+      <direction placement="below"><direction-type><dynamics><mf/></dynamics></direction-type></direction>
+      <!-- A4(q) Bb4(q) B4(q) C5(q) -->
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="18">
+      <!-- Db5(e) D5(e) Eb5(e) E5(e) F5(q) Gb5(q) -->
+      <note><pitch><step>D</step><alter>-1</alter><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="19">
+      <!-- G5(q) F5(q) Eb5(dq) D5(e) -->
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="20">
+      <!-- C5(h) R(h) -->
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><rest/><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="21">
+      <direction placement="below"><direction-type><dynamics><mp/></dynamics></direction-type></direction>
+      <!-- Bb4(q) A4(q) Ab4(q) G4(q) -->
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="22">
+      <!-- F#4(h) G4(dq) A4(e) -->
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="23">
+      <!-- B4(q) C5(q) D5(q) Eb5(q) -->
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="24">
+      <!-- E5(h) D5(q) C5(q) -->
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="25">
+      <!-- B4(q) A4(q) G4(q) F4(q) -->
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="26">
+      <!-- E4(e) F4(e) G4(e) Ab4(e) Bb4(q) B4(q) -->
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="27">
+      <!-- C5(dq) B4(e) Bb4(q) A4(q) -->
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="28">
+      <!-- Ab4(h) R(h) -->
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><rest/><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="29">
+      <!-- G4(q) Ab4(q) G4(q) F#4(q) -->
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="30">
+      <!-- G4(e) Ab4(e) A4(e) Bb4(e) B4(q) C5(q) -->
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="31">
+      <!-- Db5(dq) C5(e) B4(q) Bb4(q) -->
+      <note><pitch><step>D</step><alter>-1</alter><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="32">
+      <!-- A4(w) -->
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>16</duration><type>whole</type></note>
+    </measure>
+
+    <!-- ═══════════════════════════════════════════════════════
+         SECTION C  bars 33–48  Contrast — sparse, high register
+         rit. to ♩=92
+         ═══════════════════════════════════════════════════════ -->
+
+    <measure number="33">
+      <direction placement="above">
+        <direction-type><words xml:lang="it">rit.</words></direction-type>
+      </direction>
+      <direction placement="below"><direction-type><dynamics><p/></dynamics></direction-type></direction>
+      <!-- R(h) E5(dq) F5(e) -->
+      <note><rest/><duration>8</duration><type>half</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="34">
+      <direction placement="above">
+        <direction-type>
+          <metronome parentheses="yes">
+            <beat-unit>quarter</beat-unit>
+            <per-minute>92</per-minute>
+          </metronome>
+        </direction-type>
+        <sound tempo="92"/>
+      </direction>
+      <!-- G5(q) Ab5(q) G5(q) F5(q) -->
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="35">
+      <!-- E5(q) Eb5(q) D5(dq) C5(e) -->
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="36">
+      <!-- B4(w) -->
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>16</duration><type>whole</type></note>
+    </measure>
+
+    <measure number="37">
+      <!-- R(q) Bb4(q) A4(h) -->
+      <note><rest/><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="38">
+      <!-- G#4(dq) A4(e) B4(q) C5(q) -->
+      <note><pitch><step>G</step><alter>1</alter><octave>4</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="39">
+      <direction placement="below"><direction-type><dynamics><mp/></dynamics></direction-type></direction>
+      <!-- D5(q) E5(q) F5(dq) E5(e) -->
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="40">
+      <!-- D5(h) C5(h) -->
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="41">
+      <!-- B4(q) C5(q) Db5(q) D5(q) -->
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="42">
+      <!-- Eb5(e) E5(e) F5(e) G5(e) Ab5(q) G5(q) -->
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="43">
+      <!-- F5(dq) E5(e) D5(q) C5(q) -->
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="44">
+      <!-- B4(h) R(h) -->
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><rest/><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="45">
+      <!-- A4(q) Bb4(q) B4(q) C5(q) -->
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="46">
+      <!-- D5(dh) E5(q) -->
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>12</duration><type>half</type><dot/></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="47">
+      <!-- F5(q) Eb5(q) D5(q) C5(q) -->
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="48">
+      <!-- B4(w) -->
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>16</duration><type>whole</type></note>
+    </measure>
+
+    <!-- ═══════════════════════════════════════════════════════
+         SECTION D  bars 49–64  Recapitulation — theme returns
+         a tempo ♩=110
+         ═══════════════════════════════════════════════════════ -->
+
+    <measure number="49">
+      <direction placement="above">
+        <direction-type><words xml:lang="it">a tempo</words></direction-type>
+        <sound tempo="110"/>
+      </direction>
+      <direction placement="below"><direction-type><dynamics><mf/></dynamics></direction-type></direction>
+      <!-- E4(q) F4(e) Eb4(e) G4(q) Ab4(q) — theme head -->
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="50">
+      <!-- Bb4(dq) A4(e) G4(q) F4(q) -->
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="51">
+      <!-- E4(q) D4(q) Db4(q) C4(q) — lower extension -->
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="52">
+      <!-- B3(h) R(h) -->
+      <note><pitch><step>B</step><octave>3</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><rest/><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="53">
+      <!-- Db4(q) D4(q) Eb4(q) E4(q) -->
+      <note><pitch><step>D</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="54">
+      <!-- F4(q) G4(q) Ab4(dq) Bb4(e) -->
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="55">
+      <!-- B4(q) C5(q) D5(dq) E5(e) -->
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="56">
+      <!-- F5(h) Eb5(h) -->
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="57">
+      <!-- D5(q) C5(q) B4(q) Bb4(q) -->
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="58">
+      <!-- A4(dq) Ab4(e) G4(q) F4(q) -->
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="59">
+      <!-- E4(h) F4(dq) G4(e) -->
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="60">
+      <!-- Ab4(h) A4(h) -->
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="61">
+      <!-- Bb4(q) B4(q) C5(q) Db5(q) -->
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="62">
+      <!-- D5(e) Eb5(e) E5(e) F5(e) Gb5(q) G5(q) -->
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="63">
+      <!-- Ab5(q) G5(q) F5(dq) E5(e) -->
+      <note><pitch><step>A</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="64">
+      <!-- D5(w) -->
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>16</duration><type>whole</type></note>
+    </measure>
+
+    <!-- ═══════════════════════════════════════════════════════
+         SECTION E  bars 65–88  Build / Climax preparation
+         cresc. through to ff
+         ═══════════════════════════════════════════════════════ -->
+
+    <measure number="65">
+      <direction placement="above"><direction-type><words>cresc.</words></direction-type></direction>
+      <!-- C5(q) B4(q) Bb4(q) A4(q) -->
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="66">
+      <!-- Ab4(q) G4(q) F#4(q) F4(q) -->
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="67">
+      <!-- all eighths: E4 F4 G4 Ab4 A4 Bb4 B4 C5 — chromatic ascent -->
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="68">
+      <!-- D5(q) Eb5(q) E5(q) F5(q) -->
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="69">
+      <direction placement="below"><direction-type><dynamics><f/></dynamics></direction-type></direction>
+      <!-- F#5(h) G5(h) -->
+      <note><pitch><step>F</step><alter>1</alter><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="70">
+      <!-- Ab5(q) G5(q) F5(dq) E5(e) -->
+      <note><pitch><step>A</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="71">
+      <!-- Eb5(q) D5(q) C5(q) B4(q) -->
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="72">
+      <!-- Bb4(h) A4(h) -->
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="73">
+      <direction placement="below"><direction-type><dynamics><mp/></dynamics></direction-type></direction>
+      <!-- Ab4(q) G4(q) F4(q) E4(q) -->
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="74">
+      <!-- Eb4(h) D4(dq) Db4(e) -->
+      <note><pitch><step>E</step><alter>-1</alter><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>D</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="75">
+      <!-- C4(q) D4(q) E4(q) F4(q) -->
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="76">
+      <!-- G4(dh) Ab4(q) -->
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>12</duration><type>half</type><dot/></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="77">
+      <direction placement="above"><direction-type><words>cresc.</words></direction-type></direction>
+      <!-- A4(q) Bb4(q) B4(q) C5(q) -->
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="78">
+      <!-- D5(dq) E5(e) F5(q) G5(q) -->
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="79">
+      <!-- Ab5(q) G5(q) F5(q) E5(q) -->
+      <note><pitch><step>A</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="80">
+      <!-- Eb5(h) D5(h) -->
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="81">
+      <!-- C5(q) D5(q) E5(q) F5(q) -->
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="82">
+      <!-- G5(dh) Ab5(q) -->
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>12</duration><type>half</type><dot/></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="83">
+      <!-- A5(dq) G5(e) F5(q) E5(q) -->
+      <note><pitch><step>A</step><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="84">
+      <!-- D5(h) C5(h) -->
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="85">
+      <!-- B4(q) C5(q) D5(q) E5(q) -->
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="86">
+      <!-- F5(q) Eb5(q) D5(q) C5(q) -->
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="87">
+      <!-- Bb4(dq) A4(e) G4(q) F4(q) -->
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="88">
+      <!-- E4(w) -->
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>16</duration><type>whole</type></note>
+    </measure>
+
+    <!-- ═══════════════════════════════════════════════════════
+         CODA  bars 89–110  accel. → ♩=126, then rit. to end
+         ═══════════════════════════════════════════════════════ -->
+
+    <measure number="89">
+      <direction placement="above">
+        <direction-type><words xml:lang="it">accel.</words></direction-type>
+      </direction>
+      <direction placement="below"><direction-type><dynamics><ff/></dynamics></direction-type></direction>
+      <!-- all eighths E5 F5 G5 Ab5 G5 F5 E5 D5 -->
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="90">
+      <direction placement="above">
+        <direction-type>
+          <metronome parentheses="yes">
+            <beat-unit>quarter</beat-unit>
+            <per-minute>126</per-minute>
+          </metronome>
+        </direction-type>
+        <sound tempo="126"/>
+      </direction>
+      <!-- C5(q) D5(q) Eb5(dq) D5(e) -->
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="91">
+      <!-- C5(q) B4(q) Bb4(q) A4(q) -->
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="92">
+      <!-- Ab4(dh) G4(q) -->
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>12</duration><type>half</type><dot/></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="93">
+      <!-- all eighths: F#4 G4 A4 B4 C5 D5 E5 F5 -->
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="94">
+      <!-- G5(dq) F5(e) E5(q) D5(q) -->
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="95">
+      <!-- C#5(q) D5(q) E5(q) F#5(q) -->
+      <note><pitch><step>C</step><alter>1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="96">
+      <!-- G5(h) R(h) -->
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><rest/><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="97">
+      <direction placement="below"><direction-type><dynamics><f/></dynamics></direction-type></direction>
+      <!-- E4(q) A4(q) D5(q) G5(q) — arpeggio ascent -->
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="98">
+      <!-- F5(dh) E5(q) -->
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>12</duration><type>half</type><dot/></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="99">
+      <!-- D5(q) C5(q) B4(q) A4(q) -->
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="100">
+      <!-- G4(h) F#4(h) -->
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="101">
+      <!-- all eighths: E4 F4 G4 Ab4 Bb4 B4 C5 D5 -->
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="102">
+      <!-- Eb5(q) E5(q) F5(dq) G5(e) -->
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="103">
+      <!-- Ab5(q) G5(q) F5(q) E5(q) -->
+      <note><pitch><step>A</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="104">
+      <!-- D5(h) Eb5(h) -->
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>E</step><alter>-1</alter><octave>5</octave></pitch><duration>8</duration><type>half</type></note>
+    </measure>
+
+    <measure number="105">
+      <direction placement="below"><direction-type><dynamics><ff/></dynamics></direction-type></direction>
+      <!-- E5(q) F5(q) G5(q) Ab5(q) -->
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>A</step><alter>-1</alter><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="106">
+      <!-- A5(dh) G5(q) -->
+      <note><pitch><step>A</step><octave>5</octave></pitch><duration>12</duration><type>half</type><dot/></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="107">
+      <!-- F5(q) E5(q) D5(q) C5(q) -->
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="108">
+      <direction placement="above">
+        <direction-type><words xml:lang="it">rit.</words></direction-type>
+      </direction>
+      <!-- B4(h) Bb4(dq) A4(e) -->
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>8</duration><type>half</type></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>4</octave></pitch><duration>6</duration><type>quarter</type><dot/></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type></note>
+    </measure>
+
+    <measure number="109">
+      <!-- Ab4(q) G4(q) F4(q) E4(q) -->
+      <note><pitch><step>A</step><alter>-1</alter><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure>
+
+    <measure number="110">
+      <direction placement="below"><direction-type><dynamics><mp/></dynamics></direction-type></direction>
+      <!-- E4(w) — final -->
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>16</duration><type>whole</type></note>
+      <barline location="right"><bar-style>light-heavy</bar-style></barline>
+    </measure>
+
+  </part>
+</score-partwise>
