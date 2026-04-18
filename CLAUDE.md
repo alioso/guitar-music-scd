@@ -1,95 +1,65 @@
-# guitar-music-scd — AI Instructions
+# CLAUDE.md
 
-## Project
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
-A series of live solo guitar pieces. Input is a guitar through a Scarlett interface. Output is stereo speakers. All pieces run in **SuperCollider 3.14.1** (standalone, not Max for Live).
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
-Each piece lives in its own directory with a `.scd` file and a `README.md`.
+## 1. Think Before Coding
 
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
 ```
-guitar-music-scd/
-├── fan-fiction/fan-fiction.scd   ← Reich phasing piece
-├── anaerobes/anaerobes.scd
-├── chimera/chimera.scd
-├── tryphon/tryphon.scd
-```
-
-## SuperCollider Conventions
-
-**Audio I/O**
-- Guitar input: `SoundIn.ar(0)` — mono, channel 0
-- Output: `Out.ar(0, sig)` — stereo pair on channels 0+1
-- Always `clip2(1.0)` before final hardware output
-
-**SynthDef patterns**
-```supercollider
-// Fade-in via Lag (set targetAmp from language side)
-SynthDef(\voice, {
-    |out=0, bufnum, targetAmp=0.0, fadeSecs=8.0, pan=0.0|
-    var sig = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum), loop: 1);
-    Out.ar(out, Pan2.ar(sig * Lag.kr(targetAmp, fadeSecs), pan));
-}).add;
-
-// Amplitude detection with rising-edge only
-SynthDef(\detect, {
-    |thresh=0.01|
-    var amp   = Amplitude.kr(SoundIn.ar(0), attackTime: 0.005, releaseTime: 0.1);
-    var above = amp > thresh;
-    var trig  = above * (1 - Delay1.kr(above));   // rising edge only
-    SendReply.kr(trig, '/myPiece/firstNote', amp);
-}).add;
-```
-
-**Group execution order** (use this in every piece)
-```supercollider
-~grpRec    = Group.new(s);              // recorders, detectors
-~grpVoice  = Group.after(~grpRec);     // playback voices
-~grpDry    = Group.after(~grpVoice);   // dry guitar passthrough
-~grpMaster = Group.after(~grpDry);     // master out, archive recorder
-```
-
-**Mix bus pattern** (for archive recording)
-```supercollider
-~mixBus = Bus.audio(s, 2);
-// voices + dry → ~mixBus
-// ffMaster reads ~mixBus → hardware out
-// ffArchRec reads ~mixBus → archive buffer
-```
-
-**Timing**
-- Use `SystemClock.sched(delaySeconds, { ... nil })` for one-shot events
-- Always `nil` at end of sched block
-- Convert bars: `barDur = 60 / bpm * 4`
-
-**OSC handlers**
-```supercollider
-OSCdef(\myHandler, { |msg| ... }, '/myPiece/event');
-// Free when done:
-OSCdef(\myHandler).free;
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
 ```
 
-**Stopping a piece**
-Every piece ends with a clearly marked stop block:
-```supercollider
-( // STOP
-OSCdef(\myHandler).free;
-~myBuf.free;
-~myBus.free;
-s.freeAll;
-)
-```
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
-**Buffer allocation**
-```supercollider
-~buf = Buffer.alloc(s, (s.sampleRate * durationSeconds).ceil.asInteger, numChannels);
-```
+---
 
-## Do not
-- Edit `.scd` files without understanding the piece structure
-- Add features not requested
-
-## Each piece has three code blocks
-
-1. **Config block** `( ~pieceName = (...); )` — all parameters, no audio
-2. **Boot block** `( s.waitForBoot({ ... }); )` — allocates buffers, adds SynthDefs, starts synths
-3. **Stop block** `( // STOP ... s.freeAll; )` — always at the bottom, clearly marked
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
