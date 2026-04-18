@@ -1,103 +1,128 @@
 # Tryphon
 
-Euclidean polyrhythm guitar quintet. Duration ~7 min from first note.
+LFO-polyrhythm guitar sextet. Duration ~7 min from first note.
 
 ## Concept
 
-The guitarist plays a 4-bar loop in strict 4/4. SC records it, then four partner voices play it back in interlocking euclidean rhythms — each partner firing a 1-bar fragment of the recording at its own euclidean beat. Partners use prime-length step cycles (9, 11, 13 steps) so their patterns drift continuously against the 4/4 grid and never realign within the piece (~28 min LCM). The texture evolves through three cycles, each with a new recorded harmony. At each transition all but the simplest partner drop out, the input establishes new material, and the ensemble rebuilds from scratch.
+The guitarist plays a 4-bar loop in strict 4/4. SC records it, normalises it, then four partner voices (P1–P4) replay fragments of the recording at independent, continuously drifting tempos — never realigning. A fifth voice (P5) processes the live guitar input in real time with pitch transposition, reversal, and saturation. The texture evolves through three cycles, each with a new recorded source loop. The piece ends with a 48-second crescendo and a hard stop.
 
 ## Structure
 
-| Time from first note | Event |
+| Time | Event |
 |---|---|
-| 0:00 | First note → loop recording starts (4 bars / 12s) |
-| +12s | P1 enters — E(3,16) |
-| +24s | P2 enters — E(4,11) |
-| +36s | P3 enters — E(5,9) |
-| +48s | P4 enters — E(6,13) — Cycle 1 full |
-| 3:00 | P2–P4 drop. P1 holds. New loop re-recorded. |
-| 3:12 | P1 switches to Cycle 2 pattern. Partners re-enter staggered. |
-| 5:00 | P2–P4 drop. P1 holds. New loop re-recorded. |
-| 5:12 | P1 switches to Cycle 3 pattern. Partners re-enter staggered. |
-| 6:36 | P2–P4 drop — duo phase (input + P1 only) |
+| 0:00 | First note → 4-bar loop records (12s) |
+| 0:12 | P1 enters |
+| 0:24 | P2 enters |
+| 0:36 | P3 enters |
+| 0:48 | P4 enters — Cycle 1 full bed |
+| 1:18 | P5 (live processing) enters |
+| 2:57 | Voice countdown in headphones: 4–3–2–1 |
+| 3:00 | Cycle 2 — P2–P4 drop, new 4-bar loop records |
+| 3:12 | P1 restarts on loop 2; P2–P4 rebuild staggered |
+| 4:57 | Voice countdown: 4–3–2–1 |
+| 5:00 | Cycle 3 — P2–P4 drop, new 4-bar loop records |
+| 5:12 | P1 restarts on loop 3; P2–P4 rebuild staggered |
+| 6:12 | Crescendo begins — all partners ramp to peak over 16 bars |
+| 6:36 | Slow countdown: "four…three…two…one" (one word per bar) |
+| 6:48 | Slow countdown repeats |
 | 7:00 | Hard stop |
 
-## Euclidean patterns
+## How the polyrhythm works
 
-All patterns step at 16th-note rate (80 BPM → 0.1875s per step). Prime N values give cycle lengths of 1.7s (9), 2.1s (11), and 2.4s (13) — none a multiple of the 3s bar. P1 uses N=16 (bar-aligned) as a rhythmic anchor.
+Each partner runs an independent Routine with its own drifting clock. On every tick it rolls a probability check; if it fires, it spawns a 0.75s slice from the recorded buffer starting near the current playhead position. The tick interval is:
 
-| Partner | Cycle 1 | Cycle 2 | Cycle 3 | N cycle | Role |
+```
+wait = stepDur × stepMul × (1 + sin(2π × driftHz × t) × driftDepth)
+```
+
+`stepMul` values are irrational ratios so the four voices never realign. A second slow LFO (`evolveHz`) drifts hit probability up and down, creating long fill and space phases that are independent across voices. The outer voices (P1, P4) also have mild saturation for warmth and grit.
+
+| Voice | Pan | Tempo ratio | Hit prob | Saturation | Character |
 |---|---|---|---|---|---|
-| P1 | E(3,16) | E(4,16) | E(5,16) | 3.0s (bar) | anchor — stays at all transitions |
-| P2 | E(4,11) | E(5,11) | E(7,11) | 2.06s | syncopated drift |
-| P3 | E(5,9) | E(6,9) | E(7,9) | 1.69s | faster cross-rhythm |
-| P4 | E(6,13) | E(7,13) | E(9,13) | 2.44s | slow complex drift |
+| P1 | −0.75 | 1.000 | 0.22 | 0.40 | anchor, left, gritty |
+| P2 | −0.25 | 1.063 | 0.28 | — | syncopated drift |
+| P3 | +0.25 | 0.940 | 0.25 | — | faster cross-rhythm |
+| P4 | +0.75 | 1.110 | 0.20 | 0.40 | slow drift, right, gritty |
+| P5 | random | — | — | optional | live processing |
 
-Each euclidean hit plays back 1 bar (~3s) of the recorded guitar loop, reading from the current position in the loop at the moment of the hit. Overlapping hits from the same partner create washes; overlapping partners create the quintet texture.
+P5 reads from an 8-second circular buffer of the live guitar and fires random effects: forward, reverse, down-4th, down-5th, down-octave, reverse+octave, saturation.
 
 ## Key levels
 
 | Parameter | Value |
 |---|---|
-| `partnerAmp` | 0.22 per hit (washes accumulate) |
-| `dryAmp` | 0.58 (live guitar through) |
-| `reverbMix` | 0.15 (JPverb, subtle) |
+| `partnerAmp` | 0.16 per slice (ramps to 0.50 in last 16 bars) |
+| `liveAmp` | 0.24 for P5 (ramps to 0.60 in last 16 bars) |
+| `dryAmp` | 0.32 live guitar through |
+| `reverbMix` | 0.15 (GVerb, subtle) |
 | `threshold` | 0.015 |
+
+Each buffer is normalised to 0.7 after recording, so partner level is consistent regardless of how loudly you played.
 
 ## Performance notes
 
 **Before you play**
-- Evaluate Block 1, then Block 2. Wait for `"Tryphon — running."` in the post window.
-- The click track starts immediately (headphones, output channel 3). Lock onto it before playing.
+- Evaluate Block 1, then Block 2. Wait for `"Tryphon — running"` in the post window.
+- The click starts immediately (headphones, output channel 2). Lock in before playing.
 - The piece does not start until the first note above threshold — take your time.
 
 **The initial loop (Cycle 1)**
-- Play a clear 4/4 melodic or chordal phrase. Repetition and rhythmic definition help — the partners will replay fragments of exactly what you record.
-- SC records exactly 4 bars from your first note. Keep the phrase consistent across those 4 bars; the material you play in that window is what every partner will use for the next 3 minutes.
-- After 12s, partners begin entering. The texture builds over the next 36s. Continue playing your original phrase — you are the 5th voice in the quintet.
+- Play your first note on a click downbeat. All cycle transitions and voice countdowns are bar-aligned from that moment; starting off-beat will shift the countdowns relative to the click.
+- SC records exactly 4 bars from your first note. That material becomes the source pool for all four partners for the next 3 minutes.
+- After 12s, partners begin entering one per 12s. Continue playing — you are the sixth voice.
 
 **Cycle transitions (3:00 and 5:00)**
-- At T=3:00 and T=5:00 you will hear P2–P4 cut out suddenly. P1 keeps going on the old material.
-- This is your cue: change harmony or phrasing. The new material you play in the next 12s becomes the source loop for Cycle 2 / Cycle 3.
-- Play confidently and clearly — SC is recording your new material for exactly 4 bars starting from the moment of the drop. After that window, P1 switches to the new loop and partners re-enter one by one.
-- P1 switching is a second signal that the new cycle has begun.
-
-**Tempo**
-- The tempo is rigid. The click provides a constant 80 BPM quarter-note pulse with a louder downbeat on beat 1. Trust it and lock in — the euclidean polyrhythm only works when the human voice is metronomically solid.
-- If you rush or lag during the initial recording, the partners will replay that feel faithfully. This is a feature, not a problem, but consistency rewards listening.
-
-**What to expect**
-- Cycle 1: partners enter sparsely (E(3,16) and E(4,11) leave a lot of space). The texture will feel open and interlocking.
-- Cycle 2: slightly denser patterns. The cross-rhythms become more audible as prime-length cycles drift further from alignment.
-- Cycle 3: densest patterns (E(9,13) approaches a near-continuous wash). The texture shifts from rhythmic to textural.
-- Duo phase: at 6:36 the texture clears to just you and P1. This is the coda — play freely until the hard stop at 7:00.
+- You will hear a fast "4–3–2–1" in your headphones (four beats, one bar) immediately before the transition. That is your cue to prepare a new harmony.
+- At the downbeat: P2–P4 cut suddenly. P1 keeps going on the old material. Start playing your new phrase — SC is recording for exactly 4 bars from that moment.
+- After the 4-bar window, P1 switches to the new loop and partners rebuild.
+- Play confidently and clearly during the recording window. Hesitation or silence will be recorded.
 
 **Ending**
-- The piece ends with a hard stop at T=7:00. This is automatic — no performer action needed. Be prepared for silence.
+- At 6:12 a slow crescendo begins. Partners get steadily louder over 16 bars.
+- At 6:36 a slow voice countdown begins in headphones: "four" (one word per bar) counting down 8 bars to the hard stop.
+- The piece ends at 7:00 with a hard stop. No performer action needed — be prepared for silence.
+
+## Playing suggestions
+
+**What works well**
+
+- **Quarter notes and half notes.** The partners slice 0.75s fragments. Slow, held notes give them clean attack + sustain to work with. Each fragment will have a clear, identifiable attack transient.
+- **Simple chords — power chords, triads, open shapes.** P5 transposes down a 4th, 5th, and octave. Harmonically complex voicings can create awkward intervals when transposed; simple chords sit cleanly across all three intervals.
+- **Consistent dynamics within each 4-bar loop.** The buffer is normalised before partners use it, so your overall volume doesn't matter. But wild dynamic swings *inside* the phrase (very quiet then very loud) will be replayed in random order by partners, which can sound incoherent. A steady moderate level per cycle sounds best.
+- **Strong rhythmic definition on beat 1.** Partners are playhead-anchored — they tend to read from positions near the current loop position. A clear downbeat attack at the top of each bar gives them the best chance of firing on an actual note.
+
+**What to avoid**
+
+- **Dense 16th-note lines.** Many short attacks close together means partners can't distinguish note boundaries, and fragments tend to catch mid-transient sounds. The artifact character increases.
+- **Starting between beats.** If your first note lands off the click, all voice countdowns will be slightly offset from the metronome for the whole piece.
+- **Silence in the recording window.** If you hesitate during the 4-bar loop, that silence is in the buffer. Partners will replay it and the texture will thin at random.
+
+**What P5 does with your playing**
+
+P5 reads from a continuously updating 8-second buffer of your live guitar. The louder and more actively you play, the richer the material P5 has to work with. P5 does not track your rhythm — it fires at exponentially-distributed random intervals (roughly 0.3–6s) and picks random fragments. Sustained held notes give P5 long, warm fragments; fast lines give it busy, layered ones.
 
 ## Reverb
 
-Uses **JPverb** from sc3-plugins (`brew install sc3-plugins`). GVerb fallback commented in source.
-
-Settings: size 1.1, decay 3.5s, damp 0.5, mix 0.15.
+Uses **GVerb** (built-in). Settings: room ~31m, decay 3.5s, damping 0.5, mix 0.15.
 
 ## How to run
 
 1. Open `tryphon.scd`
 2. Evaluate **Block 1** (config) — `Cmd+Return` inside the block
-3. Evaluate **Block 2** (start) — allocates buffers, starts listening
-4. Wait for `"Tryphon — running."` in the post window
+3. Evaluate **Block 2** (start) — allocates buffers, pre-renders voice cues (~6s), starts listening
+4. Wait for `"Tryphon — running"` in the post window
 5. Play guitar — piece responds to first note above threshold
 6. Evaluate **Block 3** to stop early, or `Cmd+.`
 
 ## Tweaking (all in Block 1)
 
-- `bpm` — tempo; also updates all derived timing
-- `threshold` — amplitude to trigger first note
-- `recBars` — loop buffer length in bars (default 4)
-- `buildStep` — automatically 4 bars; adjust `recBars` to change partner spacing
+- `bpm` — tempo; updates all derived timing (stepDur, barDur, loopDur)
+- `threshold` — amplitude to trigger first note; raise if click bleeds into mic
+- `recBars` — loop buffer length in bars (default 4 = 12s)
 - `cycleTimes` — when Cycle 1→2 and 2→3 transitions happen (seconds from first note)
-- `endDropBefore` — length of duo phase before hard stop
-- `partnerAmp` / `dryAmp` — mix balance; if texture is too dense, lower `partnerAmp`
-- `patterns` — euclidean [k, n] per partner per cycle
-- `clickOn` — set `false` to disable metronome (not recommended for live performance)
+- `totalDur` — piece length in seconds (default 420 = 7 min)
+- `partnerAmp` / `dryAmp` — mix balance; lower `partnerAmp` if texture is too dense
+- `liveAmp` — P5 processing level; raise for more prominent live effects
+- `partnerVoices` — per-voice `stepMul`, `hitProb`, `satAmt`, drift LFO parameters
+- `clickOn` — set `false` to disable metronome (not recommended live)
+- `cueVoice` — macOS TTS voice for countdowns (default `"Samantha"`)

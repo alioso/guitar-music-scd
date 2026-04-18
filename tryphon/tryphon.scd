@@ -63,13 +63,13 @@ REQUIRES sc3-plugins note in README; master uses GVerb like other pieces.
     // hitProb:    base probability of firing on any step (drifts via evolve LFO)
     partnerVoices: [
         (pan: -0.75, stepMul: 1.0,   driftHz: 0.055, driftDepth: 0.09,
-                     evolveHz: 0.0027, evolveDepth: 0.30, hitProb: 0.22),
+                     evolveHz: 0.0027, evolveDepth: 0.30, hitProb: 0.22, satAmt: 0.40),
         (pan: -0.25, stepMul: 1.063, driftHz: 0.048, driftDepth: 0.11,
                      evolveHz: 0.0038, evolveDepth: 0.28, hitProb: 0.28),
         (pan:  0.25, stepMul: 0.94,  driftHz: 0.062, driftDepth: 0.10,
                      evolveHz: 0.0044, evolveDepth: 0.32, hitProb: 0.25),
         (pan:  0.75, stepMul: 1.11,  driftHz: 0.041, driftDepth: 0.12,
-                     evolveHz: 0.0031, evolveDepth: 0.35, hitProb: 0.20),
+                     evolveHz: 0.0031, evolveDepth: 0.35, hitProb: 0.20, satAmt: 0.40),
     ],
 );
 
@@ -100,8 +100,10 @@ s.waitForBoot({
     trp.partnerSyns = [nil, nil, nil, nil];
     trp.mixBus      = Bus.audio(s, 2);
     trp.partnerT0   = [0, 0, 0, 0];
-    trp.liveRoutine = nil;
-    trp.liveRecSyn  = nil;
+    trp.liveRoutine    = nil;
+    trp.liveRecSyn     = nil;
+    trp.partnerAmpSlot = [trp.partnerAmp];  // shared — crescendo updates this live
+    trp.liveAmpSlot    = [trp.liveAmp];
 
     s.sync;
 
@@ -115,7 +117,7 @@ s.waitForBoot({
         mixBusSlot  = [trp.mixBus.index];
         bufNumSlot  = [buf.bufnum];
         stepDurSlot = [trp.stepDur];
-        ampSlot     = [trp.partnerAmp];
+        ampSlot     = trp.partnerAmpSlot;  // shared slot — crescendo ramps this
 
         if(trp.routines[pIdx].notNil, {
             oldR = trp.routines[pIdx];
@@ -127,7 +129,7 @@ s.waitForBoot({
 
         // .defer avoids re-entrancy when called from SystemClock.sched
         newR = Routine({
-            var dh, dd, eh, ed, hp, mulB, slc, amp, pan, t0;
+            var dh, dd, eh, ed, hp, mulB, slc, amp, pan, sat, t0;
             var now, dt, w, nf, stFr, prob;
             dh   = voice[\driftHz]    ? 0.05;
             dd   = voice[\driftDepth] ? 0.08;
@@ -137,7 +139,8 @@ s.waitForBoot({
             mulB = voice[\stepMul]    ? 1.0;
             slc  = voice[\sliceSecs]  ? (trp.barDur / 4);  // 1 quarter note = natural note length
             amp  = ampSlot[0];
-            pan  = voice[\pan] ? 0.0;
+            pan  = voice[\pan]    ? 0.0;
+            sat  = voice[\satAmt] ? 0.0;
             t0   = trp.partnerT0[pIdx];
 
             while { ~trp.alive } {
@@ -166,6 +169,7 @@ s.waitForBoot({
                         numFrames:  nf,
                         amp:        amp,
                         pan:        pan,
+                        satAmt:     sat,
                     ], trp.grpVoice);
                 });
                 w.max(0.02).wait;
@@ -205,16 +209,19 @@ s.waitForBoot({
     // Slice: reads numFrames frames from buffer starting at startFrame.
     // Duration is derived from numFrames so envelope always matches audio length.
     // Attack 50ms / release 1.5s gives natural overlapping guitar wash.
-    SynthDef(\trpSlice, { |out=0, bufnum=0, startFrame=0, numFrames=132300, amp=0.5, pan=0|
+    SynthDef(\trpSlice, { |out=0, bufnum=0, startFrame=0, numFrames=132300, amp=0.5, pan=0, satAmt=0.0|
         var dur      = (numFrames / SampleRate.ir).max(0.001);
         var releaseT = 1.5.min(dur * 0.45);
         var attackT  = 0.05.min(dur * 0.1);
         var pos      = startFrame + Line.ar(0, (numFrames - 1).max(0), dur);
         var sig      = BufRd.ar(1, bufnum, pos, 0, 4);
+        var gain     = 1 + (satAmt * 5);
+        var sat_sig  = (sig * gain).tanh / gain.sqrt;
+        var out_sig  = sig + ((sat_sig - sig) * satAmt);
         var env      = EnvGen.kr(
             Env.linen(attackT, (dur - attackT - releaseT).max(0.001), releaseT, 1, \sine),
             doneAction: 2);
-        Out.ar(out, Pan2.ar(sig * env * amp, pan));
+        Out.ar(out, Pan2.ar(out_sig * env * amp, pan));
     }).add;
 
     // Continuously writes guitar input into circular buffer (loop:1 = overwrite)
@@ -318,7 +325,7 @@ s.waitForBoot({
     trp.startLive = {
         var lBuf    = trp.liveBuf;
         var outSlot = [trp.mixBus.index];
-        var ampSlot = [trp.liveAmp];
+        var ampSlot = trp.liveAmpSlot;  // shared slot — crescendo ramps this
         var sr      = s.sampleRate;
 
         trp.liveRoutine = Routine({
@@ -358,10 +365,11 @@ s.waitForBoot({
     };
 
     // Play "4 3 2 1" countdown on cue output, bar-aligned, delayFromNow seconds from first note
-    trp.playCountdown = { |delayFromNow|
+    trp.playCountdown = { |delayFromNow, beatSpacing|
         var words = [\four, \three, \two, \one];
+        var spc   = beatSpacing ? (trp.barDur / 4);  // default: quarter-note cue; pass barDur for slow
         4.do { |i|
-            SystemClock.sched(delayFromNow + (i * trp.barDur), {
+            SystemClock.sched(delayFromNow + (i * spc), {
                 if(~trp.alive, {
                     var buf = trp.cueBufs[words[i]];
                     if(buf.notNil, {
@@ -385,6 +393,7 @@ s.waitForBoot({
             SystemClock.sched(trp.loopDur, {
                 if(trp.alive, {
                     trp.recFinished[0] = Main.elapsedTime;
+                    trp.bufs[0].normalize(0.7);
                     { "Loop 1 ready — strata build...".postln; }.defer;
                     trp[\startPartner].(0, 0);
                     // P5 enters 30s after full bed (full bed = loopDur + buildStep×3 from first note)
@@ -408,10 +417,33 @@ s.waitForBoot({
                 nil
             });
 
-            // Countdowns: 4 bars = 12s before each transition
-            trp[\playCountdown].(trp.cycleTimes[0] - (trp.barDur * 4));
-            trp[\playCountdown].(trp.cycleTimes[1] - (trp.barDur * 4));
-            trp[\playCountdown].(trp.totalDur - (trp.barDur * 4));
+            // Cycle countdowns: 1 bar before (quarter-note spacing = 4 beats in 1 bar)
+            trp[\playCountdown].(trp.cycleTimes[0] - trp.barDur);
+            trp[\playCountdown].(trp.cycleTimes[1] - trp.barDur);
+            // Hard-stop countdown: two slow 4/3/2/1 (one word per bar) across 8 bars
+            trp[\playCountdown].(trp.totalDur - (trp.barDur * 8), trp.barDur);
+            trp[\playCountdown].(trp.totalDur - (trp.barDur * 4), trp.barDur);
+
+            // Crescendo: last 16 bars — all partners ramp to peak for the cliff
+            SystemClock.sched(trp.totalDur - (trp.barDur * 16), {
+                if(trp.alive, {
+                    var aBase = trp.partnerAmpSlot[0];
+                    var lBase = trp.liveAmpSlot[0];
+                    var aPeak = 0.50;
+                    var lPeak = 0.60;
+                    var dur   = trp.barDur * 16;
+                    Routine({
+                        var t0 = Main.elapsedTime;
+                        while { ~trp.alive } {
+                            var frac = ((Main.elapsedTime - t0) / dur).clip(0.0, 1.0);
+                            trp.partnerAmpSlot[0] = aBase + ((aPeak - aBase) * frac);
+                            trp.liveAmpSlot[0]    = lBase + ((lPeak - lBase) * frac);
+                            0.25.wait;
+                        };
+                    }).play(SystemClock);
+                });
+                nil
+            });
 
             SystemClock.sched(trp.cycleTimes[0], {
                 if(trp.alive, {
@@ -421,6 +453,7 @@ s.waitForBoot({
                     SystemClock.sched(trp.loopDur, {
                         if(trp.alive, {
                             trp.recFinished[1] = Main.elapsedTime;
+                            trp.bufs[1].normalize(0.7);
                             { "Loop 2 ready.".postln; }.defer;
                             trp[\startPartner].(0, 1);
                             SystemClock.sched(trp.buildStep, { if(trp.alive, { trp[\startPartner].(1, 1) }); nil });
@@ -447,6 +480,7 @@ s.waitForBoot({
                     SystemClock.sched(trp.loopDur, {
                         if(trp.alive, {
                             trp.recFinished[2] = Main.elapsedTime;
+                            trp.bufs[2].normalize(0.7);
                             { "Loop 3 ready.".postln; }.defer;
                             trp[\startPartner].(0, 2);
                             SystemClock.sched(trp.buildStep, { if(trp.alive, { trp[\startPartner].(1, 2) }); nil });
