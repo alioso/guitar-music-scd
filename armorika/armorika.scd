@@ -8,23 +8,25 @@
 ~aCfg = (
     thresh:      0.015,
     refractory:  0.09,
-    dryAmp:      0.2,
-    bedAmp:      0.12,
-    shadowAmp:   0.05,
+    blendAmp:    0.08,    // processed guitar blend (soft-saturated, not dry)
+    bedAmp:      0.16,    // +30% from previous
+    shadowAmp:   0.08,
     revMix:      0.3,
     revRoom:     0.88,
 
     // Lydian dominant — Zappa's characteristic mode
     mode: [0, 2, 4, 6, 7, 9, 10],
 
-    // [synthName, octaveOffsetFromRoot, stepMin, stepMax, restProb, amp, decayMin, decayMax, panRange]
-    // octaveOffset: semitones above rootMidi for this stream's register center
+    // [synthName, octOff, stepMin, stepMax, restProb, amp, decMin, decMax, panRange, octVar]
+    // octOff: semitones from root center for this stream's register
+    // octVar: random ±N octave jumps (in units of 12 semitones) — 0 = fixed register
     streamDefs: [
-        [\bedChime,  24,  0.10, 0.22, 0.20, 0.10, 0.30, 0.90, 0.7],
-        [\bedReed,   12,  0.18, 0.38, 0.25, 0.08, 0.80, 2.00, 0.5],
-        [\bedPad,   -12,  0.80, 2.50, 0.30, 0.06, 2.00, 5.00, 0.3],
-        [\bedBrass,   0,  0.14, 0.28, 0.20, 0.09, 0.50, 1.20, 0.6],
-        [\bedVibes,  19,  0.08, 0.25, 0.15, 0.08, 1.00, 3.00, 0.8],
+        [\bedOrgan,  0,   0.60, 2.00, 0.25, 0.08, 2.0, 6.0, 0.4, 1],  // wide-ranging, the loved one
+        [\bedBass,  -24,  0.40, 1.50, 0.15, 0.12, 1.0, 3.0, 0.2, 0],  // anchored low
+        [\bedString,  0,  0.30, 0.80, 0.30, 0.07, 2.0, 5.0, 0.6, 0],  // mid, slow attack
+        [\bedFlute,  12,  0.15, 0.35, 0.25, 0.07, 0.5, 1.5, 0.5, 0],  // mid-high, clean
+        [\bedChime,  12,  0.10, 0.22, 0.35, 0.07, 0.3, 0.9, 0.7, 0],  // sparser, lower than before
+        [\bedBrass,   0,  0.14, 0.28, 0.20, 0.09, 0.5, 1.2, 0.6, 0],  // mid, punchy
     ],
 );
 )
@@ -46,25 +48,8 @@ s.waitForBoot({
 
     // --- Bed instruments ---
 
-    // High, fast, bright bell — passed between streams like hocketing fragments
-    SynthDef(\bedChime, { |out=0, freq=440, amp=0.1, pan=0.0, decay=0.6|
-        var mod = SinOsc.ar(freq * 3.5, 0, freq * 1.5);
-        var car = SinOsc.ar(freq + mod);
-        var env = EnvGen.kr(Env.perc(0.005, decay, curve: -5), doneAction: 2);
-        Out.ar(out, Pan2.ar(car * env * amp, pan));
-    }).add;
-
-    // Mid-high, reedy double-modulator FM — woodwind character
-    SynthDef(\bedReed, { |out=0, freq=440, amp=0.1, pan=0.0, decay=1.5|
-        var mod1 = SinOsc.ar(freq * 2.0, 0, freq * 0.7);
-        var mod2 = SinOsc.ar(freq * 3.0, 0, freq * 0.3);
-        var car  = SinOsc.ar(freq + mod1 + mod2);
-        var env  = EnvGen.kr(Env.perc(0.02, decay, curve: -3), doneAction: 2);
-        Out.ar(out, Pan2.ar(car * env * amp, pan));
-    }).add;
-
-    // Low, additive, slow — harmonic foundation
-    SynthDef(\bedPad, { |out=0, freq=440, amp=0.08, pan=0.0, decay=3.0|
+    // Additive sines, slow attack — organ/pipe character (KEEP AS-IS, loved)
+    SynthDef(\bedOrgan, { |out=0, freq=440, amp=0.08, pan=0.0, decay=3.0|
         var sig = SinOsc.ar(freq)     * 0.50
                 + SinOsc.ar(freq * 2) * 0.30
                 + SinOsc.ar(freq * 3) * 0.15
@@ -73,7 +58,39 @@ s.waitForBoot({
         Out.ar(out, Pan2.ar(sig * env * amp, pan));
     }).add;
 
-    // Mid, high modIndex FM — brass/horn character
+    // Sub-octave FM, warm — bass/cello register
+    SynthDef(\bedBass, { |out=0, freq=440, amp=0.12, pan=0.0, decay=2.0|
+        var mod = SinOsc.ar(freq * 0.5, 0, freq * 0.4);
+        var car = SinOsc.ar(freq + mod);
+        var env = EnvGen.kr(Env.perc(0.1, decay, curve: -2), doneAction: 2);
+        Out.ar(out, Pan2.ar(car * env * amp, pan));
+    }).add;
+
+    // Two detuned sines, slow attack — string section warmth
+    SynthDef(\bedString, { |out=0, freq=440, amp=0.08, pan=0.0, decay=4.0|
+        var sig = SinOsc.ar(freq)         * 0.60
+                + SinOsc.ar(freq * 1.003) * 0.40;
+        var env = EnvGen.kr(Env.perc(0.3, decay, curve: -2), doneAction: 2);
+        Out.ar(out, Pan2.ar(sig * env * amp, pan));
+    }).add;
+
+    // Low modIndex FM — flute/pipe breath character
+    SynthDef(\bedFlute, { |out=0, freq=440, amp=0.08, pan=0.0, decay=1.2|
+        var mod = SinOsc.ar(freq * 4.0, 0, freq * 0.12);
+        var car = SinOsc.ar(freq + mod);
+        var env = EnvGen.kr(Env.perc(0.06, decay, curve: -4), doneAction: 2);
+        Out.ar(out, Pan2.ar(car * env * amp, pan));
+    }).add;
+
+    // High FM bell — now mid register, sparser (was +24 dominant, now +12 accent)
+    SynthDef(\bedChime, { |out=0, freq=440, amp=0.1, pan=0.0, decay=0.6|
+        var mod = SinOsc.ar(freq * 3.5, 0, freq * 1.5);
+        var car = SinOsc.ar(freq + mod);
+        var env = EnvGen.kr(Env.perc(0.005, decay, curve: -5), doneAction: 2);
+        Out.ar(out, Pan2.ar(car * env * amp, pan));
+    }).add;
+
+    // High modIndex FM — brass/horn punch
     SynthDef(\bedBrass, { |out=0, freq=440, amp=0.1, pan=0.0, decay=0.9|
         var mod = SinOsc.ar(freq * 1.0, 0, freq * 2.5);
         var car = SinOsc.ar(freq + mod);
@@ -81,16 +98,7 @@ s.waitForBoot({
         Out.ar(out, Pan2.ar(car * env * amp, pan));
     }).add;
 
-    // High-mid, metallic dual modulator — vibraphone/mallet character
-    SynthDef(\bedVibes, { |out=0, freq=440, amp=0.08, pan=0.0, decay=2.0|
-        var mod1 = SinOsc.ar(freq * 5.0, 0, freq * 0.8);
-        var mod2 = SinOsc.ar(freq * 7.0, 0, freq * 0.3);
-        var car  = SinOsc.ar(freq + mod1 + mod2);
-        var env  = EnvGen.kr(Env.perc(0.005, decay, curve: -6), doneAction: 2);
-        Out.ar(out, Pan2.ar(car * env * amp, pan));
-    }).add;
-
-    // --- Guitar shadow (light FM triggered by each pluck) ---
+    // --- Guitar shadow (FM echo of each pluck) ---
     SynthDef(\armorikaVoiceA, { |out=0, freq=440, decay=0.6, amp=0.05, pan=0.0|
         var mod = SinOsc.ar(freq * 2.01, 0, freq * 0.5);
         var car = SinOsc.ar(freq + mod);
@@ -98,10 +106,11 @@ s.waitForBoot({
         Out.ar(out, Pan2.ar(car * env * amp, pan));
     }).add;
 
-    // --- Dry guitar ---
-    SynthDef(\armorikaDry, { |out=0, amp=0.2|
-        var sig = SoundIn.ar(0) * amp;
-        Out.ar(out, Pan2.ar(sig, 0));
+    // --- Processed guitar blend (soft saturation — not dry) ---
+    SynthDef(\armorikaBlend, { |out=0, amp=0.08|
+        var sig = SoundIn.ar(0);
+        var sat = (sig * 2.5).tanh * amp;
+        Out.ar(out, Pan2.ar(sat, 0));
     }).add;
 
     // --- Master: reverb + soft limit ---
@@ -121,18 +130,18 @@ s.waitForBoot({
 
     ~mixBus = Bus.audio(s, 2);
 
-    ~ffDetect = Synth(\armorikaDetect, [thresh: ~aCfg.thresh], ~grpRec);
-    ~ffDry    = Synth(\armorikaDry,    [out: ~mixBus.index, amp: ~aCfg.dryAmp], ~grpDry);
-    ~ffMaster = Synth(\armorikaMaster, [out: 0, in: ~mixBus.index,
+    ~ffDetect = Synth(\armorikaDetect,  [thresh: ~aCfg.thresh], ~grpRec);
+    ~ffBlend  = Synth(\armorikaBlend,   [out: ~mixBus.index, amp: ~aCfg.blendAmp], ~grpDry);
+    ~ffMaster = Synth(\armorikaMaster,  [out: 0, in: ~mixBus.index,
         revMix: ~aCfg.revMix, revRoom: ~aCfg.revRoom], ~grpMaster);
 
     // --- Root pitch state ---
-    ~rootMidi       = 69;    // A4 default before guitar plays
+    ~rootMidi       = 69;
     ~lastTrig       = 0.0;
     ~streamsRunning = false;
     ~streams        = [];
 
-    // Bed stream routines — built here, started on first guitar note
+    // Bed stream routines — started on first guitar note
     ~streams = ~aCfg.streamDefs.collect { |def|
         var synthName = def[0];
         var octOff    = def[1];
@@ -143,14 +152,15 @@ s.waitForBoot({
         var decMin    = def[6];
         var decMax    = def[7];
         var panRange  = def[8];
+        var octVar    = def[9];
 
         Routine {
             loop {
                 var step     = stepMin.rrand(stepMax);
                 var decay    = decMin.rrand(decMax);
                 var interval = ~aCfg.mode.choose;
-                // normalize guitar pitch to middle octave, then offset per stream
-                var noteMidi = (~rootMidi.mod(12) + 60) + octOff + interval;
+                var octShift = ((-octVar)..octVar).choose * 12;
+                var noteMidi = (~rootMidi.mod(12) + 60) + octOff + interval + octShift;
                 noteMidi = noteMidi.clip(28, 104);
 
                 if(restProb.coin.not) {
@@ -176,17 +186,14 @@ s.waitForBoot({
         if((now - ~lastTrig) > ~aCfg.refractory) {
             ~lastTrig = now;
 
-            // Update root — streams read this on their next step
             ~rootMidi = freq.cpsmidi.round(1).asInteger;
 
-            // First note starts the bed
             if(~streamsRunning.not) {
                 ~streamsRunning = true;
                 ~streams.do { |r| r.play(TempoClock.default) };
                 "Bed started.".postln;
             };
 
-            // Light shadow on guitar note
             Synth(\armorikaVoiceA, [
                 out:   ~mixBus.index,
                 freq:  freq,
