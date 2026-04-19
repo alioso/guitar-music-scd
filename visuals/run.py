@@ -3,7 +3,7 @@ Visual effects runner for live guitar performance.
 
 Usage:
     python visuals/run.py --media visuals/stills/
-    python visuals/run.py --media visuals/media/ --effects grain,darken_faces
+    python visuals/run.py --media visuals/media/ --effects fx_grain,tf_blur_face
     python visuals/run.py --media visuals/media/ --min-dur 5 --max-dur 30
 
 Controls:
@@ -14,6 +14,7 @@ import sys
 import os
 import time
 import random
+import inspect
 import threading
 import argparse
 import importlib
@@ -102,6 +103,16 @@ def scale_down(frame):
         return cv2.resize(frame, (int(iw * s), int(ih * s)), interpolation=cv2.INTER_AREA)
     return frame
 
+def call_setup(emod, base_frame, osc_state, context):
+    """Call setup() with context only if the effect declares it."""
+    if 'context' in inspect.signature(emod.setup).parameters:
+        return emod.setup(base_frame, osc_state, context)
+    return emod.setup(base_frame, osc_state)
+
+def call_teardown(emod, state):
+    if hasattr(emod, 'teardown'):
+        emod.teardown(state)
+
 def pick_next(last_media):
     """Pick a random effect and a random compatible media item independently.
     Only constraint: avoid the same media file two activations in a row."""
@@ -111,9 +122,9 @@ def pick_next(last_media):
         compatible = [(p, t) for p, t in media if t in emod.MEDIA]
         if not compatible:
             continue
-        pool     = [m for m in compatible if m[0] != last_media] or compatible
+        pool        = [m for m in compatible if m[0] != last_media] or compatible
         path, mtype = random.choice(pool)
-        duration = random.uniform(args.min_dur, args.max_dur)
+        duration    = random.uniform(args.min_dur, args.max_dur)
         return ename, emod, path, mtype, duration
     sys.exit('No compatible effect+media combinations — check MEDIA declarations in effects.')
 
@@ -123,7 +134,7 @@ cv2.setWindowProperty('visuals', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
 delay_ms   = int(1000 / FPS)
 amp_smooth = 0.0
-last_media = None   # media_path of previous activation
+last_media = None
 
 print(f"\nRunning — Esc/Q to quit | dur {args.min_dur:.0f}–{args.max_dur:.0f}s")
 
@@ -153,9 +164,10 @@ while True:
         base_frame = scale_down(first)
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
-    # ── Setup effect (do expensive precomputation once per activation) ─────────
+    # ── Setup effect ──────────────────────────────────────────────────────────
     osc_state = {'amp': amp_smooth}
-    state     = emod.setup(base_frame, osc_state)
+    context   = {'media': media, 'current_path': media_path}
+    state     = call_setup(emod, base_frame, osc_state, context)
 
     # ── Render loop ───────────────────────────────────────────────────────────
     start = time.time()
@@ -171,23 +183,23 @@ while True:
                     break
             raw_frame = scale_down(raw_frame)
 
-        # Smooth amplitude
         with _osc_lock:
             target = _amp_raw
         amp_smooth += AMP_SMOOTH * (min(target * AMP_SCALE, 1.0) - amp_smooth)
         osc_state['amp'] = amp_smooth
 
-        # Render — effects must not modify raw_frame in place
         frame = emod.render(raw_frame, osc_state, state)
 
         cv2.imshow('visuals', frame)
         key = cv2.waitKey(delay_ms) & 0xFF
         if key in (27, ord('q')):
+            call_teardown(emod, state)
             if cap:
                 cap.release()
             cv2.destroyAllWindows()
             sys.exit(0)
 
+    call_teardown(emod, state)
     if cap:
         cap.release()
 
