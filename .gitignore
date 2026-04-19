@@ -1,4 +1,6 @@
 .DS_Store
 visuals/.venv/
+visuals/models/
+visuals/media/
 visuals/stills/
 **/__pycache__/
