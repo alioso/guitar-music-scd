@@ -20,6 +20,7 @@ Live solo guitar compositions in SuperCollider 3.14.1.
 | [tryphon](tryphon/) | Polyrhythm, 4 drifting partners + live processing | ~7 min |
 | [armorika](armorika/) | TBD | TBD |
 | [vanilla](vanilla/) | Granular sampler, 5 partners, pre-recorded + live capture | ~5 min |
+| [coronal](coronal/) | Feedback resonance network, 7 delay lines, touch-controlled | ~8 min |
 
 ## Workflow
 
