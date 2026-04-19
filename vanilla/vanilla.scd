@@ -44,16 +44,14 @@ BLOCKS
 // ─────────────────────────────────────────────────────────────────────────────
 (
 ~van = (
-    numChans:     8,       // match your audio interface output count
-
     inBus:        0,       // input channel (heavily processed guitar)
     thresh:       0.015,   // amplitude threshold to start the piece
 
     pieceDur:     300,     // 5 minutes in seconds
     outroStart:   270,     // 4:30 — P1–3 begin cascade out
 
-    // PanAz positions (-1..1) for 8-channel spread: front → sides → rear
-    pans:         [0.0, 0.5, -0.5, 0.85, -0.85],
+    // Pan2 positions: -1 (left) to +1 (right)
+    pans:         [-0.8, -0.4, 0.4, 0.8, 0.0],
 
     // Grain bounds — min floor of 0.08s prevents crackle artifacts
     // Rate drift in semitones — capped at ±2 keeps it musical not glitchy
@@ -62,9 +60,15 @@ BLOCKS
 
     fadeTimeP123: 6,       // seconds — asr envelope
     fadeTimeP45:  8,
+
+    // Dry input + reverb (GVerb — requires sc3-plugins)
+    dryAmp:       0.5,
+    reverbMix:    0.75,    // mostly wet — the verb is the point
+    reverbDecay:  7.0,     // seconds
+    reverbDamp:   0.4,
+    reverbSize:   1.8,     // room size multiplier (~50m)
 );
-s.options.numOutputBusChannels = ~van.numChans;
-s.options.numInputBusChannels  = 1;
+s.options.numInputBusChannels = 1;
 postln("Vanilla: config loaded.");
 )
 
@@ -100,8 +104,9 @@ s.waitForBoot {
         var pos, rate, dur, trig, sig, env;
 
         // Position: slow wander (LFNoise1) + grain-level scatter (LFNoise2)
+        // TGrains centerPos is in seconds, so multiply normalized 0-1 by buffer duration
         pos  = (LFNoise1.kr(posRate).range(0, 1)
-               + LFNoise2.kr(1.5).bipolar(posDev)).clip(0, 1);
+               + LFNoise2.kr(1.5).bipolar(posDev)).clip(0, 1) * BufDur.kr(buf);
 
         // Rate: pitch drift ±rateDrift semitones, very slow
         rate = 2 ** (LFNoise1.kr(0.07).bipolar(rateDrift) / 12);
@@ -116,7 +121,7 @@ s.waitForBoot {
         sig  = TGrains.ar(1, trig, buf, rate, pos, dur, 0, amp);
         env  = EnvGen.kr(Env.asr(fadeTime, 1, fadeTime), gate, doneAction: 2);
 
-        Out.ar(0, PanAz.ar(~van.numChans, sig * env, panPos));
+        Out.ar(0, Pan2.ar(sig * env, panPos));
     }).add;
 
     // ── 30s mono recorder — fills buffer once (loop:0), stays alive until freed ─

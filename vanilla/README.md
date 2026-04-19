@@ -36,23 +36,22 @@ The 80ms duration floor prevents crackle artifacts. The ±2 semitone default rat
 
 ## Partners
 
-| Voice | Source | Pan position | Grain dur | Density | Fade |
+| Voice | Source | Pan | Grain dur | Density | Fade |
 |---|---|---|---|---|---|
-| P1 | samp_1.wav | front (0.0) | 80–220ms | 6–16/s | 6s asr |
-| P2 | samp_2.wav | right (0.5) | 80–220ms | 6–16/s | 6s asr |
-| P3 | samp_3.wav | left (−0.5) | 80–220ms | 6–16/s | 6s asr |
-| P4 | live capture | rear-right (0.85) | 100–280ms | 8–18/s | 8s asr |
-| P5 | live capture | rear-left (−0.85) | 100–280ms | 8–18/s | 8s asr |
+| P1 | samp_1.wav | hard left (−0.8) | 80–220ms | 6–16/s | 6s asr |
+| P2 | samp_2.wav | left (−0.4) | 80–220ms | 6–16/s | 6s asr |
+| P3 | samp_3.wav | right (0.4) | 80–220ms | 6–16/s | 6s asr |
+| P4 | live capture | hard right (0.8) | 100–280ms | 8–18/s | 8s asr |
+| P5 | live capture | center (0.0) | 100–280ms | 8–18/s | 8s asr |
 
-Pan positions assume 8-channel circular layout (0=front, ±1=rear). Adjust `~van.pans` for your actual speaker arrangement.
+Uses `Pan2` (stereo). Adjust `~van.pans` to taste; values are −1 (left) to +1 (right).
 
 ## Key parameters (Block 1)
 
 | Parameter | Default | Notes |
 |---|---|---|
-| `numChans` | 8 | Match your interface output count |
 | `thresh` | 0.015 | Amplitude to start the piece |
-| `pans` | [0.0, 0.5, −0.5, 0.85, −0.85] | PanAz positions for 8-channel circular |
+| `pans` | [−0.8, −0.4, 0.4, 0.8, 0.0] | Pan2 positions: −1 (left) to +1 (right) |
 | `grainDurMin` | 0.08 | Minimum grain duration in seconds — lower = crackle risk |
 | `rateDriftMax` | 2.0 | Max semitone drift for all partners |
 | `fadeTimeP123` | 6 | Fade envelope time (seconds) for P1–P3 |

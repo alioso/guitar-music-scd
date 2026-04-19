@@ -324,7 +324,7 @@ s.waitForBoot({
 ( // STOP
 OSCdef(\armorikaNote).free;
 ~streams.do { |r| r.stop };
-~scaleRevertTask.isNil.not.if { ~scaleRevertTask.stop };
+if(~scaleRevertTask.notNil) { ~scaleRevertTask.stop };
 ~gBuf.free;
 ~mixBus.free;
 s.freeAll;
