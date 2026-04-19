@@ -137,6 +137,19 @@ s.waitForBoot {
         SendReply.kr(amp > thresh, '/vanilla/detected');
     }).add;
 
+    // ── dry input + big reverb ────────────────────────────────────────────────
+    SynthDef(\van_dry, {
+        arg inBus=0, amp=0.5, reverbMix=0.75,
+            reverbDecay=7.0, reverbDamp=0.4, reverbSize=1.8, gate=1;
+        var sig  = SoundIn.ar(inBus) * amp;
+        var room = (reverbSize * 28).clip(10, 300);
+        var verb = GVerb.ar(sig, roomsize: room,
+            revtime: reverbDecay, damping: reverbDamp, drylevel: 0);
+        var wet  = Sanitize.ar([verb[0], verb[1]]);
+        var env  = EnvGen.kr(Env.asr(2, 1, 4), gate, doneAction: 2);
+        Out.ar(0, ((sig ! 2) * (1 - reverbMix) + (wet * reverbMix)) * env);
+    }).add;
+
     s.sync;
     postln("Vanilla: ready — evaluate BLOCK 3 to arm.");
 };
@@ -149,6 +162,7 @@ s.waitForBoot {
 (
 ~vanSynths     = Array.newClear(5);   // P1–P5 granular voices
 ~vanRec        = Array.newClear(2);   // P4/P5 recorders
+~vanDry        = nil;
 ~vanRunning    = false;
 ~vanRoutine    = nil;
 
@@ -159,6 +173,15 @@ OSCdef(\van_start, { |msg|
         ~vanRunning = true;
         ~vanDetector.free;
         postln("Vanilla: input detected — piece begins.");
+
+        ~vanDry = Synth(\van_dry, [
+            \inBus,       ~van.inBus,
+            \amp,         ~van.dryAmp,
+            \reverbMix,   ~van.reverbMix,
+            \reverbDecay, ~van.reverbDecay,
+            \reverbDamp,  ~van.reverbDamp,
+            \reverbSize,  ~van.reverbSize,
+        ]);
 
         ~vanRoutine = fork {
 
@@ -256,6 +279,7 @@ OSCdef(\van_start, { |msg|
             ~vanRunning = false;
             [3, 4].do { |i| ~vanSynths[i] !? { |s| s.set(\gate, 0) } };
             ~vanRec.do  { |r| r !? _.free };
+            ~vanDry     !? { |s| s.set(\gate, 0) };
             postln("Vanilla: ended.");
         };
     };
@@ -273,6 +297,7 @@ postln("Vanilla: armed — play to begin.");
 ~vanRoutine  !? _.stop;
 ~vanSynths.do { |s| s !? { |x| x.set(\gate, 0) } };
 ~vanRec.do    { |s| s !? _.free };
+~vanDry      !? { |s| s.set(\gate, 0) };
 ~vanDetector  !? _.free;
 OSCdef(\van_start).free;
 postln("Vanilla: stopped.");
