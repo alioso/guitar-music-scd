@@ -86,13 +86,14 @@ SynthDef(\gtr, { |out=0, freq=220, amp=0.5, decay=2.0, bright=0.48, pan=0|
     Out.ar(out, Pan2.ar(sig, pan));
 }).add;
 
-// ── Reverb (JPverb, falls back to GVerb) ─────────────────────────────────────
+// ── Reverb (GVerb — built-in) ─────────────────────────────────────────────────
 SynthDef(\qtrReverb, { |in=4, out=0|
     var sig = In.ar(in, 2);
-    var wet = JPverb.ar(sig, t60: 2.8, damp: 0.4, size: 0.7, earlyDiff: 0.7,
-                         modDepth: 0.05, modFreq: 0.3, low: 0.9, mid: 0.8, high: 0.5,
-                         lowcut: 200, highcut: 6000);
-    Out.ar(out, wet * 0.30);
+    var mono = sig.sum * 0.5;
+    var wet  = GVerb.ar(mono, roomsize: 28, revtime: 2.8, damping: 0.4,
+                         inputbw: 0.75, spread: 15, drylevel: 0, earlyreflevel: 0.5,
+                         taillevel: 0.5);
+    Out.ar(out, wet * 0.28);
 }).add;
 
 // ── Click (sine blip, two pitches: downbeat / subdivision) ────────────────────
@@ -1006,7 +1007,7 @@ SynthDef(\click, { |out=0, freq=880, amp=0.6|
 
 // ── Click track ───────────────────────────────────────────────────────────────
 ~clickRoutine = Routine({
-    ~running.not.whileTrue { 0.1.wait };  // wait for start
+    while { ~running.not } { 0.1.wait };  // wait for start
     while { ~running } {
         var bpm         = ~tempoAtBar.(~currentBar);
         var secPerBeat  = 60.0 / bpm;
