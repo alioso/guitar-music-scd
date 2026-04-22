@@ -15,7 +15,18 @@ python visuals/run.py --media visuals/media/ --effects fx_grain,tf_blur_face
 
 # Tune timing (seconds per activation)
 python visuals/run.py --media visuals/stills/ --min-dur 5 --max-dur 30
+
+# Override screen resolution (default: auto-detected via osascript)
+python visuals/run.py --media visuals/stills/ --screen 1280x800
 ```
+
+Each activation is built from three independent random draws:
+1. **Media** — one item from the folder (repeats allowed)
+2. **Compositor** (`comp_*`) — picked with `COMP_CHANCE` probability (default 40%), or skipped
+3. **Process stack** — 0, 1, or 2 `fx_*`/`tf_*`/`tp_*` effects chained on top (tunable via `PROC_WEIGHTS`)
+
+Chain order: compositor → proc1 → proc2 → fit_frame → display.
+The terminal prints the full stack label each activation, e.g. `[comp_dual + fx_grain + tf_blur_face]`.
 
 **Controls:** `Esc` / `Q` to quit. The runner prints each activation to the terminal.
 
@@ -45,7 +56,9 @@ uv pip install -r requirements.txt
 
 ## Media
 
-Drop stills (`.jpg`, `.png`, `.webp`, etc.) or short video clips (`.mp4`, `.mov`, `.avi`) into any folder and point `--media` at it. Stills and videos can be mixed in the same folder — effects declare which types they accept and the scheduler filters automatically.
+Drop stills (`.jpg`, `.png`, `.webp`, etc.) or video clips (`.mp4`, `.mov`, `.avi`) into any folder and point `--media` at it. Stills and videos can be mixed. Effects declare which types they accept and the scheduler filters automatically.
+
+**Long videos are fine.** OpenCV streams frame-by-frame — a 12-minute film uses the same memory as a 30-second clip. On each activation the runner seeks to a random point in the video, always leaving at least `--min-dur` seconds of content ahead. If the activation duration runs past the end of the file, it loops. Secondary videos in `comp_dual` and `comp_super` also seek randomly (within the first 90% of the file).
 
 ---
 
@@ -68,7 +81,7 @@ Tune: `MAX_GRAIN` (noise intensity), `AMP_POWER`.
 ---
 
 ### `tf_blur_face`
-**Media:** still  
+**Media:** still — **`PERF = 'heavy'`**  
 Detects faces with OpenCV's DNN detector (downloaded once to `visuals/models/`, ~10 MB). Applies a feathered elliptical Gaussian blur to each face. Amplitude drives blur intensity.  
 Tune: `_MIN_BLUR`, `_MAX_BLUR`, `_CONFIDENCE` (detection threshold, lower = more detections), `AMP_POWER`.  
 *For a hard rectangular blockout version, see `tf_block_face` (not yet implemented).*
@@ -76,7 +89,7 @@ Tune: `_MIN_BLUR`, `_MAX_BLUR`, `_CONFIDENCE` (detection threshold, lower = more
 ---
 
 ### `tp_bw`
-**Media:** video  
+**Media:** video — **`PERF = 'heavy'`**  
 Uses YOLOv8n-seg to segment people per frame. People render in greyscale; background keeps its natural colour with a subtle saturation boost. Amplitude drives the saturation intensity.  
 Tune: `_SAT_BASE`, `_SAT_MAX`.  
 *Requires `ultralytics` — model downloads automatically on first use (~6 MB).*
@@ -126,19 +139,30 @@ Create `visuals/effects/{name}.py` — the runner picks it up automatically.
 import cv2
 import numpy as np
 
+TYPE  = 'process'            # 'process' (default) or 'layout' for comp_* effects
 MEDIA = {'still', 'video'}   # restrict as needed
+# PERF = 'heavy'             # REQUIRED if render() runs ML inference — see rule below
 
 def setup(frame, osc_state):
-    """Called once per activation. Expensive work goes here (detection, model load).
-    Return a state dict passed to every render() call."""
+    """Called once per activation. Expensive work goes here (detection, model load)."""
     return {}
 
 def render(frame, osc_state, state):
-    """Called every frame. Must return a uint8 BGR image.
-    Do not modify frame in place."""
+    """Called every frame. Must return a uint8 BGR image. Do not modify frame in place."""
     amp = osc_state['amp']   # smoothed, scaled, 0.0–1.0
     return frame
 ```
+
+### The `PERF = 'heavy'` rule
+
+**Always set `PERF = 'heavy'` if `render()` calls a neural network** — OpenCV DNN, YOLO, MediaPipe, or any per-frame model inference. The scheduler uses this to guarantee two heavy effects never share the same activation chain.
+
+| Type | Cost/frame | Stack freely? | Set `PERF`? |
+|---|---|---|---|
+| Pure math — grain, blur, colour | 2–5ms | Yes | No |
+| ML inference per frame | 40–80ms | No | **Yes** |
+
+Two heavy effects in one chain = ~8fps. This is enforced automatically once the flag is set — no manual coordination needed.
 
 **Effects that need a second media item** (like `comp_` effects) declare `context` in `setup()`:
 

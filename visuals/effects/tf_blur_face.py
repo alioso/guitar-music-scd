@@ -14,6 +14,7 @@ import cv2
 import numpy as np
 
 MEDIA = {'still'}
+PERF  = 'heavy'   # uses DNN inference — scheduler won't pair with another heavy effect
 
 _MIN_BLUR   = 11
 _MAX_BLUR   = 101

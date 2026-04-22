@@ -7,6 +7,7 @@ import random
 import cv2
 import numpy as np
 
+TYPE  = 'layout'
 MEDIA = {'still', 'video'}
 
 _ALPHA_MIN = 0.30
@@ -20,14 +21,16 @@ def _load_second(context, main_path):
         pool = context['media']
     path, mtype = random.choice(pool)
     if mtype == 'still':
-        frame = cv2.imread(path)
-        return frame, None, mtype
-    cap = cv2.VideoCapture(path)
+        return cv2.imread(path), None, mtype
+    cap        = cv2.VideoCapture(path)
+    total      = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    start      = random.randint(0, max(0, int(total * 0.9)))
+    cap.set(cv2.CAP_PROP_POS_FRAMES, start)
     ret, frame = cap.read()
     if not ret:
         cap.release()
         return None, None, mtype
-    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, start)
     return frame, cap, mtype
 
 

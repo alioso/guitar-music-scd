@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 
 MEDIA = {'video'}
+PERF  = 'heavy'   # uses YOLO inference per frame — scheduler won't pair with another heavy effect
 
 _SAT_BASE = 1.20   # background saturation multiplier at silence
 _SAT_MAX  = 1.55   # at full amplitude
