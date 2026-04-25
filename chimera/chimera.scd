@@ -22,7 +22,7 @@ STRUCTURE (times from first note)
   8:30    Fade — bed dissolves over 35s
   9:00    Silence
 
-BED (P1–P4 — the ocean)
+BED (P1–P4 — the ocean)"/Users/albanbailly/Documents/guitar-music-scd/chimera/README.md"
   3 synthesized additive voices + 1 restless P4 voice,
   frequencies locked from calibration pitches.
   Harmonics breathe independently via LFNoise — never static, never sudden.

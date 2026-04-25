@@ -30,7 +30,7 @@ STRUCTURE (~8 min from first note)
          The network rings out in its own physics — no fade button.
          Some delay lines will outlast others.
   7:00   Silence. Evaluate Block 3 to stop.
-
+"/Users/albanbailly/Documents/guitar-music-scd/coronal/README.md"
 NETWORK
   Delay times: 97, 137, 181, 239, 307, 389, 443 ms.
   Each line LFO-modulated at 9–27 mHz (independent, incommensurable) —
@@ -62,17 +62,17 @@ PERFORMANCE NOTES
     act3Dur:   120,   // dissolution — gain ramps to 0; network decays naturally
 
     // Feedback gain arc
-    gainStart:  0.70,  // feedback gain at first note
-    gainPeak:   0.84,  // peak gain (end of Act 1, held through Act 2)
-    touchMax:   0.08,  // max amplitude-driven gain boost (peak total: 0.92)
+    gainStart:  0.15,  // feedback gain at first note — all lines decaying, stable
+    gainPeak:   0.76,  // peak gain — all lines self-oscillating (97ms crosses at ~21s, 443ms at ~118s)
+    touchMax:   0.12,  // max amplitude-driven gain boost (peak total: 0.88 — edge of dangerous zone)
 
     // CombL decay arc
     decayStart:  3.0,  // seconds at first note
-    decayPeak:   6.5,  // seconds at peak
+    decayPeak:   8.0,  // seconds at peak
 
     // Mix
-    dryAmp:   0.35,    // guitar gain entering the network (no dry bypass)
-    outGain:  0.78,    // master output from network SynthDef
+    dryAmp:   0.70,    // guitar gain entering the network (no dry bypass)
+    outGain:  1.80,    // master output from network SynthDef
 
     // Reverb
     reverbMix:   0.40,
@@ -141,7 +141,7 @@ s.waitForBoot({
         combs = dts.collect { |dt, i|
             var modded = dt * (1.0 + (SinOsc.kr(rates[i]) * 0.007));
             modded = modded.clip(0.001, dt * 1.02);
-            CombL.ar(feedIn, dt * 1.02, modded, Lag.kr(decayTime, 6.0))
+            CombL.ar(feedIn, dt * 1.02, modded, Lag.kr(decayTime, 3.0))
         };
 
         // Soft-clip each line before feeding back — prevents blowup
@@ -260,8 +260,8 @@ s.waitForBoot({
     // ── Ready ─────────────────────────────────────────────────────────────────
     "".postln;
     "Coronal — running. Play guitar when ready.".postln;
-    "  Threshold: % | Gain arc: % → %  | Touch boost: 0 → %".format(
-        cor.threshold, cor.gainStart, cor.gainPeak, cor.touchMax).postln;
+    "  Threshold: % | Gain arc: % → % | Touch boost: 0 → % (ceiling: %)".format(
+        cor.threshold, cor.gainStart, cor.gainPeak, cor.touchMax, (cor.gainPeak + cor.touchMax).round(0.01)).postln;
     "  Excitation: 0–%s | Sustain: %s–%s | Dissolve: %s–%s | End: %ss".format(
         cor.act1Dur,
         cor.act1Dur, cor.act1Dur + cor.act2Dur,

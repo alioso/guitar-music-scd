@@ -4,3 +4,4 @@ visuals/models/
 visuals/media/
 visuals/stills/
 **/__pycache__/
+*.pt
