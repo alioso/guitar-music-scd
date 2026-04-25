@@ -11,11 +11,12 @@ A generative Synclavier-style bed triggered and conducted by live guitar. The gu
 ```
 Guitar → pitch detection
               ↓
-         root pitch update → 6 FM bed streams (always running)
+         root pitch update → 7 FM bed streams (always running)
               ↓
          soft FM shadow (echoes each pluck)
               ↓
-         processed guitar blend (tanh saturation)
+         resonator bank (7 Resonz filters tuned to current mode,
+              excited by live guitar energy)
               ↓
          mix bus → reverb → limiter → out
 ```
@@ -29,16 +30,30 @@ Guitar → pitch detection
 | bedFlute | clean low-modIndex FM | mid-high | fast |
 | bedChime | bright FM bell | mid-high accent | fast, sparse |
 | bedBrass | high modIndex FM, punchy | mid | medium |
+| bedGranGuitar | TGrains from live buffer, pitched to root | wide | slow |
 
-Mode: **Lydian dominant** `[0, 2, 4, 6, 7, 9, 10]` — Zappa's characteristic scale.
+Default mode: **natural minor** `[0, 2, 3, 5, 7, 8, 10]`.
+
+### Guitar resonator
+Seven narrow-bandwidth `Resonz` filters tuned to the 7 mode degrees one octave above the current root. Driven by live guitar energy — responds to playing intensity, not pitch. Each resonator has a slow independent drift (LFNoise1) and a fixed stereo position. Sounds like bowed metal tines or singing bowls. Frequencies update whenever the root or mode changes.
 
 ---
 
 ## Performance
 
+### Structure (all times from first detected note)
+
+| Time | Event |
+|---|---|
+| 0:00 | First note → bed instruments enter one by one, 8s apart (organ → bass → string → flute → chime → brass → gran guitar). Full ensemble ~48s in. |
+| 2:00 | **Harmonious passage 1** — Dorian mode (minor with sweet 6th); brass+chime near-silent; organ/string/flute boosted; ring mod pulled back. |
+| 3:00 | Natural minor returns, full texture restored. |
+| 4:00 | **Harmonious passage 2** — major mode (bright lift); same instrument balance as passage 1. |
+| 5:00 | Streams stop, master fades to silence over 20s. |
+
 ### Starting the piece
-- Boot, then play your first note. The bed starts on the first detected pitch.
-- Give it 10–15 seconds to build before moving.
+- Boot, then play your first note. The bed starts and the structure clock begins.
+- The first ~50 seconds are sparse — let it build.
 
 ### What the guitar does
 - **Each note shifts the key center** of all 6 streams simultaneously. Streams pick up the new root on their next step — key changes feel gradual because each stream has its own pace.
@@ -53,7 +68,10 @@ Mode: **Lydian dominant** `[0, 2, 4, 6, 7, 9, 10]` — Zappa's characteristic sc
 - **Silence** → bed continues in last key, guitar absence becomes expressive
 
 ### What the guitar sounds like
-The input is soft-saturated (not dry) — it blends into the texture rather than sitting on top. Each pluck also spawns a light FM shadow voice. The guitar is the high register of the orchestra, not a soloist above it.
+Three layers on top of the bed:
+- **Ring mod** (`\armorikaRingMod`): dry guitar multiplied by a sine carrier tuned to the current root. Creates sum and difference tones — when you play the root you get octave doubling, other notes produce harmonically "wrong" but related overtones. Goes through the master reverb.
+- **Resonator bank** (`\armorikaResonator`): 7 narrow filters tuned to the mode, excited by guitar energy. Responds to intensity, not pitch.
+- **FM shadow** (`\armorikaVoiceA`): short FM burst on each detected pluck.
 
 ---
 
@@ -62,7 +80,8 @@ The input is soft-saturated (not dry) — it blends into the texture rather than
 | Parameter | Effect |
 |---|---|
 | `bedAmp` | overall bed volume |
-| `blendAmp` | how present the processed guitar is |
+| `resAmp` | resonator bank level (metal tines) |
+| `ringAmp` | ring-modulated guitar level |
 | `shadowAmp` | brightness of the FM echo on each pluck |
 | `revMix` | how much the space envelops everything |
 | `mode` | harmonic world — change for different color |

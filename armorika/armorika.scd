@@ -8,24 +8,25 @@
 ~aCfg = (
     thresh:      0.015,
     refractory:  0.09,
-    inputAmp:    0.14,    // processed FM input (no dry guitar ever)
-    bedAmp:      0.22,    // bed is part of the piece, not background
+    resAmp:      0.28,    // resonator bank driven by guitar
+    ringAmp:     0.20,    // ring-modulated dry guitar
+    bedAmp:      0.42,    // bed is part of the piece, not background
     shadowAmp:   0.08,
     revMix:      0.32,
     revRoom:     0.88,
 
-    // Lydian dominant — Zappa's characteristic mode
-    mode: [0, 2, 4, 6, 7, 9, 10],
+    // Natural minor — default harmonic world
+    mode: [0, 2, 3, 5, 7, 8, 10],
 
     // [synthName, octOff, stepMin, stepMax, restProb, amp, decMin, decMax, panRange, octVar, atkMin, atkMax]
     streamDefs: [
-        [\bedOrgan,      0,  0.55, 1.80, 0.12, 0.10, 2.0, 6.0, 0.4, 1, 0.32, 0.50],
-        [\bedBass,      -24, 0.60, 2.00, 0.25, 0.12, 1.0, 3.0, 0.2, 0, 0.05, 0.25],
-        [\bedString,     0,  0.50, 1.20, 0.40, 0.07, 2.0, 5.0, 0.6, 0, 0.10, 0.50],
-        [\bedFlute,      12, 0.30, 0.70, 0.45, 0.07, 0.5, 1.5, 0.5, 0, 0.02, 0.12],
-        [\bedChime,      12, 0.22, 0.55, 0.55, 0.07, 0.3, 0.9, 0.7, 0, 0.002, 0.01],
-        [\bedBrass,      0,  0.28, 0.65, 0.40, 0.09, 0.5, 1.2, 0.6, 0, 0.04, 0.15],
-        [\bedGranGuitar, 0,  0.70, 2.00, 0.35, 0.10, 2.0, 5.0, 0.7, 0, 0.30, 0.80],
+        [\bedOrgan,      0,  0.55, 1.80, 0.12, 0.17, 2.0, 6.0, 0.4, 1, 0.05, 0.12],
+        [\bedBass,      -24, 0.60, 2.00, 0.25, 0.20, 1.0, 3.0, 0.2, 0, 0.02, 0.08],
+        [\bedString,     0,  0.50, 1.20, 0.40, 0.12, 2.0, 5.0, 0.6, 0, 0.03, 0.12],
+        [\bedFlute,      12, 0.30, 0.70, 0.45, 0.11, 0.5, 1.5, 0.5, 0, 0.01, 0.05],
+        [\bedChime,      12, 0.22, 0.55, 0.55, 0.14, 0.3, 0.9, 0.7, 0, 0.002, 0.01],
+        [\bedBrass,      0,  0.28, 0.65, 0.40, 0.16, 0.5, 1.2, 0.6, 0, 0.02, 0.07],
+        [\bedGranGuitar, 0,  0.70, 2.00, 0.35, 0.14, 2.0, 5.0, 0.7, 0, 0.10, 0.30],
     ],
 );
 )
@@ -123,21 +124,27 @@ s.waitForBoot({
         Out.ar(out, sig * env);
     }).add;
 
-    // --- Guitar input: organ-like additive voice, amplitude-followed, mild artifacts ---
-    // Additive sines (same logic as bedOrgan) + subtle wobble + mild noise + gentle sat.
-    // Guitar amplitude controls volume. Carrier smoothly tracks detected pitch.
-    SynthDef(\armorikaInput, { |out=0, amp=0.14, carrierFreq=440|
-        var sig    = SoundIn.ar(0);
-        var ampEnv = Amplitude.kr(sig, 0.01, 0.15).linlin(0, 0.25, 0, 1).clip(0, 1);
-        var cFreq  = carrierFreq.lag(0.05);
-        var wobble = LFNoise1.kr(1.5).range(0.998, 1.002);
-        var voice  = SinOsc.ar(cFreq * wobble)     * 0.50
-                   + SinOsc.ar(cFreq * 2 * wobble) * 0.30
-                   + SinOsc.ar(cFreq * 3 * wobble) * 0.15
-                   + SinOsc.ar(cFreq * 4 * wobble) * 0.05;
-        var noise  = HPF.ar(PinkNoise.ar(0.008), 600);
-        var proc   = ((voice + noise) * 1.3).tanh;
-        Out.ar(out, Pan2.ar(proc * amp * ampEnv, 0));
+    // --- Guitar input: resonator bank — 7 narrow Resonz filters tuned to current mode,
+    //     excited by live guitar. Responds to playing energy, not pitch.
+    //     Sounds like bowed metal tines. Frequencies updated on root/mode change.
+    SynthDef(\armorikaResonator, { |out=0, amp=0.28,
+        f0=880, f1=988, f2=1109, f3=1245, f4=1319, f5=1480, f6=1568|
+        var in     = SoundIn.ar(0);
+        var exc    = HPF.ar(in, 100);
+        var drift  = LFNoise1.kr([0.07, 0.05, 0.09, 0.06, 0.08, 0.05, 0.07]).range(0.995, 1.005);
+        var res    = Resonz.ar(exc, [f0, f1, f2, f3, f4, f5, f6] * drift, 0.008);
+        var pans   = [-0.6, -0.3, 0.1, -0.5, 0.4, 0.2, 0.6];
+        var spread = res.collect { |r, i| Pan2.ar(r, pans[i]) }.sum;
+        var ampEnv = Amplitude.kr(in, 0.005, 0.6).linlin(0, 0.2, 0, 1).clip(0, 1);
+        Out.ar(out, spread * amp * ampEnv);
+    }).add;
+
+    // --- Ring-modulated guitar — carrier at root, slight saturation for body ---
+    SynthDef(\armorikaRingMod, { |out=0, amp=0.20, carrierFreq=440|
+        var in      = SoundIn.ar(0);
+        var carrier = SinOsc.ar(carrierFreq);
+        var ring    = (in * carrier * 3.0).tanh * 0.7;
+        Out.ar(out, Pan2.ar(ring * amp, 0));
     }).add;
 
     // --- FM shadow on each pluck ---
@@ -149,10 +156,10 @@ s.waitForBoot({
     }).add;
 
     // --- Master: reverb + soft limit ---
-    SynthDef(\armorikaMaster, { |out=0, in=0, revMix=0.32, revRoom=0.88|
+    SynthDef(\armorikaMaster, { |out=0, in=0, revMix=0.32, revRoom=0.88, amp=1|
         var sig = In.ar(in, 2);
         var wet = FreeVerb2.ar(sig[0], sig[1], mix: revMix, room: revRoom, damp: 0.4);
-        Out.ar(out, Limiter.ar(wet, 0.95));
+        Out.ar(out, Limiter.ar(wet * amp.lag(1.0), 0.95));
     }).add;
 
     // Allocate guitar capture buffer (8 seconds)
@@ -175,20 +182,33 @@ s.waitForBoot({
         DC.ar(0)
     }.play(~grpRec);
 
+    ~rootMidi = 69;
+
     ~ffDetect = Synth(\armorikaDetect, [thresh: ~aCfg.thresh], ~grpRec);
-    ~ffInput  = Synth(\armorikaInput,  [out: ~mixBus.index, amp: ~aCfg.inputAmp,
-        carrierFreq: 440], ~grpDry);
+    ~ffInput  = Synth(\armorikaResonator, [
+        out: ~mixBus.index, amp: ~aCfg.resAmp,
+        f0: (~rootMidi + 12 + ~aCfg.mode[0]).midicps,
+        f1: (~rootMidi + 12 + ~aCfg.mode[1]).midicps,
+        f2: (~rootMidi + 12 + ~aCfg.mode[2]).midicps,
+        f3: (~rootMidi + 12 + ~aCfg.mode[3]).midicps,
+        f4: (~rootMidi + 12 + ~aCfg.mode[4]).midicps,
+        f5: (~rootMidi + 12 + ~aCfg.mode[5]).midicps,
+        f6: (~rootMidi + 12 + ~aCfg.mode[6]).midicps,
+    ], ~grpDry);
+    ~ffRingMod = Synth(\armorikaRingMod, [
+        out: ~mixBus.index, amp: ~aCfg.ringAmp,
+        carrierFreq: ~rootMidi.midicps,
+    ], ~grpDry);
     ~ffMaster = Synth(\armorikaMaster, [out: 0, in: ~mixBus.index,
         revMix: ~aCfg.revMix, revRoom: ~aCfg.revRoom], ~grpMaster);
 
     // --- Root pitch state ---
-    ~rootMidi       = 69;
     ~lastTrig       = 0.0;
     ~streamsRunning = false;
     ~streams        = [];
 
     // --- Scale recognition ---
-    ~lydianMode      = [0, 2, 4, 6, 7, 9, 10];
+    ~defaultMode     = [0, 2, 3, 5, 7, 8, 10];  // natural minor
     ~knownScales     = [
         [0, 2, 4, 5, 7, 9, 11],  // major
         [0, 2, 3, 5, 7, 8, 10],  // natural minor
@@ -196,6 +216,60 @@ s.waitForBoot({
     ~pcHistory       = [];   // rolling unique-pitch-class evidence (last 10 notes)
     ~matchHistory    = [];   // last 4 detection results (nil or event)
     ~scaleRevertTask = nil;
+    ~bedAmpMods      = Array.fill(7, 1.0);  // per-stream multiplier, live-writable
+
+    ~updateResonator = {
+        var r = ~aCfg.mode.collect { |i| (~rootMidi + 12 + i).midicps };
+        ~ffInput.set(\f0, r[0], \f1, r[1], \f2, r[2], \f3, r[3],
+                     \f4, r[4], \f5, r[5], \f6, r[6]);
+        ~ffRingMod.set(\carrierFreq, ~rootMidi.midicps);
+    };
+
+    // Structure timeline — runs from first guitar note
+    // Stream index → instrument: 0=organ 1=bass 2=string 3=flute 4=chime 5=brass 6=granGuitar
+    ~startStructure = {
+        Routine {
+            // t=2min: harmonious passage 1 — Dorian (minor with sweet 6th)
+            //   boost melodic voices, silence brass+chime, pull back ring mod
+            120.wait;
+            ~scaleRevertTask.isNil.not.if { ~scaleRevertTask.stop; ~scaleRevertTask = nil };
+            ~aCfg.mode    = [0, 2, 3, 5, 7, 9, 10];  // Dorian
+            ~bedAmpMods   = [1.5, 1.0, 1.5, 1.4, 0.05, 0.05, 0.6];
+            ~aCfg.shadowAmp = 0.02;
+            ~ffRingMod.set(\amp, 0.05);
+            ~updateResonator.();
+            "Structure: harmonious 1 (Dorian)".postln;
+
+            // t=3min: back to natural minor, full texture
+            60.wait;
+            ~aCfg.mode    = ~defaultMode;
+            ~bedAmpMods   = Array.fill(7, 1.0);
+            ~aCfg.shadowAmp = 0.08;
+            ~ffRingMod.set(\amp, ~aCfg.ringAmp);
+            ~updateResonator.();
+            "Structure: natural minor".postln;
+
+            // t=4min: harmonious passage 2 — major (bright lift)
+            60.wait;
+            ~scaleRevertTask.isNil.not.if { ~scaleRevertTask.stop; ~scaleRevertTask = nil };
+            ~aCfg.mode    = [0, 2, 4, 5, 7, 9, 11];  // major
+            ~bedAmpMods   = [1.6, 1.0, 1.6, 1.5, 0.05, 0.05, 0.5];
+            ~aCfg.shadowAmp = 0.02;
+            ~ffRingMod.set(\amp, 0.05);
+            ~updateResonator.();
+            "Structure: harmonious 2 (major)".postln;
+
+            // t=5min: stop streams, fade master over 20s
+            60.wait;
+            ~scaleRevertTask.isNil.not.if { ~scaleRevertTask.stop };
+            ~streams.do { |r| r.stop };
+            "Structure: fade out".postln;
+            20.do { |i|
+                ~ffMaster.set(\amp, 1.0 - ((i + 1) / 20.0));
+                1.0.wait;
+            };
+        }.play(SystemClock);
+    };
 
     // Check if a set of unique pitch classes fits a known scale — returns event or nil
     ~detectScale = { |uniquePCs|
@@ -213,7 +287,7 @@ s.waitForBoot({
     };
 
     // Bed stream routines — started on first guitar note
-    ~streams = ~aCfg.streamDefs.collect { |def|
+    ~streams = ~aCfg.streamDefs.collect { |def, streamIdx|
         var synthName = def[0];
         var octOff    = def[1];
         var stepMin   = def[2];
@@ -243,7 +317,7 @@ s.waitForBoot({
                         out:    ~mixBus.index,
                         bufnum: ~gBuf.bufnum,
                         freq:   noteMidi.midicps,
-                        amp:    amp * ~aCfg.bedAmp * accent,
+                        amp:    amp * ~aCfg.bedAmp * accent * ~bedAmpMods[streamIdx],
                         atk:    atk,
                         pan:    panRange.neg.rrand(panRange),
                         decay:  decay,
@@ -267,7 +341,6 @@ s.waitForBoot({
             var stable    = false;
 
             ~lastTrig = now;
-            ~ffInput.set(\carrierFreq, freq);
 
             // Build rolling pitch-class evidence (keep last 10, deduplicated)
             ~pcHistory = ([pc] ++ ~pcHistory).keep(10);
@@ -279,10 +352,12 @@ s.waitForBoot({
             // Require 4 consecutive detections on the same root before committing
             ~matchHistory = ([found] ++ ~matchHistory).keep(4);
             stable = (~matchHistory.size >= 4)
-                && ~matchHistory[0].notNil
-                && (~matchHistory.detect { |m|
-                    m.isNil || (m[\root] != ~matchHistory[0][\root])
-                }.isNil);
+                && { ~matchHistory[0].notNil }
+                && {
+                    ~matchHistory.detect { |m|
+                        m.isNil || { m[\root] != ~matchHistory[0][\root] }
+                    }.isNil
+                };
 
             if(stable) {
                 var newRoot = ~matchHistory[0][\root] + 60;
@@ -291,19 +366,25 @@ s.waitForBoot({
                 };
                 ~aCfg.mode = ~matchHistory[0][\intervals];
                 ~rootMidi  = newRoot;
+                ~updateResonator.();
                 ~scaleRevertTask.isNil.not.if { ~scaleRevertTask.stop };
                 ~scaleRevertTask = Routine {
                     8.0.wait;
-                    ~aCfg.mode = ~lydianMode;
-                    "Reverted to Lydian.".postln;
+                    ~aCfg.mode = ~defaultMode;
+                    ~updateResonator.();
+                    "Reverted to natural minor.".postln;
                 }.play(SystemClock);
             } {
                 ~rootMidi = freq.cpsmidi.round(1).asInteger;
+                ~updateResonator.();
             };
 
             if(~streamsRunning.not) {
                 ~streamsRunning = true;
-                ~streams.do { |r| r.play(TempoClock.default) };
+                ~streams.do { |r, i|
+                    Routine { (i * 8).wait; r.play(TempoClock.default) }.play(SystemClock);
+                };
+                ~startStructure.();
                 "Bed started.".postln;
             };
 
