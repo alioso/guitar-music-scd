@@ -15,15 +15,27 @@ SETUP
 
 STRUCTURE
   First note detected → timer starts
-  +8 bars             → 4 voices fade in slowly over 8 bars (sine curve)
-  +16 bars            → full mix begins archive recording
-  +16+64 bars (~2:55) → archive loops to end of piece, live input no longer needed
+  +8 bars             → 4 guitar voices + 3 synth voices fade in (sine curve)
+  +16 bars            → full mix begins archive recording; two-tone headphone cue fires
+  +16+64 bars (~2:55) → archive loops; dry guitar stays live for playing on top
 
 VOICES
   G1: rate locked 1.0,           pan -1.0 (full left)
   G2: ±0.8% over 12min cycle,    pan -0.5 (half left)
   G3: ±1.0% over 9min cycle,     pan  0.5 (half right)
   G4: ±0.6% over 15min cycle,    pan  1.0 (full right)
+
+SYNTH VOICES (amplitude-following sine oscillators — 4 pitched registers, each phasing)
+  Each voice tracks the loop's amplitude envelope to drive a pure sine at a set pitch.
+  Guitar attacks trigger sine swells; phase drift creates constantly shifting harmonics.
+  S1: ±0.4% over 10.5min cycle,  pan -0.75,  synthRoot×1  (sub bass)
+  S2: ±0.9% over  7.5min cycle,  pan -0.25,  synthRoot×2  (low-mid)
+  S3: ±0.7% over   13min cycle,  pan  0.25,  synthRoot×3  (mid)
+  S4: ±0.5% over   10min cycle,  pan  0.75,  synthRoot×4  (treble)
+
+CLICK
+  Beat pulse: 880 Hz every quarter note
+  Loop boundary: 1200 Hz every 2 bars (when the 2-bar loop resets)
 
 REQUIRES sc3-plugins for JPverb (brew install sc3-plugins)
   Fallback: GVerb is used if JPverb not available (see master section)
@@ -46,21 +58,34 @@ REQUIRES sc3-plugins for JPverb (brew install sc3-plugins)
 
     voices: [
         // lfoDepth=0 → locked rate, no phase drift
-        (lfoDepth: 0.000, lfoHz: 1/720,   pan: -1.0),  // G1 full left
-        (lfoDepth: 0.008, lfoHz: 1/720,   pan: -0.5),  // G2 half left,  12min cycle
-        (lfoDepth: 0.010, lfoHz: 1/540,   pan:  0.5),  // G3 half right,  9min cycle
-        (lfoDepth: 0.006, lfoHz: 1/900,   pan:  1.0),  // G4 full right, 15min cycle
+        (lfoDepth: 0.000, lfoHz: 1/720,  pan: -1.0),  // G1 full left
+        (lfoDepth: 0.008, lfoHz: 1/720,  pan: -0.5),  // G2 half left,  12min cycle
+        (lfoDepth: 0.010, lfoHz: 1/540,  pan:  0.5),  // G3 half right,  9min cycle
+        (lfoDepth: 0.006, lfoHz: 1/900,  pan:  1.0),  // G4 full right, 15min cycle
     ],
+
+    // Amplitude-following sine voices — each tracks a phase-drifted copy of the loop
+    // and drives a sine at synthRoot×1/2/3/4. Adjust synthRoot to your key.
+    // E: 82.4 | A: 55.0 | D: 73.4 | G: 49.0 | B: 61.7
+    synthRoot: 82.4,
+    synthVoices: [
+        (lfoDepth: 0.004, lfoHz: 1/630, pan: -0.75, mult: 1, amp: 1.8),  // S1 sub
+        (lfoDepth: 0.009, lfoHz: 1/450, pan: -0.25, mult: 2, amp: 1.2),  // S2 low-mid
+        (lfoDepth: 0.007, lfoHz: 1/780, pan:  0.25, mult: 3, amp: 0.9),  // S3 mid
+        (lfoDepth: 0.005, lfoHz: 1/600, pan:  0.75, mult: 4, amp: 0.7),  // S4 treble
+    ],
+    synthVoiceAmp: 0.28,  // global scale; per-voice amp multipliers above
 
     // Reverb
     reverbMix:     0.07,   // 0=dry 1=wet — very subtle, just space not wash
-    reverbSize:    1.2,    // room size
-    reverbDecay:   4.5,    // decay in seconds
-    reverbDamp:    0.4,    // high-freq damping
+    reverbSize:    1.2,
+    reverbDecay:   4.5,
+    reverbDamp:    0.4,
 
-    // Metronome (optional — requires Scarlett 4i4+ with outputs 3+4 as headphones)
-    metronomeOn:   false,  // set true to enable click to headphones
-    clickOutChan:  2,      // SC output channel for click L (0-indexed, so ch 3 on device)
+    // Metronome — beat click (880 Hz) + loop-boundary accent (1200 Hz) to headphones
+    // Requires Scarlett 4i4+ with outputs 3+4 as headphones
+    metronomeOn:   true,
+    clickOutChan:  2,      // SC output channel (0-indexed, so ch 3 on device)
 );
 
 // Derived timing
@@ -106,7 +131,7 @@ s.waitForBoot({
             recLevel: 1.0, preLevel: 0.0, loop: 1);
     }).add;
 
-    // One loop voice — gate 1 triggers fade-in via Env.asr (sine curve)
+    // One guitar loop voice — gate 1 triggers fade-in via Env.asr (sine curve)
     SynthDef(\ffVoice, {
         |out=0, bufnum, gate=0, fadeSecs=17.0,
          lfoDepth=0.0, lfoHz=0.001, pan=0.0, voiceAmp=0.5|
@@ -115,6 +140,20 @@ s.waitForBoot({
         var rate = 1.0 + (SinOsc.kr(lfoHz) * lfoDepth);
         var sig  = PlayBuf.ar(1, bufnum,
                        rate * BufRateScale.kr(bufnum), loop: 1);
+        Out.ar(out, Pan2.ar(sig * env * voiceAmp, pan));
+    }).add;
+
+    // Amplitude-following sine — reads the loop with phase drift, extracts its envelope,
+    // drives a pure sine at `freq`. Guitar attacks become pitched swells; different
+    // phase rates per voice create a shifting harmonic shimmer across the 4 registers.
+    SynthDef(\ffSynVoice, {
+        |out=0, bufnum, gate=0, fadeSecs=17.0,
+         lfoDepth=0.0, lfoHz=0.001, pan=0.0, voiceAmp=0.28, freq=82.4|
+        var env    = EnvGen.kr(Env.asr(fadeSecs, 1.0, 2.0, curve: \sine), gate);
+        var rate   = 1.0 + (SinOsc.kr(lfoHz) * lfoDepth);
+        var buf    = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), loop: 1);
+        var bufEnv = Amplitude.kr(buf, attackTime: 0.02, releaseTime: 1.0);
+        var sig    = SinOsc.ar(freq) * bufEnv;
         Out.ar(out, Pan2.ar(sig * env * voiceAmp, pan));
     }).add;
 
@@ -154,14 +193,19 @@ s.waitForBoot({
         Out.ar(out, ((dry * (1-reverbMix)) + (wet * reverbMix)).clip2(1.0));
     }).add;
 
-    // Optional metronome click to headphone output (requires Scarlett 4i4+)
-    SynthDef(\ffClick, { |out=2, bpm=110|
-        var trig = Impulse.kr(bpm / 60);
-        var beat = Impulse.kr(bpm / 60 * 4);   // downbeat
-        var sig  = SinOsc.ar(
-            Select.kr(trig > beat, [880, 1200]), 0,
-            EnvGen.kr(Env.perc(0.001, 0.05), trig)
-        );
+    // Beat click (880 Hz every quarter note) + loop-boundary accent (1200 Hz every 2 bars)
+    SynthDef(\ffClick, { |out=2, bpm=110, loopDur=8.73|
+        var beatTrig = Impulse.kr(bpm / 60);
+        var loopTrig = Impulse.kr(1 / loopDur);
+        var beatSig  = SinOsc.ar(880,  0, EnvGen.kr(Env.perc(0.001, 0.05), beatTrig));
+        var loopSig  = SinOsc.ar(1200, 0, EnvGen.kr(Env.perc(0.001, 0.12), loopTrig));
+        Out.ar(out, ((beatSig + loopSig) * 0.7).dup);
+    }).add;
+
+    // One-shot cue tone — fires on creation, frees itself when done
+    SynthDef(\ffBufCue, { |out=2, freq=1000|
+        var sig = SinOsc.ar(freq, 0,
+            EnvGen.kr(Env.perc(0.001, 0.12), 1, doneAction: Done.freeSelf));
         Out.ar(out, sig.dup);
     }).add;
 
@@ -174,7 +218,7 @@ s.waitForBoot({
     ff.grpMaster = Group.after(ff.grpDry);
 
     // ── Start synths ──────────────────────────────────────────────────────────
-    ff.recSyn  = Synth(\ffRec, [bufnum: ff.loopBuf], ff.grpRec);
+    ff.recSyn    = Synth(\ffRec,    [bufnum: ff.loopBuf], ff.grpRec);
     ff.detectSyn = Synth(\ffDetect, [thresh: ff.threshold], ff.grpRec);
 
     ff.voiceSyns = ff.voices.collect({ |v|
@@ -190,6 +234,20 @@ s.waitForBoot({
         ], ff.grpVoice);
     });
 
+    ff.synVoiceSyns = ff.synthVoices.collect({ |v|
+        Synth(\ffSynVoice, [
+            out:       ff.mixBus.index,
+            bufnum:    ff.loopBuf,
+            gate:      0,
+            fadeSecs:  ff.fadeDur,
+            lfoDepth:  v[\lfoDepth],
+            lfoHz:     v[\lfoHz],
+            pan:       v[\pan],
+            voiceAmp:  ff.synthVoiceAmp * v[\amp],
+            freq:      ff.synthRoot * v[\mult],
+        ], ff.grpVoice);
+    });
+
     ff.drySyn    = Synth(\ffDry,
         [out: ff.mixBus.index, amp: ff.dryAmp], ff.grpDry);
     ff.masterSyn = Synth(\ffMaster, [
@@ -202,9 +260,13 @@ s.waitForBoot({
     ], ff.grpMaster);
 
     if(ff.metronomeOn, {
-        ff.clickSyn = Synth(\ffClick,
-            [out: ff.clickOutChan, bpm: ff.bpm], ff.grpMaster);
-        "Metronome active on output channel %".format(ff.clickOutChan).postln;
+        ff.clickSyn = Synth(\ffClick, [
+            out:     ff.clickOutChan,
+            bpm:     ff.bpm,
+            loopDur: ff.loopDur,
+        ], ff.grpMaster);
+        "Metronome active on output channel % (beat 880Hz | loop boundary 1200Hz)".format(
+            ff.clickOutChan).postln;
     });
 
     // ── First note handler ────────────────────────────────────────────────────
@@ -218,38 +280,45 @@ s.waitForBoot({
             { "First note! Voices enter in % bars (% sec)."
                 .format(ff.entryBars, ff.entryDur.round(0.1)).postln; }.defer;
 
-            // +8 bars: gate all 4 voices open (fade-in via Env.asr over fadeDur)
+            // +8 bars: gate all voices open (fade-in via Env.asr over fadeDur)
             SystemClock.sched(ff.entryDur, {
                 if(ff.alive, {
                     { "Voices fading in over % bars...".format(ff.fadeBars).postln; }.defer;
                     ff.voiceSyns.do({ |syn| syn.set(\gate, 1) });
+                    ff.synVoiceSyns.do({ |syn| syn.set(\gate, 1) });
                 });
                 nil;
             });
 
-            // +16 bars: start archive recording
+            // +16 bars: start archive recording + fire two-tone headphone cue
             SystemClock.sched(ff.recDur, {
                 if(ff.alive, {
                     { "Archive recording (% bars = % sec)..."
                         .format(ff.archBars, ff.archDur.round(1)).postln; }.defer;
+
+                    // High → low cue: recording has started
+                    Synth(\ffBufCue, [out: ff.clickOutChan, freq: 1000]);
+                    SystemClock.sched(0.18, {
+                        Synth(\ffBufCue, [out: ff.clickOutChan, freq: 650]);
+                        nil;
+                    });
 
                     ff.archRecSyn = Synth(\ffArchRec, [
                         bufnum: ff.archBuf,
                         busIn:  ff.mixBus.index,
                     ], ff.grpMaster);
 
-                    // +16+64 bars: stop live, switch to archive loop
+                    // +16+64 bars: switch to archive loop — dry guitar stays live
                     SystemClock.sched(ff.archDur, {
                         if(ff.alive, {
-                            { "Archive complete — looping. Guitar no longer needed.".postln; }.defer;
+                            { "Archive complete — looping. Keep playing on top.".postln; }.defer;
 
                             ff.archRecSyn.free;
                             ff.recSyn.free;
                             ff.voiceSyns.do(_.free);
-                            ff.drySyn.free;
-                            if(ff.clickSyn.notNil, { ff.clickSyn.free });
+                            ff.synVoiceSyns.do(_.free);
+                            // drySyn kept alive — player continues on top of archive loop
 
-                            // Route archive through mix bus so master reverb stays active
                             ff.archPlaySyn = Synth(\ffArchPlay, [
                                 out:    ff.mixBus.index,
                                 bufnum: ff.archBuf,
@@ -271,9 +340,9 @@ s.waitForBoot({
     "Timeline from first note:".postln;
     "  +% bars (% s): voices fade in over % bars".format(
         ff.entryBars, ff.entryDur.round(1), ff.fadeBars).postln;
-    "  +% bars (% s): archive recording starts".format(
+    "  +% bars (% s): archive recording starts (headphone cue fires)".format(
         ff.recBars, ff.recDur.round(1)).postln;
-    "  +% bars (% s): live → loop (guitar done)".format(
+    "  +% bars (% s): archive loops; guitar stays live".format(
         ff.recBars + ff.archBars, ff.totalDur.round(1)).postln;
 });
 )
