@@ -13,7 +13,7 @@ The piece has three acts: excitation (prime the resonators), sustain (network se
 | Time from first note | Event |
 |---|---|
 | 0:00 | First note → EXCITATION. Play freely. |
-| 0:00–2:30 | Feedback gain ramps 0.70 → 0.84. CombL decay ramps 3.0 → 6.5 s. |
+| 0:00–2:30 | Feedback gain ramps 0.15 → 0.84. CombL decay ramps 3.0 → 8.0 s. |
 | 2:30 | SUSTAINING. Network self-runs. Barely play. |
 | 2:30–5:00 | Peak feedback gain (0.84 base + up to 0.08 touch boost). |
 | 5:00 | DISSOLVING. Do not play. |
@@ -38,7 +38,7 @@ Delay times are prime-derived — the modes never fall into rhythmic alignment. 
 
 | Source | Range |
 |---|---|
-| `baseGain` (arc) | 0.70 at start → 0.84 at peak |
+| `baseGain` (arc) | 0.15 at start → 0.84 at peak |
 | Touch boost (amplitude) | 0 → 0.08 (guitar amp 0–0.10) |
 | Hard ceiling | 0.94 (server-side `clip`) |
 

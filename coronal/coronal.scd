@@ -62,9 +62,9 @@ PERFORMANCE NOTES
     act3Dur:   120,   // dissolution — gain ramps to 0; network decays naturally
 
     // Feedback gain arc
-    gainStart:  0.15,  // feedback gain at first note — all lines decaying, stable
-    gainPeak:   0.76,  // peak gain — all lines self-oscillating (97ms crosses at ~21s, 443ms at ~118s)
-    touchMax:   0.12,  // max amplitude-driven gain boost (peak total: 0.88 — edge of dangerous zone)
+    gainStart:  0.15,  // feedback gain at first note — all 7 lines decaying (loop gain < 1)
+    gainPeak:   0.84,  // peak gain — all lines self-oscillating by end of Act 1
+    touchMax:   0.08,  // max amplitude-driven boost (peak total: 0.92 — edge of dangerous zone)
 
     // CombL decay arc
     decayStart:  3.0,  // seconds at first note
@@ -121,33 +121,34 @@ s.waitForBoot({
         |out=0, dryAmp=0.35, outGain=0.78,
          baseGain=0.70, decayTime=3.0, touchMax=0.08|
         var sig, amp, touchBoost, fbkGain;
-        var fbk, feedIn;
-        var dts, rates, pans, combs, sat, fbkSum, stereo;
+        var fbk, dryIn, decaySmooth;
+        var dts, rates, pans, combs, sat, stereo;
 
         sig = SoundIn.ar(0);
         amp = Amplitude.kr(sig, attackTime: 0.01, releaseTime: 1.2);
 
-        // Loud playing → more feedback gain → closer to instability
-        touchBoost = (amp * 0.80).clip(0, touchMax);
-        fbkGain    = (Lag.kr(baseGain, 2.0) + touchBoost).clip(0, 0.94);
-
-        fbk    = LocalIn.ar(1, 0.0);
-        feedIn = (sig * Lag.kr(dryAmp, 1.0)) + fbk;
+        touchBoost  = (amp * 0.80).clip(0, touchMax);
+        fbkGain     = (Lag.kr(baseGain, 2.0) + touchBoost).clip(0, 0.94);
+        dryIn       = sig * Lag.kr(dryAmp, 1.0);
+        decaySmooth = Lag.kr(decayTime, 3.0);
 
         dts   = [0.097, 0.137, 0.181, 0.239, 0.307, 0.389, 0.443];
         rates = [0.011, 0.017, 0.013, 0.019, 0.023, 0.009, 0.027];
         pans  = [-0.88, -0.55, -0.22,  0.0,  0.22,  0.55,  0.88];
 
+        // Each line has its own feedback channel — self-oscillates independently.
+        // With a shared single-channel sum, loop gain per line = fbkGain×0.85/7,
+        // which is always < 1 and can never self-sustain.
+        fbk = LocalIn.ar(7, 0.0);
+
         combs = dts.collect { |dt, i|
-            var modded = dt * (1.0 + (SinOsc.kr(rates[i]) * 0.007));
+            var modded = dt * (1.0 + (SinOsc.kr(rates[i]) * 0.025));
             modded = modded.clip(0.001, dt * 1.02);
-            CombL.ar(feedIn, dt * 1.02, modded, Lag.kr(decayTime, 3.0))
+            CombL.ar(dryIn + fbk[i], dt * 1.02, modded, decaySmooth)
         };
 
-        // Soft-clip each line before feeding back — prevents blowup
-        sat    = combs.collect { |c| c.tanh * 0.85 };
-        fbkSum = sat.sum * (1/7);
-        LocalOut.ar(fbkSum * fbkGain);
+        sat = combs.collect { |c| c.tanh * 0.85 };
+        LocalOut.ar(sat * fbkGain);
 
         stereo = Mix.ar(sat.collect { |c, i| Pan2.ar(c, pans[i]) }) * (0.60 / 7);
         Out.ar(out, stereo * Lag.kr(outGain, 1.0));
