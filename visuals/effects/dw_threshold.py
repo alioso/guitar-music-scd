@@ -17,8 +17,8 @@ AMP_POWER = 1.6
 
 def _posterize(gray, levels):
     step = max(1, 256 // levels)
-    lut  = np.array([(v // step) * step + step // 2 for v in range(256)],
-                    dtype=np.uint8)
+    lut  = np.clip([(v // step) * step + step // 2 for v in range(256)],
+                   0, 255).astype(np.uint8)
     return cv2.LUT(gray, lut)
 
 
