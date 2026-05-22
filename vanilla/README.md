@@ -83,7 +83,7 @@ Uses `Pan2` (stereo). Adjust `~van.pans` to taste; values are −1 (left) to +1 
 **What to play**
 - This piece is not about rhythm or melody. Long, sustained tones or slow textures give the granular engine rich material to fragment — a chord held for 10 seconds yields far more interesting grains than a fast run.
 - P1–P3 use pre-recorded material so your live playing only affects P4/P5. Playing sparsely in the first minute gives P4/P5 clear material; playing densely gives them layered chaos. Both work, but decide intentionally.
-- You are not audible in the house mix (no dry signal passes through). The piece sounds identical whether you play quietly or loudly — dynamics only matter for what gets captured into the granular buffers.
+- You are audible in the house mix through a large reverb (`van_dry` sends your signal at 25% dry + 75% wet GVerb). Your dynamics are directly audible and also affect what gets captured into the granular buffers.
 
 ## How to run
 

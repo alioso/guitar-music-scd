@@ -143,7 +143,7 @@ s.waitForBoot({
             sat  = voice[\satAmt] ? 0.0;
             t0   = trp.partnerT0[pIdx];
 
-            while { ~trp.alive } {
+            while { ~trp[\alive] == true } {
                 now  = Main.elapsedTime;
                 dt   = now - t0;
                 // LFO 1: breathes the step interval — each voice has its own drifting tempo
@@ -330,7 +330,7 @@ s.waitForBoot({
 
         trp.liveRoutine = Routine({
             var nf, rPos, effect, rate, rev, sat, startPos, endPos, dur, pan;
-            while { ~trp.alive } {
+            while { ~trp[\alive] == true } {
                 exprand(0.3, 6.0).wait;  // exponential = more short gaps, rare long silences
                 effect = #[\fwd, \rev, \down4, \down5, \down8, \rev8, \sat].choose;
                 nf     = (rrand(0.4, 3.5) * sr).asInteger;
@@ -434,7 +434,7 @@ s.waitForBoot({
                     var dur   = trp.barDur * 16;
                     Routine({
                         var t0 = Main.elapsedTime;
-                        while { ~trp.alive } {
+                        while { ~trp[\alive] == true } {
                             var frac = ((Main.elapsedTime - t0) / dur).clip(0.0, 1.0);
                             trp.partnerAmpSlot[0] = aBase + ((aPeak - aBase) * frac);
                             trp.liveAmpSlot[0]    = lBase + ((lPeak - lBase) * frac);

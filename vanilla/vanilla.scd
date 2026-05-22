@@ -133,8 +133,10 @@ s.waitForBoot {
     // ── amplitude detector — fires OSC on first signal above threshold ─────────
     SynthDef(\van_detect, {
         arg inBus=0, thresh=0.015;
-        var amp = Amplitude.kr(SoundIn.ar(inBus), 0.01, 0.3);
-        SendReply.kr(amp > thresh, '/vanilla/detected');
+        var amp   = Amplitude.kr(SoundIn.ar(inBus), 0.01, 0.3);
+        var above = amp > thresh;
+        var trig  = above * (1 - Delay1.kr(above));
+        SendReply.kr(trig, '/vanilla/detected');
     }).add;
 
     // ── dry input + big reverb ────────────────────────────────────────────────
@@ -219,8 +221,8 @@ OSCdef(\van_start, { |msg|
                     ~vanRec[0] = Synth(\van_rec, [\inBus, ~van.inBus, \buf, ~vanLiveBufs[0]]);
                     postln("Vanilla: P4 recording...");
                     30.wait;
-                    ~vanRec[0].free;
-                    if(~vanSynths[3].isNil) {
+                    ~vanRec[0].free; ~vanRec[0] = nil;
+                    if(~vanRunning && ~vanSynths[3].isNil) {
                         ~vanSynths[3] = Synth(\van_grain, [
                             \buf,         ~vanLiveBufs[0],
                             \amp,         rrand(0.45, 0.60),
@@ -241,8 +243,8 @@ OSCdef(\van_start, { |msg|
                     ~vanRec[1] = Synth(\van_rec, [\inBus, ~van.inBus, \buf, ~vanLiveBufs[1]]);
                     postln("Vanilla: P5 recording...");
                     30.wait;
-                    ~vanRec[1].free;
-                    if(~vanSynths[4].isNil) {
+                    ~vanRec[1].free; ~vanRec[1] = nil;
+                    if(~vanRunning && ~vanSynths[4].isNil) {
                         ~vanSynths[4] = Synth(\van_grain, [
                             \buf,         ~vanLiveBufs[1],
                             \amp,         rrand(0.45, 0.60),
@@ -270,6 +272,7 @@ OSCdef(\van_start, { |msg|
                 fork {
                     rrand(0.0, 24.0).wait;
                     ~vanSynths[i] !? { |s| s.set(\gate, 0) };
+                    ~vanSynths[i] = nil;
                     postln("Vanilla: P% out".format(i + 1));
                 };
             };
@@ -277,9 +280,9 @@ OSCdef(\van_start, { |msg|
             // ── END ─────────────────────────────────────────────────────────
             30.wait;
             ~vanRunning = false;
-            [3, 4].do { |i| ~vanSynths[i] !? { |s| s.set(\gate, 0) } };
-            ~vanRec.do  { |r| r !? _.free };
-            ~vanDry     !? { |s| s.set(\gate, 0) };
+            [3, 4].do { |i| ~vanSynths[i] !? { |s| s.set(\gate, 0) }; ~vanSynths[i] = nil };
+            ~vanRec.doWithIndex { |r, i| r !? { r.free; ~vanRec[i] = nil } };
+            ~vanDry !? { |s| s.set(\gate, 0) }; ~vanDry = nil;
             postln("Vanilla: ended.");
         };
     };
