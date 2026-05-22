@@ -40,7 +40,7 @@ MAX_DIM      = 1920
 FPS          = 30
 
 COMP_CHANCE  = 0.40          # probability of adding a compositor each activation
-PROC_WEIGHTS = [0.3, 0.5, 0.2]  # weights for [0, 1, 2] stacked process effects
+PROC_WEIGHTS = [0.10, 0.30, 0.40, 0.20]  # weights for [0, 1, 2, 3] stacked process effects
 
 STILL_EXT = {'.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tiff', '.tif'}
 VIDEO_EXT  = {'.mp4', '.mov', '.avi', '.mkv', '.m4v'}
@@ -170,7 +170,7 @@ def next_activation():
 
     # Process stack — 0, 1, or 2 effects; never two heavy effects in the same chain
     proc_pool  = [(n, m) for n, m in proc_effects.items() if mtype in m.MEDIA]
-    n_proc     = random.choices([0, 1, 2], weights=PROC_WEIGHTS)[0]
+    n_proc     = random.choices([0, 1, 2, 3], weights=PROC_WEIGHTS)[0]
     n_proc     = min(n_proc, len(proc_pool))
     processors = []
     remaining  = list(proc_pool)

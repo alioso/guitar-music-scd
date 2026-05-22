@@ -281,7 +281,7 @@ OSCdef(\van_start, { |msg|
             30.wait;
             ~vanRunning = false;
             [3, 4].do { |i| ~vanSynths[i] !? { |s| s.set(\gate, 0) }; ~vanSynths[i] = nil };
-            ~vanRec.doWithIndex { |r, i| r !? { r.free; ~vanRec[i] = nil } };
+            ~vanRec.do { |r, i| r !? { r.free; ~vanRec[i] = nil } };
             ~vanDry !? { |s| s.set(\gate, 0) }; ~vanDry = nil;
             postln("Vanilla: ended.");
         };
@@ -297,11 +297,11 @@ postln("Vanilla: armed — play to begin.");
 // ─────────────────────────────────────────────────────────────────────────────
 (
 ~vanRunning = false;
-~vanRoutine  !? _.stop;
-~vanSynths.do { |s| s !? { |x| x.set(\gate, 0) } };
-~vanRec.do    { |s| s !? _.free };
-~vanDry      !? { |s| s.set(\gate, 0) };
-~vanDetector  !? _.free;
+~vanRoutine  !? _.stop; ~vanRoutine = nil;
+~vanSynths.do { |s| s !? { |x| x.set(\gate, 0) } }; ~vanSynths = Array.newClear(5);
+~vanRec.do    { |s| s !? _.free };                    ~vanRec    = Array.newClear(2);
+~vanDry      !? { |s| s.set(\gate, 0) };              ~vanDry    = nil;
+~vanDetector  !? _.free;                               ~vanDetector = nil;
 OSCdef(\van_start).free;
 postln("Vanilla: stopped.");
 )
