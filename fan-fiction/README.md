@@ -1,10 +1,10 @@
 # Fan Fiction
 
-Steve Reich-style phasing guitar piece for live guitar and SuperCollider.
+Phasing guitar piece for live guitar and SuperCollider. Duration ~9 min.
 
 ## Concept
 
-Guitar input feeds a 2-bar loop buffer. Eight voices — four guitar loops and four synthesised sine oscillators — read that buffer at slightly different playback rates, drifting slowly in and out of phase with each other. The sine voices use the loop's amplitude envelope to drive pitched oscillators across four registers (sub bass → treble), building a shimmering harmonic bed as the phase relationships evolve.
+Guitar input feeds a 2-bar loop buffer. Eight voices — four guitar loops and four synthesised sine oscillators — read that buffer at slightly different playback rates, drifting slowly in and out of phase with each other. The sine voices use the loop's amplitude envelope to drive pitched oscillators across four registers (sub bass to treble), building a shimmering harmonic bed as the phase relationships evolve.
 
 After a full mix is captured to an archive buffer, the piece loops autonomously. The guitarist keeps playing on top of the archive for the remainder of the piece.
 
@@ -13,7 +13,7 @@ After a full mix is captured to an archive buffer, the piece loops autonomously.
 | Time from first note | Event |
 |---|---|
 | 0:00 | Timer starts; loop buffer already filling |
-| +8 bars (~17 s) | All 8 voices open, fade in over 8 bars (sine curve) |
+| +8 bars (~17 s) | All 8 voices open, fade in over 8 bars |
 | +16 bars (~35 s) | Archive recording starts; two-tone headphone cue fires |
 | +80 bars (~2:55) | Archive loops; guitar stays live for playing on top |
 
@@ -45,7 +45,7 @@ Set `synthRoot` in Block 1 to your piece's fundamental (E=82.4, A=55.0, D=73.4, 
 
 Two-tier click routed to `clickOutChan` (default: SC output 2 = device ch 3):
 - **880 Hz** every quarter note — tempo pulse
-- **1200 Hz** every 2 bars — loop boundary accent (tells you when the 2-bar phrase resets)
+- **1200 Hz** every 2 bars — loop boundary accent
 
 Set `metronomeOn: true` (default). Requires Scarlett 4i4+ or Aggregate Device with outputs 3+4 as headphones. SC startup must set `numOutputBusChannels = 4`.
 
@@ -63,11 +63,11 @@ A two-tone descending cue (1000 Hz → 650 Hz) fires in the headphones when arch
 
 ## Reverb
 
-GVerb: size 30, decay 4.5 s, damp 0.4.
+GVerb (built-in): size 30, decay 4.5 s, damp 0.4.
 
 ## How to run
 
-1. Open `fan-fiction.scd` in SuperCollider
+1. Open `fan-fiction.scd`
 2. Evaluate **Block 1** — loads config
 3. Evaluate **Block 2** — allocates buffers, arms detection
 4. Play guitar — piece starts on first note above threshold
@@ -78,7 +78,7 @@ GVerb: size 30, decay 4.5 s, damp 0.4.
 - `bpm` — tempo reference for bar-length calculations
 - `threshold` — amplitude to trigger entry
 - `entryBars` / `fadeBars` — voice entry timing
-- `archBars` — material to capture (64 bars ≈ 2:20)
+- `archBars` — material to capture before archive loop
 - `voiceAmp` / `dryAmp` / `synthVoiceAmp` — mix balance
 - `synthRoot` — fundamental for synth voices; match to your key
 - Per-voice `amp` in `synthVoices` — relative level per register

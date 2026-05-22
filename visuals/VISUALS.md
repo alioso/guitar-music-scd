@@ -1,4 +1,10 @@
-# Visuals
+# Visuals — developer reference
+
+For the performance guide (commands, media folders, drawings, quick start) see [VIDEO.md](../VIDEO.md).
+
+This file covers the effect API, naming conventions, and how to add new effects.
+
+---
 
 Real-time visual effects for live guitar performance. SuperCollider streams amplitude via OSC; a Python runner picks random effects from a media folder and drives them with the audio signal.
 
@@ -77,6 +83,13 @@ Two knobs control how strongly audio drives each effect:
 **Media:** still + video  
 Additive Gaussian film grain. Silence = clean image. Loud playing = heavy grain.  
 Tune: `MAX_GRAIN` (noise intensity), `AMP_POWER`.
+
+---
+
+### `dw_zoom`
+**Media:** still (intended for `visuals/drawings/`)  
+Zooms into micro-regions of a still image (2–25% of image dimensions, biased toward small). Applies one of 12 sub-effects per region. Sound energy accumulates each frame; when it crosses a random threshold (and `HOLD_MIN` has elapsed), a transition fires (hard cut or crossfade). `P_FULL` controls how often the full image is shown for context.  
+Tune: `P_FULL`, `HOLD_MIN`, `HOLD_MAX`.
 
 ---
 
@@ -198,6 +211,7 @@ visuals/
   effects/
     __init__.py        interface contract (comments only)
     fx_grain.py
+    dw_zoom.py
     tf_blur_face.py
     tp_bw.py
     comp_dual.py

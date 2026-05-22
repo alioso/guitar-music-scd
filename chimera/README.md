@@ -27,7 +27,7 @@ The guitarist establishes a harmonic center through bowing and swelling. SC dete
 | V3 | octave | 83 s | −0.4 (half left) |
 | V4 | flat 7th (minor 7th) | 103 s | +0.4 (half right) |
 
-LFO periods are prime-ish — voices never align, creating constant Eno-style interlacing. Floor amplitude never drops to zero (minimum 15%), ensuring continuous immersion.
+LFO periods are prime-ish — voices never align, so the texture is always in motion without ever repeating. Floor amplitude never drops to zero (minimum 15%), ensuring continuous immersion.
 
 ## Granular layer
 
