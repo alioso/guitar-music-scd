@@ -51,6 +51,19 @@ PERFORMANCE NOTES
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// BLOCK 0 — EXTERNAL INPUT (optional — synth/DAW via BlackHole, no guitar)
+// Evaluate INSTEAD of s.boot when practicing without the guitar rig, then
+// continue to Block 1. Uses the SCD EXTERNAL aggregate for both in and out.
+// ─────────────────────────────────────────────────────────────────────────────
+(
+s.options.inDevice  = "SCD EXTERNAL";
+s.options.outDevice = "SCD EXTERNAL";
+s.reboot;
+"External input active — reading from BlackHole 2ch via SCD EXTERNAL.".postln;
+)
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // BLOCK 1 — CONFIGURATION
 // ─────────────────────────────────────────────────────────────────────────────
 (

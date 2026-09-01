@@ -41,6 +41,8 @@ Run `visuals/visual-osc.scd` alongside any piece. It streams guitar amplitude to
 - **Block A** — evaluate after the piece boots to start streaming
 - **Block B** — evaluate to stop streaming
 
+**No guitar handy?** `visual-osc.scd` doesn't care what's on input 0 — it just needs a booted server. [`external/external.scd`](external/) boots SC against a synth/DAW via BlackHole instead of the Scarlett — it only monitors the signal back to your headphones, no piece-level processing — so you can drive visuals from any source. Requires an Aggregate Device combining BlackHole and your output (see [external/](external/)); a plain Multi-Output Device isn't enough since CoreAudio needs input and output on one shared-clock device. Each piece also has its own Block 0 to swap its input source the same way, if you want that piece's own audio processing to run against a synth too.
+
 ### Auto-launch from a piece
 
 To start visuals automatically when the piece starts, add to its `firstNote` handler:

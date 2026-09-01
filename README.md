@@ -18,6 +18,8 @@ Live solo guitar compositions in SuperCollider 3.14.1. Each piece is a standalon
 
 Each piece posts status updates to the SuperCollider post window. Wait for the "running" or "armed" message before playing.
 
+**Practicing without the guitar rig:** each piece has an optional Block 0 to swap its input source from the Scarlett to a synth/DAW via BlackHole (`brew install blackhole-2ch`). See [external/](external/) for a bare piece (BlackHole in, monitored straight back to headphones, no other processing) that just feeds the visuals from an external source.
+
 ## Pieces
 
 | Piece | What it does | Duration |
