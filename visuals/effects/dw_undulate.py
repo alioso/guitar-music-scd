@@ -91,7 +91,18 @@ def render(frame, osc_state, state):
     state['phase'] += speed * dt
     phase = state['phase']
 
-    h, w   = state['h'], state['w']
+    h, w = frame.shape[:2]
+
+    # Compositor may resize the frame relative to the base frame used at setup;
+    # rebuild size-dependent caches whenever the shape changes.
+    if h != state['h'] or w != state['w']:
+        xs, ys = np.meshgrid(np.arange(w, dtype=np.float32),
+                              np.arange(h, dtype=np.float32))
+        mode, x, y, zw, zh = _choose_zone(h, w)
+        state.update({'xs': xs, 'ys': ys, 'h': h, 'w': w,
+                      'mode': mode, 'zone': (x, y, zw, zh),
+                      'mask': _zone_mask(mode, h, w, x, y, zw, zh)})
+
     xs, ys = state['xs'], state['ys']
     fx, fy = state['freq_x'], state['freq_y']
 

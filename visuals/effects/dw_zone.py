@@ -114,12 +114,20 @@ def render(frame, osc_state, state):
     amp = osc_state['amp'] ** AMP_POWER
     state['energy'] += amp * dt
 
+    h, w = frame.shape[:2]
+
+    # Rebuild zone if compositor changed the frame dimensions since setup
+    if (h, w) != state.get('_shape'):
+        x, y, zw, zh = _pick_zone(h, w)
+        state['zone']   = (x, y, zw, zh)
+        state['mask']   = _zone_mask(zh, zw)
+        state['_shape'] = (h, w)
+
     fired = (
         state['energy'] >= state['threshold'] and state['elapsed'] >= _HOLD_MIN
     ) or state['elapsed'] >= _HOLD_MAX
 
     if fired:
-        h, w = frame.shape[:2]
         x, y, zw, zh = _pick_zone(h, w)
         state['zone']      = (x, y, zw, zh)
         state['mask']      = _zone_mask(zh, zw)

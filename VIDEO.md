@@ -75,20 +75,14 @@ Drop new files into any folder and they are picked up on the next run — no con
 
 ## Drawings
 
-The `visuals/drawings/` folder is specifically designed for use with the `dw_zoom` effect.
+The `visuals/drawings/` folder is specifically designed for use with the `dw_*` effect family — see [Effect library](#effect-library) below for `dw_undulate`, `dw_zone`, `dw_ink`, `dw_mirror`, `dw_saturation`, `dw_scanlines`, and `dw_threshold`.
 
-**What dw_zoom does:** crops micro-regions of a still image (2–25% of the image dimensions) and applies one of 12 sub-effects per region (grain, blur, colour shifts, edge treatments). Sound energy accumulates each frame; when it crosses a random threshold, a transition fires — either a hard cut or a crossfade. The full image occasionally appears for context.
-
-**What to put here:** any flat scanned or photographed image works — sketches, diagrams, textures, handwriting. The effect rewards images with local detail: dense cross-hatching, fine lines, watercolour washes.
+**What to put here:** any flat scanned or photographed image works — sketches, diagrams, textures, handwriting. These effects reward images with local detail: dense cross-hatching, fine lines, watercolour washes.
 
 ```bash
-# Run with drawings only
-python visuals/run.py --media visuals/drawings/ --effects dw_zoom
+# Run with drawings only, all dw_ effects
+python visuals/run.py --media visuals/drawings/ --effects dw_undulate,dw_zone,dw_ink,dw_mirror,dw_saturation,dw_scanlines,dw_threshold
 ```
-
-Tune transitions in `visuals/effects/dw_zoom.py`:
-- `P_FULL` — probability of showing full image instead of crop (default 0.08)
-- `HOLD_MIN` / `HOLD_MAX` — minimum and maximum hold time per region in seconds
 
 ---
 
@@ -115,10 +109,52 @@ Additive Gaussian film grain. Silence = clean image. Loud playing = heavy grain.
 
 ---
 
-### `dw_zoom`
+### `dw_undulate`
 **Media:** still (intended for drawings)
 
-Zooms into micro-regions of the image. 12 sub-effects applied per region. Sound energy drives transition timing — more playing = faster cuts. See [Drawings](#drawings) above.
+Sinusoidal warp applied to a zone (full image / horizontal band / vertical band / rectangle, feathered at edges). Amplitude drives ripple speed and displacement strength.
+
+---
+
+### `dw_zone`
+**Media:** still (intended for drawings)
+
+Applies one sub-effect (grain, invert, saturation boost, distortion, or edge emphasis) to a single feathered rectangular zone while the rest of the image stays untouched. Sound energy drives when the zone relocates and re-rolls its sub-effect.
+
+---
+
+### `dw_ink`
+**Media:** still (intended for drawings)
+
+Detects dark ink lines and blooms a coloured glow around them, hue drifting slowly. Crisp and clean at silence; glows harder as you play.
+
+---
+
+### `dw_mirror`
+**Media:** still (intended for drawings) — layout effect
+
+Mirrors one half of the image onto the other (fold left/right/top/bottom, randomised per activation), producing bilateral symmetry. Amplitude adds a subtle grain overlay.
+
+---
+
+### `dw_saturation`
+**Media:** still (intended for drawings)
+
+Boosts colour saturation and drifts hue with amplitude. Near-natural at silence; vivid and hue-shifting at peak.
+
+---
+
+### `dw_scanlines`
+**Media:** still (intended for drawings)
+
+Burns horizontal or vertical lines into the image (photocopier / CRT look), orientation randomised per activation. Amplitude controls line density and darkness.
+
+---
+
+### `dw_threshold`
+**Media:** still (intended for drawings)
+
+Pushes the image toward a high-contrast woodcut/linocut look — gentle posterize at silence, tightening toward adaptive B&W threshold as amplitude rises. Blended over the original so colour bleeds through at moderate levels.
 
 ---
 
@@ -170,7 +206,13 @@ visuals/
   VISUALS.md           developer reference (adding effects, effect API)
   effects/
     fx_grain.py
-    dw_zoom.py
+    dw_undulate.py
+    dw_zone.py
+    dw_ink.py
+    dw_mirror.py
+    dw_saturation.py
+    dw_scanlines.py
+    dw_threshold.py
     tf_blur_face.py
     tp_bw.py
     comp_dual.py
