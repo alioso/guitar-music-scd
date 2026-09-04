@@ -24,10 +24,10 @@ import inspect
 import threading
 import argparse
 import importlib
-import subprocess
 
 import numpy as np
 import cv2
+import pygame
 from pythonosc import dispatcher, osc_server
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -44,21 +44,6 @@ PROC_WEIGHTS = [0.10, 0.30, 0.40, 0.20]  # weights for [0, 1, 2, 3] stacked proc
 
 STILL_EXT = {'.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tiff', '.tif'}
 VIDEO_EXT  = {'.mp4', '.mov', '.avi', '.mkv', '.m4v'}
-
-# ── Screen size detection ─────────────────────────────────────────────────────
-def _detect_screen():
-    try:
-        r = subprocess.run(
-            ['osascript', '-e',
-             'tell application "Finder" to get bounds of window of desktop'],
-            capture_output=True, text=True, timeout=2
-        )
-        parts = [int(x.strip()) for x in r.stdout.strip().split(',')]
-        if len(parts) == 4:
-            return parts[2], parts[3]
-    except Exception:
-        pass
-    return 1920, 1080
 
 # ── OSC ───────────────────────────────────────────────────────────────────────
 _amp_raw  = 0.0
@@ -85,11 +70,7 @@ parser.add_argument('--max-dur', type=float, default=60.0, dest='max_dur')
 parser.add_argument('--screen',  default=None,              help='output resolution WxH (default: auto-detect)')
 args = parser.parse_args()
 
-if args.screen:
-    SW, SH = (int(x) for x in args.screen.lower().split('x'))
-else:
-    SW, SH = _detect_screen()
-print(f"  screen: {SW}×{SH}")
+SW, SH = (int(x) for x in args.screen.lower().split('x')) if args.screen else (None, None)
 
 # ── Load effects ──────────────────────────────────────────────────────────────
 effects_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'effects')
@@ -186,10 +167,19 @@ def next_activation():
     return path, mtype, compositor, processors, duration
 
 # ── Display ───────────────────────────────────────────────────────────────────
-cv2.namedWindow('visuals', cv2.WINDOW_NORMAL)
-cv2.setWindowProperty('visuals', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+# cv2's Cocoa fullscreen is unreliable on recent macOS (leaves a stray gap
+# regardless of image size) — pygame/SDL2 handles native fullscreen correctly.
+pygame.init()
+pygame.mouse.set_visible(False)
+pygame.display.set_caption('visuals')
+if SW and SH:
+    screen = pygame.display.set_mode((SW, SH))
+else:
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    SW, SH = screen.get_size()
+print(f"  screen: {SW}×{SH}")
 
-delay_ms   = int(1000 / FPS)
+clock      = pygame.time.Clock()
 amp_smooth = 0.0
 
 print(f"\nRunning — Esc/Q to quit | dur {args.min_dur:.0f}–{args.max_dur:.0f}s")
@@ -262,17 +252,29 @@ while True:
             frame = pmod.render(frame, osc_state, pstate)
         output = fit_frame(frame, SW, SH)
 
-        cv2.imshow('visuals', output)
-        key = cv2.waitKey(delay_ms) & 0xFF
-        if key in (27, ord('q')):
+        surf = pygame.surfarray.make_surface(
+            cv2.cvtColor(output, cv2.COLOR_BGR2RGB).swapaxes(0, 1))
+        screen.blit(surf, (0, 0))
+        pygame.display.flip()
+
+        quit_requested = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                quit_requested = True
+            elif event.type == pygame.KEYDOWN and event.key in (pygame.K_ESCAPE, pygame.K_q):
+                quit_requested = True
+
+        if quit_requested:
             if compositor:
                 call_teardown(compositor[1], comp_state)
             for (_, pmod), pstate in zip(processors, proc_states):
                 call_teardown(pmod, pstate)
             if cap:
                 cap.release()
-            cv2.destroyAllWindows()
+            pygame.quit()
             sys.exit(0)
+
+        clock.tick(FPS)
 
     if compositor:
         call_teardown(compositor[1], comp_state)
@@ -281,4 +283,4 @@ while True:
     if cap:
         cap.release()
 
-cv2.destroyAllWindows()
+pygame.quit()
