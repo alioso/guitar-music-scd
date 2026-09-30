@@ -13,7 +13,7 @@ SETUP
 
 STRUCTURE (times from first note)
   0:00    First note → calibration. Post: CALIBRATING.
-  ~1:30   6 unique pitches detected OR 90s elapsed → bed locks and rises.
+  ~1:30   6 distinct pitch classes played OR 90s elapsed → bed locks and rises.
   2:30    FEED 1 — play swells/harmonics. Bed nudges toward your pitches.
   3:00    MOTIVE MODE — play phrases. Companion echoes.
   5:30    FEED 2
@@ -22,12 +22,19 @@ STRUCTURE (times from first note)
   8:30    Fade — bed dissolves over 35s
   9:00    Silence
 
-BED (P1–P4 — the ocean)"/Users/albanbailly/Documents/guitar-music-scd/chimera/README.md"
-  3 synthesized additive voices + 1 restless P4 voice,
-  frequencies locked from calibration pitches.
+NOTES
+  A "note" is a pitch held steady for ~0.3 s (stableFrames × 100 ms), so
+  slides, vibrato and octave glitches from the tracker don't count.
+
+BED (P1–P4 — the ocean)
+  3 synthesized additive voices + 1 restless P4 voice, tuned from calibration:
+  root = the pitch class you played most, plus the two most-played pitch
+  classes that sit consonantly (3rds, 4ths, 5ths, 6ths) against the root and
+  each other — fifth/octave fill in if there aren't enough.
   Harmonics breathe independently via LFNoise — never static, never sudden.
   Slow pitch drift. Separate long reverb bus. Self-sustaining: does not echo input.
-  During feed windows only: your pitches slowly nudge the bed (Lag 45s).
+  During feed windows only: each note you hold pulls the nearest bed voice
+  toward it (Lag 45s).
 
 COMPANION (the ghost guitarist)
   Granular cloud: live input written to a looping buffer, TGrains reads it back
@@ -59,8 +66,10 @@ s.reboot;
     // Timing (seconds from first note)
     totalDur:    540,    // 9 min
     calibDur:     90,    // calibration window
-    calibNotes:    6,    // unique pitch classes to lock bed
+    calibNotes:    6,    // distinct pitch classes to lock bed
+    stableFrames:  3,    // pitch frames (100 ms each) a note must hold to count
     bedRiseSecs:  55,    // bed amplitude fade-in duration
+    bedFadeSecs:  35,    // bed fade-out duration at the end
     feedWindows: [[150, 180], [330, 360], [480, 510]],
     fadeSec:     510,    // fade at 8:30
 
@@ -80,7 +89,7 @@ s.reboot;
     motiveReverbDecay:  4.0,
     motiveReverbDamp:   0.30,
 
-    // Companion — granular cloud, self-contained, direct to hardware
+    // Companion — granular cloud, self-contained
     // Starts when bed locks (not before — silent during calibration)
     companionAmp:     0.65,
     companionBufSecs: 8.0,
@@ -88,7 +97,7 @@ s.reboot;
     threshold:     0.015,
 );
 "Chimera — config loaded".postln;
-"  Calibration: % pitches in first % s | Fade at % s | End at % s".format(
+"  Calibration: % pitch classes in first % s | Fade at % s | End at % s".format(
     ~ch.calibNotes, ~ch.calibDur, ~ch.fadeSec, ~ch.totalDur).postln;
 )
 
@@ -100,6 +109,9 @@ s.reboot;
 s.waitForBoot({
     var ch = ~ch;
 
+    // Private timeline clock — stopping it cancels everything this piece scheduled
+    ch.tclock = TempoClock(1);
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     ch.normalizeHz = { |hz|
@@ -109,27 +121,31 @@ s.waitForBoot({
         h
     };
 
-    ch.lockBedFreqs = { |samples|
-        var normSamples, buckets, sortedSemis, top3Hz, root;
-        normSamples = samples.collect({ |hz| ch[\normalizeHz].(hz) });
-        buckets     = Dictionary.new;
-        normSamples.do({ |hz|
-            var semi = ((hz / 440).log2 * 12).round(1).asInteger;
-            buckets[semi] = (buckets[semi] ? 0) + 1;
-        });
-        sortedSemis = buckets.keys.asArray.sort({ |a, b| buckets[b] < buckets[a] });
-        top3Hz      = sortedSemis.collect({ |s| ch[\normalizeHz].(440 * (2 ** (s / 12))) });
-        root        = top3Hz[0] ? 220;
-        [
-            top3Hz[0] ? root,
-            top3Hz[1] ? (root * 1.5),
-            top3Hz[2] ? (root * 2.0),
-        ]
+    // Root = most-played pitch class; then the most-played pitch classes that are
+    // consonant (interval class 3, 4 or 5) with the root and with each other.
+    // Voiced within the octave above a root in 110–220 Hz.
+    ch.lockBedFreqs = { |notes|
+        var counts = Dictionary.new;
+        var sorted, rootPc, chosen, rootHz, ic;
+        ic = { |a, b| var d = (a - b) % 12; min(d, 12 - d) };
+        notes.do { |m| counts[m % 12] = (counts[m % 12] ? 0) + 1 };
+        sorted = counts.keys.asArray.sort { |a, b| counts[a] > counts[b] };
+        rootPc = sorted[0] ? 9;
+        chosen = [];
+        sorted.drop(1).do { |pc|
+            if((chosen.size < 2) and: {
+                ([rootPc] ++ chosen).every { |c| [3, 4, 5].includes(ic.(pc, c)) }
+            }) { chosen = chosen.add(pc) };
+        };
+        rootHz = (45 + ((rootPc - 9) % 12)).midicps;   // A2 (110 Hz) … G#3 (208 Hz)
+        [rootHz] ++ chosen.collect { |pc| rootHz * (2 ** (((pc - rootPc) % 12) / 12)) }
+            ++ [rootHz * 1.5, rootHz * 2].drop(chosen.size)
     };
 
     // ── Buses ─────────────────────────────────────────────────────────────────
     ch.bedBus    = Bus.audio(s, 2);
     ch.motiveBus = Bus.audio(s, 2);
+    ch.masterBus = Bus.audio(s, 2);
 
     s.sync;
 
@@ -139,7 +155,7 @@ s.waitForBoot({
     SynthDef(\chDetect, { |thresh=0.015|
         var sig, amp, pitch, freq, hasFreq, above, onset;
         sig     = SoundIn.ar(0);
-        amp     = Amplitude.kr(sig, attackTime: 0.005, releaseTime: 0.15);
+        amp     = A2K.kr(Amplitude.ar(sig, attackTime: 0.005, releaseTime: 0.15));
         pitch   = Pitch.kr(sig, ampThreshold: 0.015, median: 7);
         freq    = pitch[0];
         hasFreq = pitch[1];
@@ -204,7 +220,7 @@ s.waitForBoot({
         Out.ar(out, (SoundIn.ar(0) * amp).dup);
     }).add;
 
-    // Companion — granular cloud, outputs directly to hardware (not through buses).
+    // Companion — granular cloud with its own short room, straight to the master.
     // Starts silent (amp=0); activated from startBed when the piece is running.
     // BufWr records live input; TGrains reads it back as a scattered cloud.
     SynthDef(\chCompanion, {
@@ -229,29 +245,23 @@ s.waitForBoot({
             amp:       0.15,
             interp:    2
         );
-        verb = GVerb.ar(cloud[0], roomsize: 35, revtime: 3.5, damping: 0.4, drylevel: 0);
-        mix  = (cloud * 0.55) + ([verb[0], verb[1]] * 0.45);
-        Out.ar(out, (mix * Lag.kr(amp, 8.0)).clip2(1.0));
+        verb = GVerb.ar(cloud.sum * 0.5, roomsize: 35, revtime: 3.5, damping: 0.4, drylevel: 0);
+        mix  = (cloud * 0.55) + (verb * 0.45);
+        Out.ar(out, mix * Lag.kr(amp, 8.0));
     }).add;
 
-    // Bed reverb: bed bus → GVerb → hardware out (long, ambient)
-    SynthDef(\chBedVerb, {
-        |busIn=0, out=0, mix=0.52, decay=6.5, damp=0.35|
+    // Bus reverb (used twice: bed = long ambient room, motive = shorter room)
+    SynthDef(\chVerb, {
+        |busIn=0, out=0, mix=0.52, room=80, decay=6.5, damp=0.35|
         var dry  = In.ar(busIn, 2);
-        var verb = GVerb.ar(dry[0], roomsize: 80,
+        var verb = GVerb.ar(dry.sum * 0.5, roomsize: room,
             revtime: decay, damping: damp, drylevel: 0);
-        var wet  = [verb[0], verb[1]];
-        Out.ar(out, ((dry * (1 - mix)) + (wet * mix)).clip2(1.0));
+        Out.ar(out, (dry * (1 - mix)) + (verb * mix));
     }).add;
 
-    // Motive reverb: motive bus (dry guitar) → GVerb → hardware out
-    SynthDef(\chMotiveVerb, {
-        |busIn=0, out=0, mix=0.52, decay=4.0, damp=0.30|
-        var dry  = In.ar(busIn, 2);
-        var verb = GVerb.ar(dry[0], roomsize: 40,
-            revtime: decay, damping: damp, drylevel: 0);
-        var wet  = [verb[0], verb[1]];
-        Out.ar(out, ((dry * (1 - mix)) + (wet * mix)).clip2(1.0));
+    // Master: bed + motive + companion → limiter → hardware out
+    SynthDef(\chMaster, { |busIn=0, out=0|
+        Out.ar(out, Limiter.ar(In.ar(busIn, 2), 0.95, 0.003));
     }).add;
 
     s.sync;
@@ -262,12 +272,14 @@ s.waitForBoot({
 
     s.sync;
 
-    // ── Groups ────────────────────────────────────────────────────────────────
-    ch.grpRec    = Group.new(s);
+    // ── Groups (all inside one root group — Block 3 frees only this piece) ────
+    ch.grpRoot   = Group.new(s);
+    ch.grpRec    = Group.head(ch.grpRoot);
     ch.grpBed    = Group.after(ch.grpRec);
     ch.grpMotive = Group.after(ch.grpBed);
     ch.grpVerb   = Group.after(ch.grpMotive);
     ch.grpComp   = Group.after(ch.grpVerb);   // companion: fully independent
+    ch.grpMaster = Group.after(ch.grpComp);
 
     // ── Synths ────────────────────────────────────────────────────────────────
     ch.detectSyn = Synth(\chDetect, [thresh: ch.threshold], ch.grpRec);
@@ -293,27 +305,30 @@ s.waitForBoot({
 
     // Companion starts SILENT — activated by startBed when bed locks
     ch.companionSyn = Synth(\chCompanion, [
-        out:    0,
+        out:    ch.masterBus.index,
         amp:    0.0,
         bufnum: ch.companionBuf.bufnum,
     ], ch.grpComp);
 
-    ch.bedVerbSyn = Synth(\chBedVerb, [
-        busIn: ch.bedBus.index, out: 0,
+    ch.bedVerbSyn = Synth(\chVerb, [
+        busIn: ch.bedBus.index, out: ch.masterBus.index, room: 80,
         mix: ch.bedReverbMix, decay: ch.bedReverbDecay, damp: ch.bedReverbDamp,
     ], ch.grpVerb);
-    ch.motiveVerbSyn = Synth(\chMotiveVerb, [
-        busIn: ch.motiveBus.index, out: 0,
+    ch.motiveVerbSyn = Synth(\chVerb, [
+        busIn: ch.motiveBus.index, out: ch.masterBus.index, room: 40,
         mix: ch.motiveReverbMix, decay: ch.motiveReverbDecay, damp: ch.motiveReverbDamp,
     ], ch.grpVerb);
+    ch.masterSyn = Synth(\chMaster, [busIn: ch.masterBus.index, out: 0], ch.grpMaster);
 
     // ── State ─────────────────────────────────────────────────────────────────
     ch.phase        = \waiting;
     ch.mode         = \motiveMode;
     ch.firstFired   = false;
     ch.calibDone    = false;
-    ch.calibSamples = [];
+    ch.calibSamples = [];      // MIDI notes of stable notes played during calibration
     ch.bedFreqs     = [220, 330, 440];
+    ch.lastSemi     = nil;     // note tracker: current pitch and how long it has held
+    ch.semiFrames   = 0;
 
     // ── startBed ─────────────────────────────────────────────────────────────
     ch.startBed = {
@@ -330,19 +345,59 @@ s.waitForBoot({
         ch.bedSyns[2].set(\amp, ch.bedAmp);
         ch.p4BedSyn.set(\amp, ch.p4Amp);
         // Step 3: restore freqLag ~40s from now, before first feed window (~60s away)
-        SystemClock.sched(40, {
-            if(ch.alive, {
-                ch.bedSyns.do({ |syn| syn.set(\freqLag, ch.freqLag) });
-                ch.p4BedSyn.set(\freqLag, 20);
-            });
+        ch.tclock.sched(40, {
+            ch.bedSyns.do({ |syn| syn.set(\freqLag, ch.freqLag) });
+            ch.p4BedSyn.set(\freqLag, 20);
             nil
         });
         // Companion wakes up now — 8s fade-in via Lag inside SynthDef
         ch.companionSyn.set(\amp, ch.companionAmp);
-        "BED LOCKED → % / % / % Hz".format(
+        { "BED LOCKED → % / % / % Hz".format(
             freqs[0].round(0.1), freqs[1].round(0.1), freqs[2].round(0.1)).postln;
-        "COMPANION active — granular cloud (% s buffer)".format(
-            ch.companionBufSecs).postln;
+          "COMPANION active — granular cloud (% s buffer)".format(
+            ch.companionBufSecs).postln; }.defer;
+    };
+
+    ch.lockBed = {
+        ch.calibDone = true;
+        ch.phase     = \running;
+        if(ch.calibSamples.size >= 1, {
+            ch.bedFreqs = ch[\lockBedFreqs].(ch.calibSamples);
+        });
+        ch[\startBed].value;
+    };
+
+    // Called once per stable note (a pitch held for stableFrames)
+    ch.onNote = { |midi|
+        var hz, dists, nearestIdx, target;
+        if((ch.phase == \calibrating) && ch.calibDone.not, {
+            ch.calibSamples = ch.calibSamples.add(midi);
+            if(ch.calibSamples.collect(_ % 12).asSet.size >= ch.calibNotes, {
+                ch[\lockBed].value;
+            });
+        });
+
+        // Feed: pull the bed voice closest to this pitch class onto it, in that voice's octave
+        if(ch.mode == \feedMode, {
+            hz = midi.midicps;
+            target = ch.bedFreqs.collect { |b| hz * (2 ** (hz / b).log2.round.neg) };
+            dists  = ch.bedFreqs.collect { |b, i| (target[i] / b).log2.abs };
+            nearestIdx = dists.minIndex;
+            ch.bedFreqs[nearestIdx] = target[nearestIdx];
+            ch.bedSyns[nearestIdx].set(\freq, target[nearestIdx]);
+        });
+    };
+
+    // Free everything this piece owns
+    ch.cleanup = {
+        OSCdef(\chFirstNote).free;
+        OSCdef(\chPitch).free;
+        ch.tclock.stop;
+        ch.grpRoot.free;
+        ch.bedBus.free;
+        ch.motiveBus.free;
+        ch.masterBus.free;
+        ch.companionBuf.free;
     };
 
     // ── OSC handlers ──────────────────────────────────────────────────────────
@@ -351,55 +406,40 @@ s.waitForBoot({
         if(ch.firstFired.not, {
             ch.firstFired = true;
             ch.phase      = \calibrating;
-            "CHIMERA — STARTED".postln;
-            "CALIBRATING — play % distinct harmonics to define the bed".format(
-                ch.calibNotes).postln;
+            { "CHIMERA — STARTED".postln;
+              "CALIBRATING — hold % distinct pitch classes to define the bed".format(
+                ch.calibNotes).postln; }.defer;
 
             // Auto-close calibration after calibDur even if not enough notes
-            SystemClock.sched(ch.calibDur, {
-                if(ch.alive && ch.calibDone.not, {
-                    ch.calibDone = true;
-                    ch.phase     = \running;
-                    if(ch.calibSamples.size >= 3, {
-                        ch.bedFreqs = ch[\lockBedFreqs].(ch.calibSamples);
-                    });
-                    ch[\startBed].value;
-                });
+            ch.tclock.sched(ch.calibDur, {
+                if(ch.calibDone.not, { ch[\lockBed].value });
                 nil;
             });
 
             // Feed windows
             ch.feedWindows.do({ |win, i|
-                SystemClock.sched(win[0], {
-                    if(ch.alive, {
-                        ch.mode = \feedMode;
-                        "FEED % — play swells/harmonics".format(i + 1).postln;
-                    });
+                ch.tclock.sched(win[0], {
+                    ch.mode = \feedMode;
+                    { "FEED % — play swells/harmonics".format(i + 1).postln; }.defer;
                     nil;
                 });
-                SystemClock.sched(win[1], {
-                    if(ch.alive, {
-                        ch.mode = \motiveMode;
-                        "MOTIVE MODE".postln;
-                    });
+                ch.tclock.sched(win[1], {
+                    ch.mode = \motiveMode;
+                    { "MOTIVE MODE".postln; }.defer;
                     nil;
                 });
             });
 
             // Fade and end
-            SystemClock.sched(ch.fadeSec, {
-                if(ch.alive, {
-                    ch.bedSyns.do({ |syn| syn.set(\amp, 0) });
-                    ch.p4BedSyn.set(\amp, 0);
-                    ch.companionSyn.set(\amp, 0);
-                    "FADING...".postln;
-                });
+            ch.tclock.sched(ch.fadeSec, {
+                ch.bedSyns.do({ |syn| syn.set(\ampLag, ch.bedFadeSecs, \amp, 0) });
+                ch.p4BedSyn.set(\ampLag, ch.bedFadeSecs, \amp, 0);
+                ch.companionSyn.set(\amp, 0);
+                { "FADING...".postln; }.defer;
                 nil;
             });
-            SystemClock.sched(ch.totalDur, {
-                if(ch.alive, {
-                    "SILENCE — evaluate Block 3 to stop".postln;
-                });
+            ch.tclock.sched(ch.totalDur, {
+                { "SILENCE — evaluate Block 3 to stop".postln; }.defer;
                 nil;
             });
 
@@ -408,44 +448,31 @@ s.waitForBoot({
     }, '/ch/firstNote');
 
     OSCdef(\chPitch, { |msg|
-        var freq, hasFreq, amp, normHz, dists, nearestIdx, uniquePCs;
+        var freq, hasFreq, amp, semi;
         freq    = msg[3];
         hasFreq = msg[4];
         amp     = msg[5];
 
         if((hasFreq > 0.5) && (amp > ch.threshold)
                 && (freq > 50) && (freq < 3000), {
-
-            if((ch.phase == \calibrating) && ch.calibDone.not, {
-                ch.calibSamples = ch.calibSamples.add(freq);
-                uniquePCs = ch.calibSamples.collect({ |hz|
-                    var h = ch[\normalizeHz].(hz);
-                    ((h / 440).log2 * 12).round(1).asInteger
-                }).asSet.size;
-                if(uniquePCs >= ch.calibNotes, {
-                    ch.calibDone = true;
-                    ch.phase     = \running;
-                    ch.bedFreqs  = ch[\lockBedFreqs].(ch.calibSamples);
-                    ch[\startBed].value;
-                });
+            semi = freq.cpsmidi.round.asInteger;
+            if(semi == ch.lastSemi, {
+                ch.semiFrames = ch.semiFrames + 1;
+            }, {
+                ch.lastSemi   = semi;
+                ch.semiFrames = 1;
             });
-
-            if(ch.mode == \feedMode, {
-                normHz     = ch[\normalizeHz].(freq);
-                dists      = ch.bedFreqs.collect({ |bHz| (normHz - bHz).abs });
-                nearestIdx = dists.minIndex;
-                ch.bedFreqs[nearestIdx] = normHz;
-                ch.bedSyns[nearestIdx].set(\freq, normHz);
-            });
+            // Register the note exactly once, when it has held long enough
+            if(ch.semiFrames == ch.stableFrames, { ch[\onNote].(semi) });
+        }, {
+            ch.lastSemi = nil;
         });
     }, '/ch/pitch');
-
-    ch.alive = true;
 
     // ── Ready ─────────────────────────────────────────────────────────────────
     "".postln;
     "Chimera — running. Play guitar when ready.".postln;
-    "  Calibration: % harmonics in first % s".format(ch.calibNotes, ch.calibDur).postln;
+    "  Calibration: % pitch classes in first % s".format(ch.calibNotes, ch.calibDur).postln;
     "  Feed windows: 2:30–3:00 | 5:30–6:00 | 8:00–8:30".postln;
     "  Companion: granular cloud (% s buffer), starts when bed locks".format(
         ch.companionBufSecs).postln;
@@ -458,12 +485,6 @@ s.waitForBoot({
 // BLOCK 3 — STOP
 // ─────────────────────────────────────────────────────────────────────────────
 (
-~ch.alive = false;
-OSCdef(\chFirstNote).free;
-OSCdef(\chPitch).free;
-~ch.bedBus.free;
-~ch.motiveBus.free;
-~ch.companionBuf.free;
-s.freeAll;
+~ch[\cleanup].value;
 "Chimera — stopped.".postln;
 )

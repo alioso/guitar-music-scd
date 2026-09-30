@@ -4,7 +4,7 @@ Granular sampler for 5 partners. Duration ~5 min from first note.
 
 ## Concept
 
-Three partners (P1–P3) granulate pre-recorded dry guitar files continuously, reading micro-fragments from across the buffer with position, rate, and duration all drifting autonomously. Two partners (P4–P5) capture the live input — heavily processed, never dry — in alternating 30-second windows, then granulate from those snapshots. The guitar is conceptually present throughout (P1–P3 source material is dry guitar), but nothing ever comes out dry. The piece is almost entirely not guitar.
+Three partners (P1–P3) granulate pre-recorded dry guitar files continuously, reading micro-fragments from across the buffer with position, rate, and duration all drifting autonomously. Two partners (P4–P5) capture the live input — already heavily processed before it reaches SC — in alternating 30-second windows, then granulate from those snapshots. The guitar is conceptually present throughout (P1–P3 source material is dry guitar), but your live signal is only heard through a large, mostly-wet reverb. The piece is almost entirely not guitar.
 
 P4 and P5 read from their capture buffers while those buffers are being overwritten on the next cycle. New material bleeds into live grains mid-playback — this overlap is intentional and produces the layered smearing texture that distinguishes P4/P5 from P1–P3.
 
@@ -44,7 +44,7 @@ The 80ms duration floor prevents crackle artifacts. The ±2 semitone default rat
 | P4 | live capture | hard right (0.8) | 100–280ms | 8–18/s | 8s asr |
 | P5 | live capture | center (0.0) | 100–280ms | 8–18/s | 8s asr |
 
-Uses `Pan2` (stereo). Adjust `~van.pans` to taste; values are −1 (left) to +1 (right).
+Output is stereo (`Pan2`). Adjust `~van.pans` to taste; values are −1 (left) to +1 (right). Everything meets on a mix bus with a limiter (0.95) before the outputs.
 
 ## Key parameters (Block 1)
 
@@ -52,6 +52,8 @@ Uses `Pan2` (stereo). Adjust `~van.pans` to taste; values are −1 (left) to +1 
 |---|---|---|
 | `thresh` | 0.015 | Amplitude to start the piece |
 | `pans` | [−0.8, −0.4, 0.4, 0.8, 0.0] | Pan2 positions: −1 (left) to +1 (right) |
+| `sampleLevel` | 0.5 | Peak level P1–P3 source files are normalised to on load |
+| `captureSecs` | 30 | P4/P5 capture window length |
 | `grainDurMin` | 0.08 | Minimum grain duration in seconds — lower = crackle risk |
 | `rateDriftMax` | 2.0 | Max semitone drift for all partners |
 | `fadeTimeP123` | 6 | Fade envelope time (seconds) for P1–P3 |
@@ -66,7 +68,7 @@ Uses `Pan2` (stereo). Adjust `~van.pans` to taste; values are −1 (left) to +1 
 
 **P1–P3 and what they use**
 - P1–P3 read from pre-recorded dry guitar files (`samp_1/2/3.wav`). These are static — loaded at init and never updated. They provide a continuous grain bed from the first 30 seconds.
-- The files can be any length. Longer files give the position LFO more range to wander.
+- The files can be any length, mono or stereo (only the left channel is used — the granulator needs mono). Each is normalised to `sampleLevel` on load, so quiet recordings still sit in the mix. Longer files give the position LFO more range to wander.
 - Each file is treated independently; they don't need to be harmonically related to each other or to what you play live.
 
 **P4–P5 and the live input**
@@ -89,20 +91,19 @@ Uses `Pan2` (stereo). Adjust `~van.pans` to taste; values are −1 (left) to +1 
 
 1. Place `samp_1.wav`, `samp_2.wav`, `samp_3.wav` in `vanilla/samples/`
 2. Open `vanilla.scd`
-3. Evaluate **Block 1** — sets `~numChans`, configures server channels
-4. Boot the server if not already running (`s.boot`)
-5. Evaluate **Block 2** — loads buffers, compiles SynthDefs; wait for `"Vanilla: ready"`
-6. Evaluate **Block 3** — arms the piece; wait for `"Vanilla: armed"`
-7. Play — piece starts on first note above threshold
-8. Evaluate **STOP** block or `Cmd+.` to abort early
+3. Evaluate **Block 1** — loads config
+4. Evaluate **Block 2** — boots the server if needed, loads buffers, compiles SynthDefs; wait for `"Vanilla: ready"`
+5. Evaluate **Block 3** — arms the piece; wait for `"Vanilla: armed"`
+6. Play — piece starts on first note above threshold
+7. The piece ends by itself at 5:00. Evaluate **STOP** to clean up, or to stop early — it cancels every pending entry and fades everything out over 8 s
 
 ## Tweaking
 
 All tunable values live in the `~van` dict in Block 1. Re-evaluate Block 1 only (not Block 2) to update them between runs without reloading buffers.
 
 - `thresh` — raise if ambient noise triggers the piece early
-- `numChans` — set before booting; server must be rebooted if changed
+- `sampleLevel` — level of P1–P3 relative to the live partners
 - `pans` — five values in -1..1; rearrange for your speaker layout
 - `rateDriftMax` — lower (e.g. 0.5) for a more pitch-stable texture; raise (e.g. 4.0) for wilder pitch movement
 - `grainDurMin` — raise to 0.15–0.20 if you hear crackle artifacts
-- Density ranges are baked into Block 3 as `rrand` calls — edit those directly to change grain density per partner
+- Density ranges are baked into Block 3 (the `grain` function) as `rrand` calls — edit those directly to change grain density per partner

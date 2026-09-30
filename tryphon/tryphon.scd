@@ -8,21 +8,20 @@ SETUP
   Click:  metronome → output 2+3 (headphones, Scarlett 4i4+)
 
   Four partners = tight one-shots sliced from the loop (no pitch shift).
-  Each voice has its own clock drift, mutation rate, and pattern logic.
-  Euclidean is optional; polyrhythm comes from independent evolving strata.
+  Each voice has its own drifting clock and density; every slice starts on
+  an attack detected while the loop was recorded.
 
   Input tip: clear harmony + simple rhythm (e.g. quarters) fills the buffer
   with a readable “pool”; complexity comes from the four strata, not from
   you playing dense rhythm.
 
-STRUCTURE (~7 min from first note) — unchanged
+STRUCTURE (~7 min from first note)
   t=0        first note → record 4 bars
   t=12s      P1 · P2 · P3 · P4 stagger by 12s
+  t=1:18     P5 (live processing) enters
   t=3m / 5m  cycle change, re-record, rebuild
-  t=6m36s    duo (input + P1)
+  t=6m12s    crescendo — all partners ramp to peak over 16 bars
   t=7m       hard stop
-
-REQUIRES sc3-plugins note in README; master uses GVerb like other pieces.
 */
 
 
@@ -48,6 +47,7 @@ s.reboot;
     recBars: 4,
 
     partnerAmp: 0.16,   // per spawned slice; 4 voices × ~2 overlapping = ~8 simultaneous
+    partnerPeak: 0.50,  // partner level at the top of the crescendo
     dryAmp:     0.32,
 
     // Master
@@ -57,9 +57,10 @@ s.reboot;
     reverbDamp:  0.5,
 
     threshold: 0.015,
+    onsetSens: 0.4,     // attack detection inside the recorded loop (lower = more attacks)
 
     totalDur:       420,
-    endDropBefore:  24,
+    cycleTimes:     [180, 300],
 
     clickOn:      true,
     clickOutChan: 2,
@@ -67,21 +68,25 @@ s.reboot;
 
     // Live-input processing voice (P5) — separate circular buffer, random effects
     liveAmp:      0.24,   // amplitude; dynamics come directly from your playing
+    livePeak:     0.60,   // P5 level at the top of the crescendo
     liveBufSecs:  8.0,    // how many seconds of recent input are kept
 
     // Per-voice drifting rhythm — two LFOs per voice, no euclidean math.
-    // stepMul:    base tempo vs global 16th (irrational → voices never realign)
+    // stepMul:    base tempo vs global 16th — irrational ratios, so the voices never realign
     // driftHz/driftDepth:   LFO 1 — breathes the step interval (living tempo)
     // evolveHz/evolveDepth: LFO 2 — breathes the hit probability (fills & spaces)
     // hitProb:    base probability of firing on any step (drifts via evolve LFO)
+    // slice:      the next attack at or after (playhead + this voice's bar offset
+    //             ± jitterSteps 16ths) — slices always begin on a played note
+    jitterSteps: 2,
     partnerVoices: [
-        (pan: -0.75, stepMul: 1.0,   driftHz: 0.055, driftDepth: 0.09,
+        (pan: -0.75, stepMul: 1.0,              driftHz: 0.055, driftDepth: 0.09,
                      evolveHz: 0.0027, evolveDepth: 0.30, hitProb: 0.22, satAmt: 0.40),
-        (pan: -0.25, stepMul: 1.063, driftHz: 0.048, driftDepth: 0.11,
+        (pan: -0.25, stepMul: 2 ** (1/12),      driftHz: 0.048, driftDepth: 0.11,
                      evolveHz: 0.0038, evolveDepth: 0.28, hitProb: 0.28),
-        (pan:  0.25, stepMul: 0.94,  driftHz: 0.062, driftDepth: 0.10,
+        (pan:  0.25, stepMul: 2.sqrt * (2/3),   driftHz: 0.062, driftDepth: 0.10,
                      evolveHz: 0.0044, evolveDepth: 0.32, hitProb: 0.25),
-        (pan:  0.75, stepMul: 1.11,  driftHz: 0.041, driftDepth: 0.12,
+        (pan:  0.75, stepMul: 2 ** (1/7),       driftHz: 0.041, driftDepth: 0.12,
                      evolveHz: 0.0031, evolveDepth: 0.35, hitProb: 0.20, satAmt: 0.40),
     ],
 );
@@ -90,121 +95,116 @@ s.reboot;
 ~trp.stepDur   = ~trp.barDur / 16;
 ~trp.loopDur   = ~trp.barDur * ~trp.recBars;
 ~trp.buildStep = ~trp.barDur * 4;
-~trp.cycleTimes = [180, 300];
 
 "Tryphon — config loaded (living strata)".postln;
 "  bpm=% |16th=% s | loop=% s".format(
     ~trp.bpm, ~trp.stepDur.round(0.001), ~trp.loopDur.round(0.01)).postln;
 )
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BLOCK 2 — START
 // ─────────────────────────────────────────────────────────────────────────────
 (
 s.waitForBoot({
     var trp       = ~trp;
-    var bufFrames = (s.sampleRate * trp.loopDur).ceil.asInteger;
+    var sr        = s.sampleRate;
+    var bufFrames = (sr * trp.loopDur).ceil.asInteger;
+
+    // Private timeline clock — stopping it cancels everything this piece scheduled
+    trp.tclock = TempoClock(1);
 
     trp.bufs = 3.collect { Buffer.alloc(s, bufFrames, 1) };
     // Circular live buffer — always contains the most recent liveBufSecs of input
-    trp.liveBuf     = Buffer.alloc(s, (s.sampleRate * trp.liveBufSecs).ceil.asInteger, 1);
+    trp.liveBuf     = Buffer.alloc(s, (sr * trp.liveBufSecs).ceil.asInteger, 1);
     trp.recFinished = [nil, nil, nil];
-    trp.recSyns     = [nil, nil, nil];
+    trp.onsets      = [List[], List[], List[]];   // attack frames found in each loop
     trp.routines    = [nil, nil, nil, nil];
-    trp.partnerSyns = [nil, nil, nil, nil];
     trp.mixBus      = Bus.audio(s, 2);
-    trp.partnerT0   = [0, 0, 0, 0];
-    trp.liveRoutine    = nil;
-    trp.liveRecSyn     = nil;
-    trp.partnerAmpSlot = [trp.partnerAmp];  // shared — crescendo updates this live
-    trp.liveAmpSlot    = [trp.liveAmp];
+    trp.partnerAmpNow = trp.partnerAmp;   // crescendo ramps these; voices read them per hit
+    trp.liveAmpNow    = trp.liveAmp;
 
     s.sync;
 
+    // First attack at or after `frame` in cycle cIdx's loop (wrapping); falls back
+    // to `frame` itself when no attacks were detected
+    trp.nextOnset = { |cIdx, frame|
+        var list = trp.onsets[cIdx];
+        if(list.isEmpty) { frame } {
+            list.detect { |f| f >= frame } ? list[0]
+        };
+    };
+
     trp.startPartner = { |partnerIdx, cycleIdx|
-        var voice, buf, pIdx, cIdx, oldR, newR;
-        var mixBusSlot, bufNumSlot, stepDurSlot, ampSlot;
-        pIdx = partnerIdx.asInteger.clip(0, 3);
-        cIdx = cycleIdx.asInteger.clip(0, 2);
-        voice = trp.partnerVoices[pIdx];
-        buf   = trp.bufs[cIdx];
-        mixBusSlot  = [trp.mixBus.index];
-        bufNumSlot  = [buf.bufnum];
-        stepDurSlot = [trp.stepDur];
-        ampSlot     = trp.partnerAmpSlot;  // shared slot — crescendo ramps this
+        var voice = trp.partnerVoices[partnerIdx];
+        var cIdx  = cycleIdx;
+        var buf   = trp.bufs[cIdx];
 
-        if(trp.routines[pIdx].notNil, {
-            oldR = trp.routines[pIdx];
-            trp.routines[pIdx] = nil;
-            AppClock.sched(0.02, { if(oldR.isPlaying, { oldR.stop }); nil });
-        });
+        trp.routines[partnerIdx] !? _.stop;
 
-        trp.partnerT0[pIdx] = Main.elapsedTime;
+        trp.routines[partnerIdx] = Routine({
+            var dh   = voice[\driftHz]    ? 0.05;
+            var dd   = voice[\driftDepth] ? 0.08;
+            var eh   = voice[\evolveHz]   ? 0.003;
+            var ed   = voice[\evolveDepth]? 0.30;
+            var hp   = voice[\hitProb]    ? 0.25;
+            var mulB = voice[\stepMul]    ? 1.0;
+            var slc  = voice[\sliceSecs]  ? (trp.barDur / 4);  // 1 quarter note = natural note length
+            var pan  = voice[\pan]    ? 0.0;
+            var sat  = voice[\satAmt] ? 0.0;
+            var t0   = thisThread.seconds;
+            var bf   = buf.numFrames;
+            var nf   = (slc * sr).asInteger.max(8);
+            var voiceOff = (bf * partnerIdx / 4).asInteger;    // each voice reads a different bar
+            var jitMax   = trp.stepDur * trp.jitterSteps * sr;
+            var dt, w, prob, ph, stFr;
 
-        // .defer avoids re-entrancy when called from SystemClock.sched
-        newR = Routine({
-            var dh, dd, eh, ed, hp, mulB, slc, amp, pan, sat, t0;
-            var now, dt, w, nf, stFr, prob;
-            dh   = voice[\driftHz]    ? 0.05;
-            dd   = voice[\driftDepth] ? 0.08;
-            eh   = voice[\evolveHz]   ? 0.003;
-            ed   = voice[\evolveDepth]? 0.30;
-            hp   = voice[\hitProb]    ? 0.25;
-            mulB = voice[\stepMul]    ? 1.0;
-            slc  = voice[\sliceSecs]  ? (trp.barDur / 4);  // 1 quarter note = natural note length
-            amp  = ampSlot[0];
-            pan  = voice[\pan]    ? 0.0;
-            sat  = voice[\satAmt] ? 0.0;
-            t0   = trp.partnerT0[pIdx];
-
-            while { ~trp[\alive] == true } {
-                now  = Main.elapsedTime;
-                dt   = now - t0;
+            loop {
+                dt   = thisThread.seconds - t0;
                 // LFO 1: breathes the step interval — each voice has its own drifting tempo
-                w    = stepDurSlot[0] * mulB * (1 + (sin(2pi * dh * dt) * dd));
+                w    = trp.stepDur * mulB * (1 + (sin(2pi * dh * dt) * dd));
                 // LFO 2: breathes the hit probability — creates natural fills and spaces
                 prob = hp * (1 + (sin(2pi * eh * dt) * ed)).clip(0.3, 1.7);
                 if(1.0.rand < prob, {
-                    var ph, voiceOff, jitter, bf;
-                    nf      = (slc * s.sampleRate).asInteger.max(8);
-                    bf      = buf.numFrames;
-                    // Anchor to the recording playhead so fragments start near note onsets.
-                    // Pure random positions always land mid-sustain (guitar attack = ~5% of note).
-                    ph      = if(trp.recFinished[cIdx].isNil, 0, {
-                        (((Main.elapsedTime - trp.recFinished[cIdx]) / trp.loopDur).frac * bf).asInteger
-                    });
-                    voiceOff = (bf * pIdx / 4).asInteger;    // each voice reads different quarter
-                    jitter   = (bf * 0.12.rand2).asInteger;  // ±12% ≈ ±1.4s — keeps it moving
-                    stFr    = ((ph + voiceOff + jitter + bf) % bf).min(bf - nf).max(0);
+                    // Loop position that lines up with "now" on the recording's bar grid
+                    ph   = ((thisThread.seconds - trp.recFinished[cIdx]) / trp.loopDur).frac * bf;
+                    stFr = trp[\nextOnset].(cIdx,
+                        ((ph + voiceOff + jitMax.rand2).round.asInteger % bf));
+                    stFr = stFr.min(bf - nf).max(0);
                     Synth(\trpSlice, [
-                        out:        mixBusSlot[0],
-                        bufnum:     bufNumSlot[0],
+                        out:        trp.mixBus.index,
+                        bufnum:     buf.bufnum,
                         startFrame: stFr,
                         numFrames:  nf,
-                        amp:        amp,
+                        amp:        trp.partnerAmpNow,
                         pan:        pan,
                         satAmt:     sat,
                     ], trp.grpVoice);
                 });
                 w.max(0.02).wait;
             };
-        });
-        trp.routines[pIdx] = newR;
-        { newR.play(SystemClock) }.defer(0.001);
-        { "  P% — drifting (cycle %)".format(pIdx + 1, cIdx + 1).postln; }.defer;
+        }).play(trp.tclock);
+        { "  P% — drifting (cycle %)".format(partnerIdx + 1, cIdx + 1).postln; }.defer;
     };
 
     trp.stopPartner = { |partnerIdx|
-        var ix, oldR;
-        ix = partnerIdx.asInteger.clip(0, 3);
-        oldR = trp.routines[ix];
-        if(oldR.notNil, {
-            trp.routines[ix] = nil;
-            AppClock.sched(0.02, { if(oldR.isPlaying, { oldR.stop }); nil });
-        });
-        if(trp.partnerSyns[ix].notNil, {
-            trp.partnerSyns[ix].free;
-            trp.partnerSyns[ix] = nil;
-        });
+        trp.routines[partnerIdx] !? _.stop;
+        trp.routines[partnerIdx] = nil;
+    };
+
+    // Free everything this piece owns (Block 3 and the automatic hard stop)
+    trp.cleanup = {
+        if(trp.cleanedUp.not) {
+            trp.cleanedUp = true;
+            OSCdef(\trpFirstNote).free;
+            OSCdef(\trpMark).free;
+            trp.tclock.stop;
+            trp.grpRoot.free;
+            trp.bufs.do(_.free);
+            trp.liveBuf.free;
+            trp.cueBufs.do(_.free);
+            trp.mixBus.free;
+        };
     };
 
     SynthDef(\trpRec, { |bufnum|
@@ -212,8 +212,22 @@ s.waitForBoot({
             recLevel: 1.0, preLevel: 0.0, loop: 0, doneAction: 2);
     }).add;
 
+    // Runs alongside \trpRec for exactly one loop: reports the time of each attack
+    // (Schmidt = hysteresis, so a decaying note can't re-trigger; attacks ≥ 60 ms apart)
+    SynthDef(\trpMark, { |thresh=0.015, sens=0.4, dur=12, cycle=0|
+        var sig   = SoundIn.ar(0);
+        var amp   = A2K.kr(Amplitude.ar(sig, attackTime: 0.005, releaseTime: 0.1));
+        var above = Schmidt.kr(amp, thresh * 0.5, thresh);
+        var rise  = above * (1 - Delay1.kr(above));
+        var onset = Onsets.kr(FFT(LocalBuf(512), sig), sens, \rcomplex) * above;
+        var hold  = Trig1.kr((rise + onset) > 0, 0.06);
+        var t     = Sweep.kr(0, 1);
+        Line.kr(0, 0, dur, doneAction: 2);
+        SendReply.kr(hold * (1 - Delay1.kr(hold)), '/trp/mark', [t], cycle);
+    }).add;
+
     SynthDef(\trpDetect, { |thresh=0.015|
-        var amp   = Amplitude.kr(SoundIn.ar(0), attackTime: 0.005, releaseTime: 0.1);
+        var amp   = A2K.kr(Amplitude.ar(SoundIn.ar(0), attackTime: 0.005, releaseTime: 0.1));
         var above = amp > thresh;
         var trig  = above * (1 - Delay1.kr(above));
         SendReply.kr(trig, '/trp/firstNote', amp);
@@ -221,11 +235,11 @@ s.waitForBoot({
 
     // Slice: reads numFrames frames from buffer starting at startFrame.
     // Duration is derived from numFrames so envelope always matches audio length.
-    // Attack 50ms / release 1.5s gives natural overlapping guitar wash.
+    // Short attack keeps the note's transient; release gives natural overlap.
     SynthDef(\trpSlice, { |out=0, bufnum=0, startFrame=0, numFrames=132300, amp=0.5, pan=0, satAmt=0.0|
         var dur      = (numFrames / SampleRate.ir).max(0.001);
         var releaseT = 1.5.min(dur * 0.45);
-        var attackT  = 0.05.min(dur * 0.1);
+        var attackT  = 0.005.min(dur * 0.1);
         var pos      = startFrame + Line.ar(0, (numFrames - 1).max(0), dur);
         var sig      = BufRd.ar(1, bufnum, pos, 0, 4);
         var gain     = 1 + (satAmt * 5);
@@ -270,10 +284,11 @@ s.waitForBoot({
         var dry  = In.ar(busIn, 2);
         var safe = dry.clip2(0.7);
         var room = (reverbSize * 28).clip(10, 100);
-        var verb = GVerb.ar(safe[0], roomsize: room,
+        var verb = GVerb.ar(safe.sum * 0.5, roomsize: room,
             revtime: reverbDecay, damping: reverbDamp, drylevel: 0);
-        var wet  = Sanitize.ar([verb[0], verb[1]]);
-        Out.ar(out, ((dry * (1 - reverbMix)) + (wet * reverbMix)).clip2(1.0));
+        var wet  = Sanitize.ar(verb);
+        var sig  = (dry * (1 - reverbMix)) + (wet * reverbMix);
+        Out.ar(out, Limiter.ar(sig, 0.95, 0.003));
     }).add;
 
     SynthDef(\trpClick, { |out=2, bpm=80|
@@ -290,23 +305,19 @@ s.waitForBoot({
         Out.ar(out, sig.dup * amp);
     }).add;
 
-    s.sync;
-
-    // Pre-render voice cue words (async — done well before any countdown fires at ~168s+)
+    // Pre-render voice cue words (blocking — takes a second or two)
     trp.cueBufs = ();
-    {
-        var words = [\four, \three, \two, \one];
-        var texts = ["four", "three", "two", "one"];
-        words.do { |key, i|
-            var path = "/tmp/trp_cue_" ++ key ++ ".aiff";
-            ("say -v " ++ trp.cueVoice ++ " -o " ++ path.shellQuote ++ " " ++ texts[i].shellQuote).unixCmd;
-            1.5.wait;
-            trp.cueBufs[key] = Buffer.read(s, path);
-        };
-        { "Voice cues loaded.".postln }.defer;
-    }.fork(AppClock);
+    [\four, \three, \two, \one].do { |key|
+        var path = "/tmp/trp_cue_" ++ key ++ ".aiff";
+        ("say -v " ++ trp.cueVoice ++ " -o " ++ path.shellQuote ++ " " ++ key.asString.shellQuote).systemCmd;
+        trp.cueBufs[key] = Buffer.read(s, path);
+    };
 
-    trp.grpRec    = Group.new(s);
+    s.sync;
+    "Voice cues loaded.".postln;
+
+    trp.grpRoot   = Group.new(s);
+    trp.grpRec    = Group.head(trp.grpRoot);
     trp.grpVoice  = Group.after(trp.grpRec);
     trp.grpDry    = Group.after(trp.grpVoice);
     trp.grpMaster = Group.after(trp.grpDry);
@@ -329,21 +340,18 @@ s.waitForBoot({
     });
 
     trp.firstFired = false;
-    trp.alive      = true;
+    trp.cleanedUp  = false;
 
     // Live processing voice (P5): reads from circular live buffer, random effects.
-    // Fires at exponentially-distributed random intervals (0.4–9s) → never a delay.
+    // Fires at exponentially-distributed random intervals (0.3–6s) → never a delay.
     // Effects: forward, reverse, down-4th (5 st), down-5th (7 st), down-octave,
     //          reverse+octave, and random saturation combos.
     trp.startLive = {
-        var lBuf    = trp.liveBuf;
-        var outSlot = [trp.mixBus.index];
-        var ampSlot = trp.liveAmpSlot;  // shared slot — crescendo ramps this
-        var sr      = s.sampleRate;
+        var lBuf = trp.liveBuf;
 
         trp.liveRoutine = Routine({
             var nf, rPos, effect, rate, rev, sat, startPos, endPos, dur, pan;
-            while { ~trp[\alive] == true } {
+            loop {
                 exprand(0.3, 6.0).wait;  // exponential = more short gaps, rare long silences
                 effect = #[\fwd, \rev, \down4, \down5, \down8, \rev8, \sat].choose;
                 nf     = (rrand(0.4, 3.5) * sr).asInteger;
@@ -362,36 +370,63 @@ s.waitForBoot({
                 dur      = (nf / sr / rate).max(0.05);
                 pan      = 1.0.rand2;
                 Synth(\trpLiveProc, [
-                    out:      outSlot[0],
+                    out:      trp.mixBus.index,
                     bufnum:   lBuf.bufnum,
                     startPos: startPos,
                     endPos:   endPos,
                     dur:      dur,
                     satAmt:   sat,
-                    amp:      ampSlot[0],
+                    amp:      trp.liveAmpNow,
                     pan:      pan,
                 ], trp.grpVoice);
             };
-        });
-        { trp.liveRoutine.play(SystemClock) }.defer(0.001);
+        }).play(trp.tclock);
         { "  P5 live proc — started".postln; }.defer;
     };
 
-    // Play "4 3 2 1" countdown on cue output, bar-aligned, delayFromNow seconds from first note
+    // Play "4 3 2 1" countdown on cue output, delayFromNow seconds from first note
     trp.playCountdown = { |delayFromNow, beatSpacing|
         var words = [\four, \three, \two, \one];
         var spc   = beatSpacing ? (trp.barDur / 4);  // default: quarter-note cue; pass barDur for slow
         4.do { |i|
-            SystemClock.sched(delayFromNow + (i * spc), {
-                if(~trp.alive, {
-                    var buf = trp.cueBufs[words[i]];
-                    if(buf.notNil, {
-                        Synth(\trpVoice, [out: trp.clickOutChan, bufnum: buf.bufnum], trp.grpMaster);
-                    });
+            trp.tclock.sched(delayFromNow + (i * spc), {
+                var buf = trp.cueBufs[words[i]];
+                if((buf.numFrames ? 0) > 0, {
+                    Synth(\trpVoice, [out: trp.clickOutChan, bufnum: buf.bufnum], trp.grpMaster);
                 });
                 nil
             });
         };
+    };
+
+    // Record one 4-bar loop (and mark its attacks); partners rebuild when it's done
+    trp.recordCycle = { |cIdx|
+        var preRoll = 0.01 * sr;   // start slices just before the detected attack
+        trp.onsets[cIdx] = List[];
+        OSCdef(\trpMark, { |msg|
+            var c = msg[2];
+            trp.onsets[c].add(((msg[3] * sr) - preRoll).max(0).round.asInteger);
+        }, '/trp/mark');
+        s.makeBundle(nil, {
+            Synth(\trpRec, [bufnum: trp.bufs[cIdx]], trp.grpRec);
+            Synth(\trpMark, [thresh: trp.threshold, sens: trp.onsetSens,
+                dur: trp.loopDur, cycle: cIdx], trp.grpRec);
+        });
+
+        trp.tclock.sched(trp.loopDur, {
+            trp.recFinished[cIdx] = thisThread.seconds;
+            trp.bufs[cIdx].normalize(0.7);
+            { "Loop % ready (% attacks).".format(cIdx + 1, trp.onsets[cIdx].size).postln; }.defer;
+            trp[\startPartner].(0, cIdx);
+            3.do { |k|
+                trp.tclock.sched(trp.buildStep * (k + 1), {
+                    trp[\startPartner].(k + 1, cIdx);
+                    if(k == 2) { { "Cycle % — full bed.".format(cIdx + 1).postln; }.defer };
+                    nil
+                });
+            };
+            nil
+        });
     };
 
     OSCdef(\trpFirstNote, { |msg|
@@ -401,32 +436,11 @@ s.waitForBoot({
 
             { "Tryphon — first note. Recording % bars...".format(trp.recBars).postln; }.defer;
 
-            trp.recSyns[0] = Synth(\trpRec, [bufnum: trp.bufs[0]], trp.grpRec);
+            trp[\recordCycle].(0);
 
-            SystemClock.sched(trp.loopDur, {
-                if(trp.alive, {
-                    trp.recFinished[0] = Main.elapsedTime;
-                    trp.bufs[0].normalize(0.7);
-                    { "Loop 1 ready — strata build...".postln; }.defer;
-                    trp[\startPartner].(0, 0);
-                    // P5 enters 30s after full bed (full bed = loopDur + buildStep×3 from first note)
-                    SystemClock.sched(trp.buildStep * 3 + 30, {
-                        if(trp.alive, {
-                            trp[\startLive].();
-                            { "P5 live proc — entering.".postln; }.defer;
-                        });
-                        nil
-                    });
-                    SystemClock.sched(trp.buildStep, { if(trp.alive, { trp[\startPartner].(1, 0) }); nil });
-                    SystemClock.sched(trp.buildStep * 2, { if(trp.alive, { trp[\startPartner].(2, 0) }); nil });
-                    SystemClock.sched(trp.buildStep * 3, {
-                        if(trp.alive, {
-                            trp[\startPartner].(3, 0);
-                            { "Cycle 1 — full bed.".postln; }.defer;
-                        });
-                        nil
-                    });
-                });
+            // P5 enters 30s after full bed (full bed = loopDur + buildStep×3 from first note)
+            trp.tclock.sched(trp.loopDur + (trp.buildStep * 3) + 30, {
+                trp[\startLive].value;
                 nil
             });
 
@@ -437,101 +451,37 @@ s.waitForBoot({
             trp[\playCountdown].(trp.totalDur - (trp.barDur * 8), trp.barDur);
             trp[\playCountdown].(trp.totalDur - (trp.barDur * 4), trp.barDur);
 
-            // Crescendo: last 16 bars — all partners ramp to peak for the cliff
-            SystemClock.sched(trp.totalDur - (trp.barDur * 16), {
-                if(trp.alive, {
-                    var aBase = trp.partnerAmpSlot[0];
-                    var lBase = trp.liveAmpSlot[0];
-                    var aPeak = 0.50;
-                    var lPeak = 0.60;
-                    var dur   = trp.barDur * 16;
-                    Routine({
-                        var t0 = Main.elapsedTime;
-                        while { ~trp[\alive] == true } {
-                            var frac = ((Main.elapsedTime - t0) / dur).clip(0.0, 1.0);
-                            trp.partnerAmpSlot[0] = aBase + ((aPeak - aBase) * frac);
-                            trp.liveAmpSlot[0]    = lBase + ((lPeak - lBase) * frac);
-                            0.25.wait;
-                        };
-                    }).play(SystemClock);
-                });
+            // Crescendo: last 16 bars — every partner and P5 ramp to peak for the cliff
+            trp.tclock.sched(trp.totalDur - (trp.barDur * 16), {
+                var dur = trp.barDur * 16;
+                var t0  = thisThread.seconds;
+                { "Crescendo.".postln; }.defer;
+                Routine({
+                    loop {
+                        var frac = ((thisThread.seconds - t0) / dur).clip(0.0, 1.0);
+                        trp.partnerAmpNow = trp.partnerAmp + ((trp.partnerPeak - trp.partnerAmp) * frac);
+                        trp.liveAmpNow    = trp.liveAmp + ((trp.livePeak - trp.liveAmp) * frac);
+                        0.25.wait;
+                    };
+                }).play(trp.tclock);
                 nil
             });
 
-            SystemClock.sched(trp.cycleTimes[0], {
-                if(trp.alive, {
-                    { "\n─── Cycle 2 — re-record; P2–P4 drop...".postln; }.defer;
-                    [1, 2, 3].do { |i| trp[\stopPartner].(i) };
-                    trp.recSyns[1] = Synth(\trpRec, [bufnum: trp.bufs[1]], trp.grpRec);
-                    SystemClock.sched(trp.loopDur, {
-                        if(trp.alive, {
-                            trp.recFinished[1] = Main.elapsedTime;
-                            trp.bufs[1].normalize(0.7);
-                            { "Loop 2 ready.".postln; }.defer;
-                            trp[\startPartner].(0, 1);
-                            SystemClock.sched(trp.buildStep, { if(trp.alive, { trp[\startPartner].(1, 1) }); nil });
-                            SystemClock.sched(trp.buildStep * 2, { if(trp.alive, { trp[\startPartner].(2, 1) }); nil });
-                            SystemClock.sched(trp.buildStep * 3, {
-                                if(trp.alive, {
-                                    trp[\startPartner].(3, 1);
-                                    { "Cycle 2 — full bed.".postln; }.defer;
-                                });
-                                nil
-                            });
-                        });
-                        nil
-                    });
+            // Cycle changes: P2–P4 drop, P1 keeps the old loop until the new one is ready
+            trp.cycleTimes.do { |time, i|
+                trp.tclock.sched(time, {
+                    { "\n─── Cycle % — re-record; P2–P4 drop...".format(i + 2).postln; }.defer;
+                    [1, 2, 3].do { |k| trp[\stopPartner].(k) };
+                    trp[\recordCycle].(i + 1);
+                    nil
                 });
+            };
+
+            trp.tclock.sched(trp.totalDur, {
+                { "Tryphon — hard stop.".postln; }.defer;
+                AppClock.sched(0, { trp[\cleanup].value; nil });
                 nil
             });
-
-            SystemClock.sched(trp.cycleTimes[1], {
-                if(trp.alive, {
-                    { "\n─── Cycle 3 — re-record; P2–P4 drop...".postln; }.defer;
-                    [1, 2, 3].do { |i| trp[\stopPartner].(i) };
-                    trp.recSyns[2] = Synth(\trpRec, [bufnum: trp.bufs[2]], trp.grpRec);
-                    SystemClock.sched(trp.loopDur, {
-                        if(trp.alive, {
-                            trp.recFinished[2] = Main.elapsedTime;
-                            trp.bufs[2].normalize(0.7);
-                            { "Loop 3 ready.".postln; }.defer;
-                            trp[\startPartner].(0, 2);
-                            SystemClock.sched(trp.buildStep, { if(trp.alive, { trp[\startPartner].(1, 2) }); nil });
-                            SystemClock.sched(trp.buildStep * 2, { if(trp.alive, { trp[\startPartner].(2, 2) }); nil });
-                            SystemClock.sched(trp.buildStep * 3, {
-                                if(trp.alive, {
-                                    trp[\startPartner].(3, 2);
-                                    { "Cycle 3 — full bed.".postln; }.defer;
-                                });
-                                nil
-                            });
-                        });
-                        nil
-                    });
-                });
-                nil
-            });
-
-            SystemClock.sched(trp.totalDur, {
-                if(trp.alive, {
-                    { "Tryphon — hard stop.".postln; }.defer;
-                    trp.alive = false;
-                    OSCdef(\trpFirstNote).free;
-                    if(trp.liveRoutine.notNil, { trp.liveRoutine.stop; trp.liveRoutine = nil });
-                    Routine({
-                        0.35.wait;
-                        trp.partnerSyns.do { |syn| if(syn.notNil, { syn.free }) };
-                        trp.bufs.do { |b| if(b.notNil, { b.free }) };
-                        if(trp.liveBuf.notNil, { trp.liveBuf.free; trp.liveBuf = nil });
-                        if(trp.liveRecSyn.notNil, { trp.liveRecSyn.free; trp.liveRecSyn = nil });
-                        if(trp.mixBus.notNil, { trp.mixBus.free });
-                        s.freeAll;
-                        trp.routines = [nil, nil, nil, nil];
-                    }).play(AppClock);
-                });
-                nil
-            });
-
         });
     }, '/trp/firstNote');
 
@@ -539,7 +489,8 @@ s.waitForBoot({
     "Tryphon — running (living strata). Threshold %.".format(trp.threshold).postln;
     "  +%s  partners begin after loop 1".format(trp.loopDur.round(1)).postln;
     "  +%s  cycle 2 | +%s  cycle 3".format(trp.cycleTimes[0], trp.cycleTimes[1]).postln;
-    "  +%s  hard stop".format(trp.totalDur).postln;
+    "  +%s  crescendo | +%s  hard stop".format(
+        (trp.totalDur - (trp.barDur * 16)).round(1), trp.totalDur).postln;
 });
 )
 
@@ -548,19 +499,6 @@ s.waitForBoot({
 // BLOCK 3 — STOP
 // ─────────────────────────────────────────────────────────────────────────────
 (
-~trp.alive = false;
-OSCdef(\trpFirstNote).free;
-if(~trp.liveRoutine.notNil, { ~trp.liveRoutine.stop; ~trp.liveRoutine = nil });
-Routine({
-    0.35.wait;
-    if(~trp.partnerSyns.notNil, { ~trp.partnerSyns.do { |s| if(s.notNil, { s.free }) } });
-    if(~trp.bufs.notNil, { ~trp.bufs.do { |b| if(b.notNil, { b.free }) } });
-    if(~trp.liveBuf.notNil, { ~trp.liveBuf.free });
-    if(~trp.liveRecSyn.notNil, { ~trp.liveRecSyn.free });
-    if(~trp.mixBus.notNil, { ~trp.mixBus.free });
-    s.freeAll;
-    ~trp.routines = [nil, nil, nil, nil];
-    "Tryphon — stopped.".postln;
-}).play(AppClock);
-"Tryphon — stopping (routines exit on alive flag; cleanup deferred)…".postln;
+~trp[\cleanup].value;
+"Tryphon — stopped.".postln;
 )

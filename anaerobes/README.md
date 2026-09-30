@@ -4,28 +4,34 @@ Generative guitar quintet — live note library, four independent partner voices
 
 ## Concept
 
-The guitarist builds a live library by playing: SC detects each onset, captures ~3s of audio into a named buffer slot indexed by MIDI pitch. Four partner voices draw independently from this library, making weighted decisions about register, rhythm, and harmony to create autonomous counterpoint. The piece has two harmonic libraries — A and B — and navigates between them mid-piece, shifting the harmonic world beneath all five voices simultaneously.
+The guitarist builds a live library by playing: SC detects each attack, waits a moment for the pitch to settle, then cuts ~3 s of audio — attack included — out of a rolling input buffer and files it under that MIDI pitch. Four partner voices draw independently from this library, making weighted decisions about register, rhythm, and harmony to create autonomous counterpoint. The piece has two harmonic libraries — A and B — and navigates between them mid-piece, shifting the harmonic world beneath all five voices simultaneously.
+
+Partners, click, voice cues and tempo ramps all run on one private clock: the click follows every tempo change, and every coordinated event lands on a bar line.
 
 ## Structure
 
+Coordinated events are scheduled at the times below, then wait for the next bar line.
+
 | Time from first note | Event |
 |---|---|
-| 0:00–1:30 | Library A seeding — guitarist plays alone. All material played here becomes partner source material. |
-| 1:30 | P1 enters (low, long notes, contemplative) |
-| 2:00 | P2 enters (mid-low, melodic) |
-| 2:30 | P3 enters (mid-high, restless, triplet-leaning) |
-| 3:00 | Coord 1 — group attack window. P4 enters (high, energetic). All active partners forced to play simultaneously for one beat. |
+| 0:00–1:30 | Library A seeding. Everything you play becomes partner source material; the harmonic bias follows what you play. |
+| 0:45 | P1 enters (low, long notes, contemplative) |
+| 1:10 | P2 enters (mid-low, melodic) |
+| 1:30 | Library A sealed — its harmonic bias is frozen |
+| 1:35 | P3 enters (mid-high, restless, triplet-leaning) |
+| 2:00 | P4 enters (high, energetic) |
+| 3:00 | Coord 1 — group attack: every active partner strikes the same downbeat |
 | 3:30 | Coord 2 — forte swell. All partners amp → 1.0. |
-| 3:45 | Voice: "slow down in four bars" → decelerando begins after four bars (76 → 66 BPM over 16 bars) |
+| 3:45 | Voice: "slow down in four bars" → decelerando four bars later (76 → 66 BPM over 16 bars) |
 | 4:20 | Voice: "record new harmony in four bars" |
-| 4:32 | Dry guitar muted. Library B seeding begins (8 bars). Partners continue drawing from Library A. |
+| ~4:32 | Dry guitar muted. Library B seeding begins (8 bars). Partners continue drawing from Library A. |
 | ~5:05 | Library B ready — all partners switch to Library B. Dry guitar returns. Voice: "new harmony". |
-| 5:15 | Coord 3 — rhythmic lock. All partners play quarter-note pulse for 4 bars. |
-| 6:10 | Voice: "speed up in four bars" → accelerando begins (66 → 84 BPM over 12 bars) |
+| 5:15 | Coord 3 — rhythmic lock. All partners play a quarter-note pulse on the beat for 4 bars. |
+| 6:10 | Voice: "speed up in four bars" → accelerando (66 → 84 BPM over 12 bars) |
 | 6:47 | Voice: "returning in four bars" → Library A returns, bias updates staggered by partner |
 | 7:20 | Coord 4 — piano drop. All partners amp → 0.45. |
-| ~7:28 | Voice: "end of piece in four bars" |
-| 8:00 | Final bar — all partners attack beat 1 simultaneously, 1-bar fade. Hard cutoff. |
+| ~7:48 | Voice: "end of piece in four bars" |
+| ~8:00 | Final bar — all partners strike beat 1 together, 1-bar fade. Hard cutoff one bar later. |
 
 ## Partner personalities
 
@@ -36,11 +42,13 @@ The guitarist builds a live library by playing: SC detects each onset, captures 
 | P3 | MIDI 62–79 (D4–G5) | Restless, mid-high. Dense activity, triplet feel. | Weights favor 8th-triplet, 16th, 16th-triplet territory. |
 | P4 | MIDI 69–90 (A4–F#6) | Energetic, high. Rarely rests. Fast activity. | Strongly weights fast note values. Rarely produces whole notes. |
 
+The rhythm, rest and interval weights are genuine probabilities: each partner varies its note lengths within its tendency.
+
 ## Note library
 
-Each onset triggers a ~3s capture into the pool of 96 pre-allocated buffers (round-robin reuse). SC extracts MIDI pitch via `Pitch.kr` and stores the buffer under that pitch class in the active library. Partners look up buffers by MIDI note, filtered to their register, then filtered by harmonic bias (pitch class whitelist), then weighted by interval distance from the last note played. Up to 3 takes per MIDI pitch are retained; older takes are dropped as new ones arrive.
+The input is written continuously into a rolling buffer. Each attack (a spectral onset — so legato notes count — or a rise from silence) is reported 80 ms later with the settled pitch; ~3 s starting 10 ms before the attack is then copied into a capture buffer and indexed by MIDI pitch in the active library. Notes whose pitch the tracker isn't confident about are skipped. Partners look up buffers by MIDI note, filtered to their register, then filtered by harmonic bias (pitch class whitelist), then weighted by interval distance from the last note played. Up to 3 takes per MIDI pitch are retained; when a new take arrives the oldest is dropped, and its buffer is recycled only after any partner note still playing it has finished — library takes are never overwritten.
 
-Two libraries exist in parallel: **Library A** (seeded in the opening 90 seconds) and **Library B** (seeded during the harmonic shift section around 4:32). Partners can only draw from the active library. The harmonic bias is derived automatically from whichever pitches you played most during each seeding window.
+Two libraries exist in parallel: **Library A** (seeded in the opening 90 seconds) and **Library B** (seeded during the harmonic shift section around 4:32). Partners can only draw from the active library. The harmonic bias is the (up to 7) pitch classes you played most during each seeding window — during Library A seeding it updates live, so partners entering from 0:45 already follow you.
 
 Partners P3 and P4 receive bias updates with a 16-beat and 32-beat lag respectively, so the harmonic shift propagates across the ensemble gradually rather than simultaneously.
 
@@ -48,40 +56,40 @@ Partners P3 and P4 receive bias updates with a 16-beat and 32-beat lag respectiv
 
 | Parameter | Value |
 |---|---|
-| `partnerAmp` | 0.26 per note (before groupAmp and ampBase scaling) |
+| `partnerAmp` | 1.5 per note (before groupAmp, ampBase and a 0.75–1.0 random accent) |
 | `dryAmp` | 0.55 |
-| `reverbMix` | 0.16 (JPverb, 3.8s decay) |
+| `reverbMix` | 0.16 (GVerb, room 40, 3.8 s decay) |
 | `onsetThreshold` | 0.015 |
 | `captureDur` | 3.0 s per note |
-| `bufPoolSize` | 96 capture buffers |
+| `bufPoolSize` | 160 capture buffers |
 
 ## Performance notes
 
 ### Pre-performance setup
 
 1. Run Block 1 (config). Confirm the timeline prints in the post window.
-2. Run Block 2 (start). Wait for "Anaerobes — running" in the post window before playing. The click will start immediately if `clickOn: true`.
-3. The server allocates 96 capture buffers and pre-renders six voice cue AIFF files via macOS `say`. This takes 1–2 seconds. Do not play until the post window confirms readiness.
+2. Run Block 2 (start). It renders six voice cues via macOS `say` (a few seconds), allocates the capture pool, then posts "Anaerobes — running". The click starts immediately if `clickOn: true`. Do not play until the post window confirms readiness.
 
 ### The opening composition (most important preparation)
 
-The 90-second seeding window is the most important part of the piece. Everything the four partners play for the next eight minutes comes from what you record here. Aim for:
+The 90-second seeding window is the most important part of the piece. Everything the four partners play for the next eight minutes comes from what you record here. P1 and P2 join at 0:45 and 1:10 and play back what you have given them so far. Aim for:
 
 - **Wide pitch range**: play in all registers. P1 lives in the low range, P4 in the high. If you never play below the 5th fret or above the 12th, the low and high partners will have nothing to draw from.
 - **Variety of note lengths**: single plucks, let-ring notes, short stabs, harmonics. Partners draw the audio verbatim — a pool of only short stabs means all partners will staccato.
 - **Variety of timbres**: normal picking, near-bridge, sul tasto, harmonics. The partners replay the captured audio at pitch — their timbre is your timbre.
-- **Cover all the pitches in your intended harmony**: the bias detection at the end of seeding finds which pitch classes appear most often and uses that as the harmonic filter. If you only play tonic and fifth, the bias narrows to two pitch classes and the partners become very monotonous. Seven or more distinct pitch classes gives the richest counterpoint.
-- **Do not fill every moment**: leave some silence. The detector has a 250ms refractory period, so fast runs register as fewer captures than slow, deliberate notes.
+- **Cover all the pitches in your intended harmony**: the bias is the pitch classes you play most. If you only play tonic and fifth, the bias narrows to two pitch classes and the partners become very monotonous. Seven or more distinct pitch classes gives the richest counterpoint.
+- **Clear pitches**: notes the pitch tracker can't read confidently (heavy chords, noise) aren't captured.
+- **Do not fill every moment**: leave some silence. Captures are at least 250 ms apart, so fast runs register as fewer captures than slow, deliberate notes.
 
-The post window shows "Library A:N B:0 pitches" every five notes. Aim for 15–30 Library A entries before partners enter.
+The post window shows "Library A:N B:0 pitches" every five notes. Aim for 15–30 Library A entries by 1:30.
 
 ### Click track
 
-The click plays on SC output channel 2 (device output 3+4 = headphones). Kick on beat 1, rim shot on beats 2, 3, 4. The click follows all tempo changes automatically via a control bus. At 76 BPM the bar is approximately 3.16 seconds.
+The click plays on SC output channel 2 (device output 3+4 = headphones). Kick on beat 1, rim shot on beats 2, 3, 4. It runs on the same clock as the partners, so it follows every tempo change and the bar lines it marks are the ones the coordinated events land on. At 76 BPM the bar is approximately 3.16 seconds.
 
 ### Voice cues
 
-All voice cues play through the headphone output only (channel 2). Four bars' warning is always given before the event fires.
+All voice cues play through the headphone output only (channel 2), on a bar line. Four bars' warning is always given before the event fires.
 
 | Voice cue | Meaning | What to do |
 |---|---|---|
@@ -90,7 +98,7 @@ All voice cues play through the headphone output only (channel 2). Four bars' wa
 | "new harmony" | Library B is ready; partners have switched | Your dry guitar has returned. Partners are now in the new harmonic world. Continue in the new language. |
 | "speed up in four bars" | Accelerando begins in 4 bars | Continue playing; the click will guide you up to 84 BPM over 12 bars. Follow the click. |
 | "returning in four bars" | Library A returns in 4 bars | Prepare to shift back to the opening harmony. Begin gravitating back to Library A pitch territory. |
-| "end of piece in four bars" | Final bar in 4 bars | Prepare a final note or phrase. All partners will attack simultaneously on beat 1 of the final bar. |
+| "end of piece in four bars" | Final bar in 4 bars | Prepare a final note or phrase. All partners will strike beat 1 of the final bar together. |
 
 ### Harmonic shift procedure (most critical moment)
 
@@ -99,7 +107,7 @@ The harmonic shift around 4:20 is the structurally central event of the piece. T
 1. You hear "record new harmony in four bars". You have four bars to mentally prepare the new harmonic material. Decide on the new pitch world now — it should contrast meaningfully with Library A.
 2. Four bars later, your dry guitar signal is muted in the mix. You will not hear yourself. This is intentional — it allows you to play the new material freely without it bleeding into the existing texture. Partners continue drawing from Library A.
 3. Play the new harmony for exactly 8 bars (the `shiftSeedBars` count). Play in the same spirit as the opening: wide range, varied lengths, varied timbres. The post window will show Library B building up.
-4. You hear "new harmony". Your dry guitar returns immediately. All four partners switch to Library B. Partners P3 and P4 will lag 16 and 32 beats behind P1 and P2 in adopting the new bias — the shift cascades through the ensemble over about one minute.
+4. You hear "new harmony". Your dry guitar returns immediately. All four partners switch to Library B. Partners P3 and P4 will lag 16 and 32 beats behind P1 and P2 in adopting the new bias — the shift cascades through the ensemble. (If nothing was captured, the partners stay on Library A.)
 5. You are now in the new harmonic world. Play as if continuing the piece from the opening, but in the new language.
 
 Confidence matters during the muted phase. You cannot hear yourself, but SC is capturing every onset. Play as if the audience can hear you — that material determines what the next two minutes of ensemble counterpoint will sound like.
@@ -110,36 +118,38 @@ Both tempo changes (decelerando at 3:45, accelerando at 6:10) are gradual, one-b
 
 ### Final bar
 
-At 8:00, all four partner routines are stopped and each partner fires one final `\anaHit` synth with a decay equal to one full bar minus 10ms. The amplitude is set to `groupAmp * ampBase * partnerAmp` (no randomization). This is the one moment all five voices move together. Play a final note on beat 1 — a sustained ring or a firm pluck — and fade out with your volume pedal over the bar. The hard cutoff fires automatically four beats later, stopping all synths.
+Four bars after the end cue, all four partner routines stop and each partner strikes one final note on beat 1, with a decay of one full bar. This is the one moment all five voices move together. Play a final note on beat 1 — a sustained ring or a firm pluck — and fade out with your volume pedal over the bar. The hard cutoff fires automatically one bar later and frees everything the piece owns.
 
 ### Library limitations
 
 Partners can only play what you gave them. A sparse or register-limited library produces sparse, register-limited counterpoint. There is no synthesis or pitch transposition — the partners replay your captures at original pitch. The quality of the piece is proportional to the richness of the opening 90 seconds.
 
-## Reverb
+## Reverb and output
 
-Uses **JPverb** from sc3-plugins (`brew install sc3-plugins`). GVerb fallback is commented in the `\anaMaster` SynthDef source. Settings: size 1.2, decay 3.8 s, damp 0.45, early diffusion 0.72.
+GVerb (built-in): room 40, decay 3.8 s, damp 0.45, fed from both channels. A limiter (0.95) sits on the master.
 
 ## How to run
 
 1. Open `anaerobes.scd`
 2. Evaluate **Block 1** (config) — `Cmd+Return` inside the block
-3. Evaluate **Block 2** (start) — allocates buffers, renders voice cues, starts synths
+3. Evaluate **Block 2** (start) — renders voice cues, allocates buffers, starts synths and click
 4. Wait for "Anaerobes — running" in the post window
 5. Play guitar — piece responds to first note above threshold (0.015)
-6. Piece ends with hard cutoff at 8 min + 4 beats; evaluate **Block 3** if stopped early
+6. Piece ends with a hard cutoff one bar after the final bar; evaluate **Block 3** if stopped early
 
 ## Tweaking (all in Block 1)
 
 - `bpm` — starting tempo (default 76); all derived durations recalculate automatically
 - `seedDur` — Library A seeding window in seconds (default 90)
 - `partnerEntryTimes` — when each partner enters from first note
-- `onsetThreshold` — detection sensitivity; raise in noisy environments
-- `onsetRefractory` — minimum gap between captures (default 0.25 s); raise to avoid double-triggers on one note
+- `onsetThreshold` — amplitude gate for attacks; raise in noisy environments
+- `onsetSens` — spectral onset threshold; lower catches softer legato attacks, higher ignores them
+- `onsetRefractory` — minimum gap between captures (default 0.25 s)
+- `pitchDelay` — how long after the attack the pitch is read (default 80 ms)
 - `partnerAmp` / `dryAmp` — mix balance between partners and live guitar
 - `reverbMix` / `reverbDecay` — master reverb wetness and tail length
 - `partners[i].playProb` — how often each partner chooses to play vs rest
 - `partners[i].ringProb` — probability of letting a note ring vs cutting short
-- `harmonicBias` — fallback pitch class whitelist if auto-detection finds fewer than 3 classes
+- `harmonicBias` — fallback pitch class whitelist until you have played 3+ pitch classes
 - `clickOn` — set `false` to disable click
-- `cueVoice` — macOS TTS voice name for spoken cues (default "Samantha")
+- `cueVoice` — macOS TTS voice for spoken cues (default "Samantha")

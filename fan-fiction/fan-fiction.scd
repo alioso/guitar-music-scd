@@ -13,17 +13,21 @@ SETUP
     s.options.outDevice = "Scarlett 2i2 USB";
     s.options.numOutputBusChannels = 4;          // for metronome headphone routing
 
-STRUCTURE
-  First note detected → timer starts
-  +8 bars             → 4 guitar voices + 3 synth voices fade in (sine curve)
+STRUCTURE (bars counted from your first note)
+  bar 1               → first note; the click re-syncs so its loop accent lands on it
+  bars 7–8            → frozen into the 2-bar loop (play a steady 2-bar ostinato)
+  +8 bars             → 4 guitar voices + 4 synth voices fade in over 8 bars
   +16 bars            → full mix begins archive recording; two-tone headphone cue fires
-  +16+64 bars (~2:55) → archive loops; dry guitar stays live for playing on top
+  +80 bars (~2:55)    → archive loops; voices stop; dry guitar stays live on top
+  +236 bars           → rising two-tone cue: 4 bars to the fade
+  +240 → +248 bars    → archive fades out over 8 bars (~9:00) — end
 
-VOICES
-  G1: rate locked 1.0,           pan -1.0 (full left)
+VOICES — all read the same frozen 2-bar loop
+  G1: rate locked 1.0,           pan -1.0 (full left)  — stays in phase with you
   G2: ±0.8% over 12min cycle,    pan -0.5 (half left)
   G3: ±1.0% over 9min cycle,     pan  0.5 (half right)
   G4: ±0.6% over 15min cycle,    pan  1.0 (full right)
+  Every drifting voice starts exactly in phase at entry and slides away from it.
 
 SYNTH VOICES (amplitude-following sine oscillators — 4 pitched registers, each phasing)
   Each voice tracks the loop's amplitude envelope to drive a pure sine at a set pitch.
@@ -35,10 +39,7 @@ SYNTH VOICES (amplitude-following sine oscillators — 4 pitched registers, each
 
 CLICK
   Beat pulse: 880 Hz every quarter note
-  Loop boundary: 1200 Hz every 2 bars (when the 2-bar loop resets)
-
-REQUIRES sc3-plugins for JPverb (brew install sc3-plugins)
-  Fallback: GVerb is used if JPverb not available (see master section)
+  Loop boundary: 1200 Hz every 2 bars (aligned to your first note)
 */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -60,11 +61,13 @@ s.reboot;
 (
 ~ff = (
     bpm:           110,
-    loopBars:      2,      // loop buffer = 2 bars (~4.4s)
+    loopBars:      2,      // loop buffer = 2 bars (~4.4s), frozen from the bars just before entry
     entryBars:     8,      // bars after first note → voices start fading in
     fadeBars:      8,      // bars for fade-in (sine curve, feels gradual)
     recBars:       16,     // bars after first note → archive recording starts
     archBars:      64,     // bars to record (~2:20 of material, total ~2:55 to loop)
+    endBars:       240,    // bars after first note → archive starts fading out
+    endFadeBars:   8,      // bars for the final fade (~9:00 total)
     threshold:     0.015,  // first-note amplitude threshold (0..1)
     dryAmp:        0.65,   // dry guitar in mix
     voiceAmp:      0.52,   // per-voice level — 4 voices equal presence with dry
@@ -89,9 +92,9 @@ s.reboot;
     ],
     synthVoiceAmp: 0.28,  // global scale; per-voice amp multipliers above
 
-    // Reverb
+    // Reverb (GVerb, built-in)
     reverbMix:     0.07,   // 0=dry 1=wet — very subtle, just space not wash
-    reverbSize:    1.2,
+    reverbRoom:    30,     // GVerb room size (m)
     reverbDecay:   4.5,
     reverbDamp:    0.4,
 
@@ -99,6 +102,9 @@ s.reboot;
     // Requires Scarlett 4i4+ with outputs 3+4 as headphones
     metronomeOn:   true,
     clickOutChan:  2,      // SC output channel (0-indexed, so ch 3 on device)
+
+    preRoll:       0.005,  // seconds of audio kept before the detected attack
+    latency:       0.05,   // server scheduling latency for sample-accurate events
 );
 
 // Derived timing
@@ -109,14 +115,17 @@ s.reboot;
 ~ff.recDur    = ~ff.barDur * ~ff.recBars;
 ~ff.archDur   = ~ff.barDur * ~ff.archBars;
 ~ff.totalDur  = ~ff.recDur + ~ff.archDur;
+~ff.endDur    = ~ff.barDur * ~ff.endBars;
+~ff.endFade   = ~ff.barDur * ~ff.endFadeBars;
 
 "Fan Fiction — config loaded".postln;
 "  bar=% s | loop=% s | entry=% s | fade=% s".format(
     ~ff.barDur.round(0.01), ~ff.loopDur.round(0.01),
     ~ff.entryDur.round(0.01), ~ff.fadeDur.round(0.01)).postln;
-"  archive starts at % s, ends at % s (~% min)".format(
+"  archive starts at % s, loops at % s | end at % s (~% min)".format(
     ~ff.recDur.round(1), ~ff.totalDur.round(1),
-    (~ff.totalDur / 60).round(0.1)).postln;
+    (~ff.endDur + ~ff.endFade).round(1),
+    ((~ff.endDur + ~ff.endFade) / 60).round(0.1)).postln;
 )
 
 
@@ -126,33 +135,48 @@ s.reboot;
 (
 s.waitForBoot({
     var ff = ~ff;
+    var sr = s.sampleRate;
+
+    // Private timeline clock — Block 3 stops it, cancelling every pending event
+    ff.tclock = TempoClock(1);
 
     // ── Buffers & buses ───────────────────────────────────────────────────────
-    ff.loopBuf = Buffer.alloc(s,
-        (s.sampleRate * ff.loopDur).ceil.asInteger, 1);
-    ff.archBuf = Buffer.alloc(s,
-        (s.sampleRate * ff.archDur).ceil.asInteger, 2);
+    // ringBuf: rolling capture of the input; the loop is copied out of it
+    ff.ringBuf = Buffer.alloc(s, (sr * (ff.loopDur * 2 + 1)).ceil.asInteger, 1);
+    ff.loopBuf = Buffer.alloc(s, (sr * ff.loopDur).round.asInteger, 1);
+    ff.archBuf = Buffer.alloc(s, (sr * ff.archDur).round.asInteger, 2);
     ff.mixBus  = Bus.audio(s, 2);
+    ff.posBus  = Bus.control(s, 1);
 
     s.sync;
 
     // ── SynthDefs ─────────────────────────────────────────────────────────────
 
-    // Records guitar into loop buffer continuously (always looping)
-    SynthDef(\ffRec, { |bufnum|
-        RecordBuf.ar(SoundIn.ar(0), bufnum,
-            recLevel: 1.0, preLevel: 0.0, loop: 1);
+    // Writes guitar into the ring buffer and publishes the write position
+    SynthDef(\ffRing, { |ringBuf, posBus|
+        var phase = Phasor.ar(0, 1, 0, BufFrames.kr(ringBuf));
+        BufWr.ar(SoundIn.ar(0), ringBuf, phase);
+        Out.kr(posBus, A2K.kr(phase));
     }).add;
 
-    // One guitar loop voice — gate 1 triggers fade-in via Env.asr (sine curve)
+    // Reports the ring position of the first attack, so the loop can be cut
+    // exactly on your bar grid
+    SynthDef(\ffListen, { |posBus, thresh=0.015|
+        var amp   = A2K.kr(Amplitude.ar(SoundIn.ar(0), attackTime: 0.005, releaseTime: 0.1));
+        var above = amp > thresh;
+        var trig  = above * (1 - Delay1.kr(above));
+        SendReply.kr(trig, '/ff/firstNote', [amp, In.kr(posBus)]);
+    }).add;
+
+    // One guitar loop voice — fades in on creation via Env.asr (sine curve)
     SynthDef(\ffVoice, {
-        |out=0, bufnum, gate=0, fadeSecs=17.0,
+        |out=0, bufnum, gate=1, fadeSecs=17.0, startPos=0,
          lfoDepth=0.0, lfoHz=0.001, pan=0.0, voiceAmp=0.5|
         var env  = EnvGen.kr(
-            Env.asr(fadeSecs, 1.0, 2.0, curve: \sine), gate);
+            Env.asr(fadeSecs, 1.0, 2.0, curve: \sine), gate, doneAction: Done.freeSelf);
         var rate = 1.0 + (SinOsc.kr(lfoHz) * lfoDepth);
         var sig  = PlayBuf.ar(1, bufnum,
-                       rate * BufRateScale.kr(bufnum), loop: 1);
+                       rate * BufRateScale.kr(bufnum), startPos: startPos, loop: 1);
         Out.ar(out, Pan2.ar(sig * env * voiceAmp, pan));
     }).add;
 
@@ -160,12 +184,14 @@ s.waitForBoot({
     // drives a pure sine at `freq`. Guitar attacks become pitched swells; different
     // phase rates per voice create a shifting harmonic shimmer across the 4 registers.
     SynthDef(\ffSynVoice, {
-        |out=0, bufnum, gate=0, fadeSecs=17.0,
+        |out=0, bufnum, gate=1, fadeSecs=17.0, startPos=0,
          lfoDepth=0.0, lfoHz=0.001, pan=0.0, voiceAmp=0.28, freq=82.4|
-        var env    = EnvGen.kr(Env.asr(fadeSecs, 1.0, 2.0, curve: \sine), gate);
+        var env    = EnvGen.kr(
+            Env.asr(fadeSecs, 1.0, 2.0, curve: \sine), gate, doneAction: Done.freeSelf);
         var rate   = 1.0 + (SinOsc.kr(lfoHz) * lfoDepth);
-        var buf    = PlayBuf.ar(1, bufnum, rate * BufRateScale.kr(bufnum), loop: 1);
-        var bufEnv = Amplitude.kr(buf, attackTime: 0.02, releaseTime: 1.0);
+        var buf    = PlayBuf.ar(1, bufnum,
+                         rate * BufRateScale.kr(bufnum), startPos: startPos, loop: 1);
+        var bufEnv = Amplitude.ar(buf, attackTime: 0.02, releaseTime: 1.0);
         var sig    = SinOsc.ar(freq) * bufEnv;
         Out.ar(out, Pan2.ar(sig * env * voiceAmp, pan));
     }).add;
@@ -175,35 +201,29 @@ s.waitForBoot({
         Out.ar(out, (SoundIn.ar(0) * amp).dup);
     }).add;
 
-    // Amplitude detector — fires OSC on first rising edge
-    SynthDef(\ffDetect, { |thresh=0.015|
-        var amp   = Amplitude.kr(SoundIn.ar(0),
-                        attackTime: 0.005, releaseTime: 0.1);
-        var above = amp > thresh;
-        var trig  = above * (1 - Delay1.kr(above));
-        SendReply.kr(trig, '/ff/firstNote', amp);
-    }).add;
-
     // Records stereo mix bus to archive buffer (one-shot, no loop)
     SynthDef(\ffArchRec, { |bufnum, busIn=0|
         RecordBuf.ar(In.ar(busIn, 2), bufnum,
             recLevel: 1.0, preLevel: 0.0, loop: 0);
     }).add;
 
-    // Plays archive buffer, looping forever
-    SynthDef(\ffArchPlay, { |out=0, bufnum|
+    // Plays archive buffer, looping until released (gate 0 → fade out)
+    SynthDef(\ffArchPlay, { |out=0, bufnum, gate=1, fadeSecs=17.0|
+        var env = EnvGen.kr(
+            Env.asr(0.01, 1.0, fadeSecs, curve: \sine), gate, doneAction: Done.freeSelf);
         var sig = PlayBuf.ar(2, bufnum,
                       BufRateScale.kr(bufnum), loop: 1);
-        Out.ar(out, sig.clip2(1.0));
+        Out.ar(out, sig * env);
     }).add;
 
-    // Master: mix bus → GVerb reverb → clip → hardware out
-    SynthDef(\ffMaster, { |busIn=0, out=0, reverbMix=0.22, reverbDecay=4.5, reverbDamp=0.4|
+    // Master: mix bus → GVerb reverb → limiter → hardware out
+    SynthDef(\ffMaster, {
+        |busIn=0, out=0, reverbMix=0.07, reverbRoom=30, reverbDecay=4.5, reverbDamp=0.4|
         var dry  = In.ar(busIn, 2);
-        var verb = GVerb.ar(dry[0], roomsize: 30,
+        var verb = GVerb.ar(dry.sum * 0.5, roomsize: reverbRoom,
             revtime: reverbDecay, damping: reverbDamp, drylevel: 0);
-        var wet  = [verb[0], verb[1]];
-        Out.ar(out, ((dry * (1-reverbMix)) + (wet * reverbMix)).clip2(1.0));
+        var sig  = (dry * (1 - reverbMix)) + (verb * reverbMix);
+        Out.ar(out, Limiter.ar(sig, 0.95, 0.003));
     }).add;
 
     // Beat click (880 Hz every quarter note) + loop-boundary accent (1200 Hz every 2 bars)
@@ -224,139 +244,185 @@ s.waitForBoot({
 
     s.sync;
 
-    // ── Groups ────────────────────────────────────────────────────────────────
-    ff.grpRec    = Group.new(s);
+    // ── Groups (all inside one root group — Block 3 frees only this piece) ────
+    ff.grpRoot   = Group.new(s);
+    ff.grpRec    = Group.head(ff.grpRoot);
     ff.grpVoice  = Group.after(ff.grpRec);
     ff.grpDry    = Group.after(ff.grpVoice);
     ff.grpMaster = Group.after(ff.grpDry);
 
     // ── Start synths ──────────────────────────────────────────────────────────
-    ff.recSyn    = Synth(\ffRec,    [bufnum: ff.loopBuf], ff.grpRec);
-    ff.detectSyn = Synth(\ffDetect, [thresh: ff.threshold], ff.grpRec);
-
-    ff.voiceSyns = ff.voices.collect({ |v|
-        Synth(\ffVoice, [
-            out:       ff.mixBus.index,
-            bufnum:    ff.loopBuf,
-            gate:      0,
-            fadeSecs:  ff.fadeDur,
-            lfoDepth:  v[\lfoDepth],
-            lfoHz:     v[\lfoHz],
-            pan:       v[\pan],
-            voiceAmp:  ff.voiceAmp,
-        ], ff.grpVoice);
-    });
-
-    ff.synVoiceSyns = ff.synthVoices.collect({ |v|
-        Synth(\ffSynVoice, [
-            out:       ff.mixBus.index,
-            bufnum:    ff.loopBuf,
-            gate:      0,
-            fadeSecs:  ff.fadeDur,
-            lfoDepth:  v[\lfoDepth],
-            lfoHz:     v[\lfoHz],
-            pan:       v[\pan],
-            voiceAmp:  ff.synthVoiceAmp * v[\amp],
-            freq:      ff.synthRoot * v[\mult],
-        ], ff.grpVoice);
-    });
-
+    ff.ringSyn   = Synth(\ffRing,
+        [ringBuf: ff.ringBuf, posBus: ff.posBus], ff.grpRec);
+    ff.listenSyn = Synth(\ffListen,
+        [posBus: ff.posBus, thresh: ff.threshold], ff.grpRec, \addToTail);
     ff.drySyn    = Synth(\ffDry,
         [out: ff.mixBus.index, amp: ff.dryAmp], ff.grpDry);
     ff.masterSyn = Synth(\ffMaster, [
         busIn:       ff.mixBus.index,
         out:         0,
         reverbMix:   ff.reverbMix,
-        reverbSize:  ff.reverbSize,
+        reverbRoom:  ff.reverbRoom,
         reverbDecay: ff.reverbDecay,
         reverbDamp:  ff.reverbDamp,
     ], ff.grpMaster);
 
-    if(ff.metronomeOn, {
+    ff.startClick = {
+        ff.clickSyn !? _.free;
         ff.clickSyn = Synth(\ffClick, [
             out:     ff.clickOutChan,
             bpm:     ff.bpm,
             loopDur: ff.loopDur,
         ], ff.grpMaster);
+    };
+    if(ff.metronomeOn, {
+        ff[\startClick].value;
         "Metronome active on output channel % (beat 880Hz | loop boundary 1200Hz)".format(
             ff.clickOutChan).postln;
     });
 
+    ff.cue = { |freqs|
+        freqs.do { |freq, i|
+            ff.tclock.sched(i * 0.18, {
+                Synth(\ffBufCue, [out: ff.clickOutChan, freq: freq], ff.grpMaster);
+                nil
+            });
+        };
+    };
+
+    // Freeze bars (entry − loopBars … entry) out of the ring buffer, then start all
+    // voices at the loop position that corresponds to "now" on your bar grid
+    ff.enterVoices = {
+        Routine({
+            var ringFrames = ff.ringBuf.numFrames;
+            var loopFrames = ff.loopBuf.numFrames;
+            var start = (ff.pos0 - (ff.preRoll * sr)
+                + ((ff.entryBars - ff.loopBars) * ff.barDur * sr)).round.asInteger % ringFrames;
+            var first = min(loopFrames, ringFrames - start);
+            ff.ringBuf.copyData(ff.loopBuf, 0, start, first);
+            if(first < loopFrames) {
+                ff.ringBuf.copyData(ff.loopBuf, first, 0, loopFrames - first);
+            };
+            s.sync;
+            ff.ringSyn.free;
+            ff.listenSyn.free;
+
+            { "Loop frozen. Voices fading in over % bars...".format(ff.fadeBars).postln; }.defer;
+            s.makeBundle(ff.latency, {
+                var startPos = ((thisThread.seconds + ff.latency - ff.tEntry)
+                    % ff.loopDur * sr).round;
+                ff.voiceSyns = ff.voices.collect({ |v|
+                    Synth(\ffVoice, [
+                        out:       ff.mixBus.index,
+                        bufnum:    ff.loopBuf,
+                        fadeSecs:  ff.fadeDur,
+                        startPos:  startPos,
+                        lfoDepth:  v[\lfoDepth],
+                        lfoHz:     v[\lfoHz],
+                        pan:       v[\pan],
+                        voiceAmp:  ff.voiceAmp,
+                    ], ff.grpVoice);
+                });
+                ff.synVoiceSyns = ff.synthVoices.collect({ |v|
+                    Synth(\ffSynVoice, [
+                        out:       ff.mixBus.index,
+                        bufnum:    ff.loopBuf,
+                        fadeSecs:  ff.fadeDur,
+                        startPos:  startPos,
+                        lfoDepth:  v[\lfoDepth],
+                        lfoHz:     v[\lfoHz],
+                        pan:       v[\pan],
+                        voiceAmp:  ff.synthVoiceAmp * v[\amp],
+                        freq:      ff.synthRoot * v[\mult],
+                    ], ff.grpVoice);
+                });
+            });
+        }).play(ff.tclock);
+    };
+
     // ── First note handler ────────────────────────────────────────────────────
     ff.firstFired = false;
 
-    OSCdef(\ffFirstNote, { |msg|
+    OSCdef(\ffFirstNote, { |msg, time|
         if(ff.firstFired.not, {
             ff.firstFired = true;
-            ff.detectSyn.free;
+            ff.pos0   = msg[4];
+            ff.tEntry = time + ff.entryDur;
 
-            { "First note! Voices enter in % bars (% sec)."
-                .format(ff.entryBars, ff.entryDur.round(0.1)).postln; }.defer;
+            // Restart the click on your first note so its loop accent marks the loop
+            if(ff.metronomeOn, { ff[\startClick].value });
 
-            // +8 bars: gate all voices open (fade-in via Env.asr over fadeDur)
-            SystemClock.sched(ff.entryDur, {
-                if(ff.alive, {
-                    { "Voices fading in over % bars...".format(ff.fadeBars).postln; }.defer;
-                    ff.voiceSyns.do({ |syn| syn.set(\gate, 1) });
-                    ff.synVoiceSyns.do({ |syn| syn.set(\gate, 1) });
-                });
-                nil;
-            });
+            { "First note! Loop freezes from bars %–%, voices enter in % bars (% sec)."
+                .format(ff.entryBars - ff.loopBars + 1, ff.entryBars,
+                    ff.entryBars, ff.entryDur.round(0.1)).postln; }.defer;
+
+            // +8 bars: freeze the loop and fade all voices in (0.1 s margin so the
+            // last frames of the loop are already recorded)
+            ff.tclock.sched(ff.entryDur + 0.1, { ff[\enterVoices].value; nil });
 
             // +16 bars: start archive recording + fire two-tone headphone cue
-            SystemClock.sched(ff.recDur, {
-                if(ff.alive, {
-                    { "Archive recording (% bars = % sec)..."
-                        .format(ff.archBars, ff.archDur.round(1)).postln; }.defer;
-
-                    // High → low cue: recording has started
-                    Synth(\ffBufCue, [out: ff.clickOutChan, freq: 1000]);
-                    SystemClock.sched(0.18, {
-                        Synth(\ffBufCue, [out: ff.clickOutChan, freq: 650]);
-                        nil;
-                    });
-
+            ff.tclock.sched(ff.recDur - ff.latency, {
+                { "Archive recording (% bars = % sec)..."
+                    .format(ff.archBars, ff.archDur.round(1)).postln; }.defer;
+                s.makeBundle(ff.latency, {
                     ff.archRecSyn = Synth(\ffArchRec, [
                         bufnum: ff.archBuf,
                         busIn:  ff.mixBus.index,
                     ], ff.grpMaster);
-
-                    // +16+64 bars: switch to archive loop — dry guitar stays live
-                    SystemClock.sched(ff.archDur, {
-                        if(ff.alive, {
-                            { "Archive complete — looping. Keep playing on top.".postln; }.defer;
-
-                            ff.archRecSyn.free;
-                            ff.recSyn.free;
-                            ff.voiceSyns.do(_.free);
-                            ff.synVoiceSyns.do(_.free);
-                            // drySyn kept alive — player continues on top of archive loop
-
-                            ff.archPlaySyn = Synth(\ffArchPlay, [
-                                out:    ff.mixBus.index,
-                                bufnum: ff.archBuf,
-                            ], ff.grpVoice);
-                        });
-                        nil;
-                    });
                 });
-                nil;
+                ff[\cue].([1000, 650]);   // high → low: recording has started
+                nil
+            });
+
+            // +80 bars: switch to archive loop — dry guitar stays live
+            ff.tclock.sched(ff.totalDur - ff.latency, {
+                { "Archive complete — looping. Keep playing on top.".postln; }.defer;
+                s.makeBundle(ff.latency, {
+                    ff.archRecSyn.free;
+                    ff.voiceSyns.do(_.free);
+                    ff.synVoiceSyns.do(_.free);
+                    ff.archPlaySyn = Synth(\ffArchPlay, [
+                        out:      ff.mixBus.index,
+                        bufnum:   ff.archBuf,
+                        fadeSecs: ff.endFade,
+                    ], ff.grpVoice);
+                });
+                nil
+            });
+
+            // End: rising cue 4 bars before, then the archive fades out
+            ff.tclock.sched(ff.endDur - (ff.barDur * 4), {
+                { "Four bars to the end.".postln; }.defer;
+                ff[\cue].([650, 1000]);
+                nil
+            });
+            ff.tclock.sched(ff.endDur, {
+                { "Fading out over % bars.".format(ff.endFadeBars).postln; }.defer;
+                ff.archPlaySyn.set(\gate, 0);
+                nil
+            });
+            ff.tclock.sched(ff.endDur + ff.endFade, {
+                ff.clickSyn !? _.free;
+                { "Fan Fiction — end. Evaluate Block 3 to clean up.".postln; }.defer;
+                nil
             });
         });
     }, '/ff/firstNote');
-
-    ff.alive = true;
 
     "".postln;
     "Fan Fiction — running. Play guitar when ready.".postln;
     "Amplitude threshold: %. Cmd+. or Block 3 to stop.".format(ff.threshold).postln;
     "Timeline from first note:".postln;
+    "  bars %–%: frozen into the loop — play a steady 2-bar ostinato".format(
+        ff.entryBars - ff.loopBars + 1, ff.entryBars).postln;
     "  +% bars (% s): voices fade in over % bars".format(
         ff.entryBars, ff.entryDur.round(1), ff.fadeBars).postln;
     "  +% bars (% s): archive recording starts (headphone cue fires)".format(
         ff.recBars, ff.recDur.round(1)).postln;
     "  +% bars (% s): archive loops; guitar stays live".format(
         ff.recBars + ff.archBars, ff.totalDur.round(1)).postln;
+    "  +% bars (% s): archive fades out over % bars".format(
+        ff.endBars, ff.endDur.round(1), ff.endFadeBars).postln;
 });
 )
 
@@ -365,11 +431,9 @@ s.waitForBoot({
 // BLOCK 3 — STOP (Cmd+Return to end cleanly)
 // ─────────────────────────────────────────────────────────────────────────────
 (
-~ff.alive = false;
+~ff.tclock !? _.stop;
 OSCdef(\ffFirstNote).free;
-~ff.loopBuf.free;
-~ff.archBuf.free;
-~ff.mixBus.free;
-s.freeAll;
+~ff.grpRoot !? _.free;
+[~ff.ringBuf, ~ff.loopBuf, ~ff.archBuf, ~ff.mixBus, ~ff.posBus].do { |x| x !? _.free };
 "Fan Fiction — stopped.".postln;
 )
