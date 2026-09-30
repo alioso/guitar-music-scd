@@ -16,10 +16,10 @@ import cv2
 
 MEDIA = {'still'}
 
-_SPEED_BASE    = 0.4    # rad/sec always-on gentle drift
-_SPEED_AMP     = 2.8    # additional speed at peak amplitude
-_STRENGTH_BASE = 4.0    # pixel displacement at silence
-_STRENGTH_AMP  = 28.0   # additional displacement at peak
+_SPEED_BASE    = 0.2    # rad/sec always-on gentle drift
+_SPEED_AMP     = 1.4    # additional speed at peak amplitude
+_STRENGTH_BASE = 2.0    # pixel displacement at silence
+_STRENGTH_AMP  = 14.0   # additional displacement at peak
 _FEATHER       = 30     # feather radius at zone edges (pixels)
 
 _rng = np.random.default_rng()

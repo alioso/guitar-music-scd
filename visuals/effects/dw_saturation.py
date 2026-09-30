@@ -11,8 +11,8 @@ import cv2
 MEDIA = {'still'}
 
 _SAT_BASE  = 1.05   # saturation multiplier at silence (almost natural)
-_SAT_MAX   = 2.8    # saturation multiplier at full amplitude
-_HUE_DRIFT = 15.0   # degrees/sec of hue shift at peak amplitude
+_SAT_MAX   = 1.9    # saturation multiplier at full amplitude
+_HUE_DRIFT = 7.5     # degrees/sec of hue shift at peak amplitude
 AMP_POWER  = 1.4
 
 
